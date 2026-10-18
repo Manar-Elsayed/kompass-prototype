@@ -7,3 +7,6 @@ next-env.d.ts
 .next-build
 .claude/
 .vercel
+
+.vercel
+.env*
