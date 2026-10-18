@@ -40,7 +40,7 @@ export default async function LocaleLayout({
   const dir = isRtl(locale) ? "rtl" : "ltr";
 
   return (
-    <html lang={locale} dir={dir} className={`${latin.variable} ${arabic.variable}`} suppressHydrationWarning>
+    <html lang={locale} dir={dir} className={`${latin.variable} ${arabic.variable}`} data-scroll-behavior="smooth" suppressHydrationWarning>
       <body>
         <NextIntlClientProvider>
           <Providers dir={dir}>{children}</Providers>

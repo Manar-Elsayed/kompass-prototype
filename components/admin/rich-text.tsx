@@ -22,6 +22,8 @@ export function RichText({
     extensions: [StarterKit.configure({ heading: { levels: [2, 3] } })],
     content: value,
     immediatelyRender: false,
+    // Tiptap 3 no longer re-renders per transaction; the toolbar's active states need it
+    shouldRerenderOnTransaction: true,
     editorProps: {
       attributes: {
         class: "prose-kompass tiptap px-4 py-3 text-sm",
@@ -34,7 +36,7 @@ export function RichText({
 
   // keep in sync when the value is reset from outside (discard)
   useEffect(() => {
-    if (editor && value !== editor.getHTML()) editor.commands.setContent(value, false);
+    if (editor && value !== editor.getHTML()) editor.commands.setContent(value, { emitUpdate: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
