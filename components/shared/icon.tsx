@@ -1,0 +1,70 @@
+import {
+  BadgeCheck,
+  BadgePercent,
+  Building2,
+  ClipboardList,
+  Eye,
+  FileSignature,
+  FileText,
+  Globe2,
+  HeartHandshake,
+  House,
+  Inbox,
+  LifeBuoy,
+  PaintRoller,
+  Piano,
+  Rocket,
+  Scale,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Target,
+  Trash2,
+  Truck,
+  Wallet,
+  Warehouse,
+  Package,
+  Clock,
+  MapPin,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+
+/** Curated icon registry — CMS editors pick icons by name from this list. */
+export const ICONS: Record<string, LucideIcon> = {
+  House,
+  Building2,
+  Sparkles,
+  Trash2,
+  Piano,
+  Warehouse,
+  Globe2,
+  PaintRoller,
+  ShieldCheck,
+  Scale,
+  BadgePercent,
+  ClipboardList,
+  Inbox,
+  BadgeCheck,
+  Eye,
+  HeartHandshake,
+  Target,
+  Wallet,
+  Star,
+  LifeBuoy,
+  FileText,
+  FileSignature,
+  Rocket,
+  Truck,
+  Package,
+  Clock,
+  MapPin,
+  Users,
+};
+
+export const ICON_NAMES = Object.keys(ICONS);
+
+export function Icon({ name, className }: { name: string; className?: string }) {
+  const Cmp = ICONS[name] ?? Package;
+  return <Cmp className={className} aria-hidden />;
+}

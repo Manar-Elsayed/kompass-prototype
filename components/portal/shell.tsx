@@ -1,0 +1,221 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import { AlertTriangle, ChevronDown, ExternalLink, LayoutDashboard, LogOut, Menu, Repeat, ShieldOff, ShoppingBag, Star, Store as StoreIcon, UserCog, Wallet, ClipboardCheck } from "lucide-react";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { cn, formatCHF, formatDate } from "@/lib/utils";
+import { useStore } from "@/lib/mock/store";
+import { useCurrentPartner, useHydrated, useLang } from "@/lib/mock/hooks";
+import { availableLeads, refNow } from "@/lib/mock/selectors";
+import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/controls";
+import { Dialog, DialogTitle, SheetContent } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Logo } from "@/components/shared/bits";
+import { LocaleSwitcher } from "@/components/shared/locale-switcher";
+import { PrototypeDock } from "@/components/shared/prototype-dock";
+
+const NAV = [
+  { key: "dashboard", href: "/portal", icon: LayoutDashboard },
+  { key: "shop", href: "/portal/shop", icon: ShoppingBag },
+  { key: "leads", href: "/portal/leads", icon: ClipboardCheck },
+  { key: "payments", href: "/portal/payments", icon: Wallet },
+  { key: "reviews", href: "/portal/reviews", icon: Star },
+  { key: "profile", href: "/portal/profile", icon: UserCog },
+] as const;
+
+/** Partner-facing shell — same design system as the admin, scoped to one company. */
+export function PortalShell({ children }: { children: React.ReactNode }) {
+  const hydrated = useHydrated();
+  const partner = useCurrentPartner();
+  const session = useStore((s) => s.partnerSession);
+  const router = useRouter();
+  const pathname = usePathname();
+  const [mobileNav, setMobileNav] = useState(false);
+
+  useEffect(() => {
+    if (hydrated && (!session || !partner)) router.replace("/portal/login");
+  }, [hydrated, session, partner, router]);
+  useEffect(() => setMobileNav(false), [pathname]);
+
+  if (!hydrated || !partner) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center">
+        <div className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-dvh bg-background lg:grid lg:grid-cols-[256px_1fr]">
+      <aside className="sticky top-0 hidden h-dvh flex-col border-e bg-surface lg:flex">
+        <Sidebar />
+      </aside>
+      <Dialog open={mobileNav} onOpenChange={setMobileNav}>
+        <SheetContent side="start" className="max-w-[280px] p-0">
+          <DialogTitle className="sr-only">Menu</DialogTitle>
+          <Sidebar />
+        </SheetContent>
+      </Dialog>
+      <div className="flex min-w-0 flex-col">
+        <Topbar onMenu={() => setMobileNav(true)} />
+        <StatusBanner />
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
+      </div>
+    </div>
+  );
+}
+
+function Sidebar() {
+  const t = useTranslations("portal");
+  const lang = useLang();
+  const pathname = usePathname();
+  const partner = useCurrentPartner()!;
+  const offers = useStore((s) => s.offers);
+  const orders = useStore((s) => s.orders);
+  const available = availableLeads({ offers, orders }, partner).length;
+  const openLeads = orders.filter((o) => o.partnerId === partner.id && !o.executed).length;
+  const badges: Partial<Record<(typeof NAV)[number]["key"], number>> = { shop: available, leads: openLeads };
+  const active = (href: string) => (href === "/portal" ? pathname === "/portal" : pathname.startsWith(href));
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex h-16 shrink-0 items-center gap-2 border-b px-5">
+        <Link href="/portal"><Logo className="h-6" /></Link>
+        <span className="ms-auto rounded-md bg-success-soft px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-success">{t("shell.badge")}</span>
+      </div>
+      <div className="m-3 rounded-xl bg-surface-2 p-3">
+        <div className="flex items-center gap-3">
+          <Avatar name={partner.name} square className="size-10" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-ink">{partner.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{partner.city} · {partner.canton}</p>
+          </div>
+        </div>
+        <Link href="/portal/payments" className="mt-3 flex items-center justify-between rounded-lg bg-surface px-3 py-2 text-sm ring-1 ring-border transition hover:ring-primary/40">
+          <span className="flex items-center gap-1.5 text-muted-foreground"><Wallet className="size-4" />{t("dashboard.wallet")}</span>
+          <span className="font-bold text-ink">{formatCHF(partner.wallet, lang)}</span>
+        </Link>
+      </div>
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2" aria-label="Partner">
+        {NAV.map(({ key, href, icon: I }) => (
+          <Link
+            key={key}
+            href={href}
+            aria-current={active(href) ? "page" : undefined}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              active(href) ? "bg-primary text-white shadow-sm" : "text-foreground/80 hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <I className="size-4" />
+            <span className="flex-1">{t(`nav.${key}`)}</span>
+            {!!badges[key] && (
+              <span className={cn("min-w-5 rounded-full px-1.5 py-0.5 text-center text-[11px] font-bold", active(href) ? "bg-white/20 text-white" : "bg-accent-soft text-accent")}>
+                {badges[key]}
+              </span>
+            )}
+          </Link>
+        ))}
+      </nav>
+      <div className="space-y-0.5 border-t p-3">
+        <Link href={`/companies/${partner.id}`} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+          <ExternalLink className="size-4" /> {t("shell.viewProfile")}
+        </Link>
+        <PrototypeDock inline />
+      </div>
+    </div>
+  );
+}
+
+function Topbar({ onMenu }: { onMenu: () => void }) {
+  const t = useTranslations("portal");
+  const lang = useLang();
+  const router = useRouter();
+  const partner = useCurrentPartner()!;
+  const logout = useStore((s) => s.partnerLogout);
+
+  return (
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-surface/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+      <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenu} aria-label="Menu">
+        <Menu className="size-5" />
+      </Button>
+      <Link href="/portal" className="lg:hidden"><Logo className="h-6" /></Link>
+      <div className="ms-auto flex items-center gap-1">
+        <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
+          <Link href="/portal/payments"><Wallet /> {formatCHF(partner.wallet, lang)}</Link>
+        </Button>
+        <Button asChild variant="accent" size="sm" className="hidden md:inline-flex">
+          <Link href="/portal/shop"><StoreIcon /> {t("nav.shop")}</Link>
+        </Button>
+        <LocaleSwitcher className="hidden md:inline-flex" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-2 rounded-lg p-1 pe-2 transition hover:bg-muted">
+              <Avatar name={partner.ownerName} className="size-8" />
+              <span className="hidden text-start leading-tight md:block">
+                <span className="block text-sm font-semibold text-ink">{partner.ownerName}</span>
+                <span className="block max-w-40 truncate text-xs text-muted-foreground">{partner.name}</span>
+              </span>
+              <ChevronDown className="hidden size-4 text-muted-foreground md:block" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuLabel dir="ltr">{partner.email}</DropdownMenuLabel>
+            <DropdownMenuItem onSelect={() => router.push("/portal/profile")}><UserCog /> {t("nav.profile")}</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => { logout(); router.replace("/portal/login"); }}><Repeat /> {t("shell.switch")}</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem tone="danger" onSelect={() => { logout(); router.replace("/portal/login"); }}><LogOut /> {t("shell.logout")}</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
+  );
+}
+
+/** Account-state banners: suspended, contract expired or expiring soon. */
+function StatusBanner() {
+  const t = useTranslations("portal.shell");
+  const lang = useLang();
+  const partner = useCurrentPartner()!;
+  const email = useStore((s) => s.config.supportEmail);
+  const exp = partner.expiresAt ? Date.parse(partner.expiresAt) : Infinity;
+  const days = (exp - refNow()) / 86_400_000;
+  let tone = "";
+  let text = "";
+  let Icon = AlertTriangle;
+  if (partner.banned) {
+    tone = "bg-danger-soft text-danger";
+    text = t("banned");
+    Icon = ShieldOff;
+  } else if (days < 0) {
+    tone = "bg-danger-soft text-danger";
+    text = t("expired", { date: formatDate(partner.expiresAt!, lang) });
+  } else if (days < 30) {
+    tone = "bg-warning-soft text-warning";
+    text = t("expiresSoon", { date: formatDate(partner.expiresAt!, lang) });
+  }
+  if (!text) return null;
+  return (
+    <div className={cn("flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm font-semibold sm:px-6 lg:px-8", tone)} role="status">
+      <Icon className="size-4 shrink-0" />
+      <span className="flex-1">{text}</span>
+      <a href={`mailto:${email}`} className="underline underline-offset-2">{t("support")}</a>
+    </div>
+  );
+}
+
+/** True when the partner may buy leads (not banned, contract valid). */
+export function useCanBuy() {
+  const partner = useCurrentPartner();
+  if (!partner) return false;
+  return !partner.banned && partner.status === "approved" && (!partner.expiresAt || Date.parse(partner.expiresAt) >= refNow());
+}

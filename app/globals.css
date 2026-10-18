@@ -1,0 +1,226 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ------------------------------------------------------------------
+   Kompass design tokens
+   Primitive brand values come from the legacy tailwind.config.ts
+   (blue #383688, orange #EB652B, purple #605EA0) and are mapped to
+   semantic roles shared by the website and the admin.
+------------------------------------------------------------------- */
+:root {
+  --radius: 0.75rem;
+
+  /* surfaces */
+  --background: #f6f6fb;
+  --surface: #ffffff;
+  --surface-2: #f0f0f8;
+  --foreground: #17163a;
+  --muted: #eeeef6;
+  --muted-foreground: #6b6a8a;
+  --border: #e3e2ef;
+  --input: #dddcea;
+  --ring: #5553b8;
+
+  /* brand */
+  --primary: #383688;
+  --primary-hover: #2e2c74;
+  --primary-soft: #ebeafa;
+  --primary-foreground: #ffffff;
+  --accent: #eb652b;
+  --accent-hover: #d65520;
+  --accent-soft: #fdeee6;
+  --accent-foreground: #ffffff;
+  --brand-purple: #605ea0;
+  --ink: #1e1c4f;
+
+  /* feedback */
+  --success: #1f9d55;
+  --success-soft: #e5f6ec;
+  --warning: #b7791f;
+  --warning-soft: #fdf3dc;
+  --danger: #d33a3a;
+  --danger-soft: #fce8e8;
+  --info: #2f6fde;
+  --info-soft: #e6effd;
+
+  /* charts */
+  --chart-1: #383688;
+  --chart-2: #eb652b;
+  --chart-3: #8f8dd0;
+  --chart-4: #1f9d55;
+  --chart-5: #f2b38f;
+
+  --shadow-sm: 0 1px 2px rgb(23 22 58 / 0.05);
+  --shadow-md: 0 4px 16px -4px rgb(23 22 58 / 0.1), 0 2px 4px -2px rgb(23 22 58 / 0.05);
+  --shadow-lg: 0 24px 48px -12px rgb(23 22 58 / 0.18);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-brand-purple: var(--brand-purple);
+  --color-ink: var(--ink);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 10px);
+
+  --shadow-card: var(--shadow-sm);
+  --shadow-pop: var(--shadow-md);
+  --shadow-float: var(--shadow-lg);
+
+  --font-sans: var(--font-latin), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Arabic reads better slightly larger with more leading */
+  :lang(ar) body {
+    font-family: var(--font-arabic), var(--font-latin), ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.7;
+  }
+  ::selection {
+    background: var(--primary-soft);
+    color: var(--primary);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@utility container-page {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1240px;
+  padding-inline: 1rem;
+  @media (width >= 640px) {
+    padding-inline: 1.5rem;
+  }
+}
+
+@utility flip-rtl {
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    transform: scaleX(-1);
+  }
+}
+
+/* Rich text rendering (blog bodies, legal pages, CMS preview) */
+.prose-kompass {
+  color: var(--foreground);
+  line-height: 1.75;
+}
+.prose-kompass h2 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  margin: 1.75rem 0 0.75rem;
+  color: var(--ink);
+}
+.prose-kompass h3 {
+  font-size: 1.125rem;
+  font-weight: 650;
+  margin: 1.5rem 0 0.5rem;
+  color: var(--ink);
+}
+.prose-kompass p {
+  margin: 0.75rem 0;
+}
+.prose-kompass ul,
+.prose-kompass ol {
+  margin: 0.75rem 0;
+  padding-inline-start: 1.25rem;
+}
+.prose-kompass ul {
+  list-style: disc;
+}
+.prose-kompass ol {
+  list-style: decimal;
+}
+.prose-kompass li {
+  margin: 0.25rem 0;
+}
+.prose-kompass a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-kompass strong {
+  font-weight: 650;
+  color: var(--ink);
+}
+.prose-kompass blockquote {
+  border-inline-start: 3px solid var(--accent);
+  padding-inline-start: 1rem;
+  color: var(--muted-foreground);
+  margin: 1rem 0;
+}
+
+/* Tiptap editor surface */
+.tiptap {
+  outline: none;
+  min-height: 180px;
+}
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  float: inline-start;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Hide number spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

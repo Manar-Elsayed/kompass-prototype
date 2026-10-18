@@ -1,0 +1,48 @@
+import type { DB } from "@/lib/types";
+import { services } from "./catalog";
+import { blogs, config, faqs, modelOffers, roles, site, users } from "./content";
+import {
+  complaints,
+  contacts,
+  coupons,
+  dues,
+  fakeReports,
+  faqQuestions,
+  notifications,
+  offers,
+  orders,
+  partners,
+  removals,
+  reviews,
+  visitors,
+} from "./generated";
+
+/** Fresh deep copy of the demo database. */
+export function createSeed(): DB {
+  return structuredClone({
+    services,
+    offers,
+    orders,
+    fakeReports,
+    partners,
+    dues,
+    reviews,
+    removals,
+    complaints,
+    coupons,
+    contacts,
+    faqQuestions,
+    visitors,
+    notifications,
+    roles,
+    users,
+    blogs,
+    faqs,
+    modelOffers,
+    site,
+    config,
+  });
+}
+
+export { CITIES, KOMPASS_REVIEW_AR, trafficSeries } from "./generated";
+export { NOW, DAY } from "./rng";
