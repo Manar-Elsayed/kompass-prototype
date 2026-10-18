@@ -1,5 +1,7 @@
 # Kompass prototype
 
+**Live demo:** https://kompass-prototype-lyart.vercel.app (start at [/en/hub](https://kompass-prototype-lyart.vercel.app/en/hub))
+
 This is a frontend-only, interactive prototype of the Kompass ecosystem: the **public website**, the **admin dashboard** and the **partner portal**. All three run in one Next.js app on shared mock data. There is no backend.
 
 ```bash
