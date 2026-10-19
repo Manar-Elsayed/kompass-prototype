@@ -33,7 +33,7 @@ export const admin: Built<typeof Def> = {
     executions: "Exécutions",
     fakeReports: "Signalements de faux leads",
     offerTypes: "Prestations et tarifs",
-    partners: "Annuaire",
+    partners: "Partenaires",
     applications: "Candidatures",
     activity: "Activité",
     partnerDues: "Paiements partenaires",
@@ -186,7 +186,7 @@ export const admin: Built<typeof Def> = {
     refunded: "CHF {amount} remboursés à {name}",
   },
   partners: {
-    title: "Annuaire des partenaires",
+    title: "Partenaires",
     subtitle: "Entreprises approuvées pouvant acheter des leads.",
     wallet: "Portefeuille",
     leadsBought: "Leads achetés",

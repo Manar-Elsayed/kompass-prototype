@@ -30,7 +30,7 @@ export const admin = {
     executions: "Executions",
     fakeReports: "Fake-lead reports",
     offerTypes: "Services & pricing",
-    partners: "Directory",
+    partners: "Partners",
     applications: "Applications",
     activity: "Activity",
     partnerDues: "Partner payments",
@@ -183,7 +183,7 @@ export const admin = {
     refunded: "CHF {amount} refunded to {name}",
   },
   partners: {
-    title: "Partner directory",
+    title: "Partners",
     subtitle: "Approved companies that can buy leads.",
     wallet: "Wallet",
     leadsBought: "Leads bought",
