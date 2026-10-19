@@ -10,12 +10,10 @@ import { cn } from "@/lib/utils";
 export function RichText({
   value,
   onChange,
-  dir,
   placeholder,
 }: {
   value: string;
   onChange: (html: string) => void;
-  dir?: "ltr" | "rtl";
   placeholder?: string;
 }) {
   const editor = useEditor({
@@ -27,7 +25,6 @@ export function RichText({
     editorProps: {
       attributes: {
         class: "prose-kompass tiptap px-4 py-3 text-sm",
-        dir: dir ?? "auto",
         "data-placeholder": placeholder ?? "",
       },
     },
@@ -55,7 +52,7 @@ export function RichText({
 
   return (
     <div className="overflow-hidden rounded-lg border border-input bg-surface focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/15">
-      <div className="flex flex-wrap items-center gap-0.5 border-b bg-surface-2/60 px-1.5 py-1" dir="ltr">
+      <div className="flex flex-wrap items-center gap-0.5 border-b bg-surface-2/60 px-1.5 py-1">
         {editor && (
           <>
             {btn(editor.isActive("paragraph"), () => editor.chain().focus().setParagraph().run(), <Pilcrow />, "Paragraph")}

@@ -133,7 +133,7 @@ export default function ServicesAdmin() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {LANGS.map((l) => (
                   <Field key={l} label={`${t("common.fields.name")} · ${l.toUpperCase()}`} required={l === "en"}>
-                    <Input value={draft.name[l]} onChange={(e) => setDraft({ ...draft, name: { ...draft.name, [l]: e.target.value } })} dir={l === "ar" ? "rtl" : "ltr"} />
+                    <Input value={draft.name[l]} onChange={(e) => setDraft({ ...draft, name: { ...draft.name, [l]: e.target.value } })} />
                   </Field>
                 ))}
               </div>

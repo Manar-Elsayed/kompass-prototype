@@ -12,6 +12,7 @@ import type {
   Order,
   Partner,
   PartnerDue,
+  Refund,
   Review,
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
@@ -40,6 +41,9 @@ interface Actions {
   registerPartner: (input: Omit<Partner, "id" | "slug" | "status" | "banned" | "featured" | "wallet" | "documents" | "lastSeen" | "createdAt">) => Partner;
   decideApplication: (id: string, decision: "contract_sent" | "approved" | "rejected", expiresAt?: string) => void;
   decideDue: (id: string, status: "confirmed" | "canceled") => void;
+  /** Admin-issued refund: recorded as refunded straight away and applied to the wallet. */
+  issueRefund: (input: Pick<Refund, "partnerId" | "amount" | "reason" | "method" | "orderId" | "note">) => Refund;
+  decideRefund: (id: string, status: "refunded" | "rejected") => void;
   submitReview: (input: Pick<Review, "target" | "name" | "email" | "stars" | "comment">) => void;
   submitComplaint: (input: Omit<Complaint, "id" | "status" | "createdAt">) => void;
   submitContact: (input: Omit<ContactMessage, "id" | "read" | "createdAt">) => void;
@@ -101,6 +105,12 @@ export function quoteLead(
 const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
 const nowIso = () => new Date().toISOString();
 
+/** How a refund moves the partner wallet: wallet credits add to it, a bank payout of the wallet balance takes from it. */
+const walletDelta = (r: Pick<Refund, "amount" | "method" | "reason">) =>
+  r.method === "wallet" ? r.amount : r.reason === "wallet_payout" ? -r.amount : 0;
+const applyRefund = (partners: Partner[], r: Pick<Refund, "partnerId" | "amount" | "method" | "reason">) =>
+  partners.map((p) => (p.id === r.partnerId ? { ...p, wallet: Math.max(0, p.wallet + walletDelta(r)) } : p));
+
 function notify(state: Store, n: Omit<Notification, "id" | "read" | "createdAt">): Notification[] {
   return [{ ...n, id: uid("n"), read: false, createdAt: nowIso() }, ...state.notifications];
 }
@@ -142,7 +152,7 @@ export const useStore = create<Store>()(
           offers: [offer, ...s.offers],
           notifications: notify(s, {
             kind: "lead",
-            title: { en: `New lead ${offer.id} · ${offer.from.city}`, de: `Neuer Lead ${offer.id} · ${offer.from.city}`, fr: `Nouveau lead ${offer.id} · ${offer.from.city}`, it: `Nuovo lead ${offer.id} · ${offer.from.city}`, ar: `طلب جديد ${offer.id} · ${offer.from.city}` },
+            title: { en: `New lead ${offer.id} · ${offer.from.city}`, de: `Neuer Lead ${offer.id} · ${offer.from.city}`, fr: `Nouveau lead ${offer.id} · ${offer.from.city}`, it: `Nuovo lead ${offer.id} · ${offer.from.city}` },
             href: `/admin/leads/${offer.id}`,
           }),
         });
@@ -167,7 +177,7 @@ export const useStore = create<Store>()(
           partners: [partner, ...s.partners],
           notifications: notify(s, {
             kind: "application",
-            title: { en: `New partner application: ${partner.name}`, de: `Neue Partnerbewerbung: ${partner.name}`, fr: `Nouvelle candidature partenaire : ${partner.name}`, it: `Nuova candidatura partner: ${partner.name}`, ar: `طلب شراكة جديد: ${partner.name}` },
+            title: { en: `New partner application: ${partner.name}`, de: `Neue Partnerbewerbung: ${partner.name}`, fr: `Nouvelle candidature partenaire : ${partner.name}`, it: `Nuova candidatura partner: ${partner.name}` },
             href: `/admin/partners/applications`,
           }),
         });
@@ -191,6 +201,24 @@ export const useStore = create<Store>()(
           ),
         })),
 
+      issueRefund: (input) => {
+        const at = nowIso();
+        const next = Math.max(0, ...get().refunds.map((r) => Number(r.id.slice(3)) || 0)) + 1;
+        const refund: Refund = { ...input, id: `RF-${String(next).padStart(3, "0")}`, status: "refunded", createdAt: at, decidedAt: at };
+        set((s) => ({ refunds: [refund, ...s.refunds], partners: applyRefund(s.partners, refund) }));
+        return refund;
+      },
+
+      decideRefund: (id, status) =>
+        set((s) => {
+          const refund = s.refunds.find((r) => r.id === id);
+          if (!refund || refund.status !== "pending") return {};
+          return {
+            refunds: s.refunds.map((r) => (r.id === id ? { ...r, status, decidedAt: nowIso() } : r)),
+            partners: status === "refunded" ? applyRefund(s.partners, refund) : s.partners,
+          };
+        }),
+
       decideDue: (id, status) =>
         set((s) => {
           const due = s.dues.find((d) => d.id === id);
@@ -209,7 +237,7 @@ export const useStore = create<Store>()(
           reviews: [{ ...input, id: uid("RV"), status: "pending", createdAt: nowIso() }, ...s.reviews],
           notifications: notify(s, {
             kind: "review",
-            title: { en: `New ${input.stars}★ review awaiting moderation`, de: `Neue ${input.stars}★-Bewertung wartet auf Prüfung`, fr: `Nouvel avis ${input.stars}★ en attente de modération`, it: `Nuova recensione ${input.stars}★ in attesa di moderazione`, ar: `تقييم جديد ${input.stars}★ بانتظار المراجعة` },
+            title: { en: `New ${input.stars}★ review awaiting moderation`, de: `Neue ${input.stars}★-Bewertung wartet auf Prüfung`, fr: `Nouvel avis ${input.stars}★ en attente de modération`, it: `Nuova recensione ${input.stars}★ in attesa di moderazione` },
             href: input.target === "kompass" ? "/admin/moderation/kompass-reviews" : "/admin/moderation/partner-reviews",
           }),
         })),
@@ -219,7 +247,7 @@ export const useStore = create<Store>()(
           complaints: [{ ...input, id: uid("CMP"), status: "pending", createdAt: nowIso() }, ...s.complaints],
           notifications: notify(s, {
             kind: "complaint",
-            title: { en: `New complaint from ${input.name}`, de: `Neue Beschwerde von ${input.name}`, fr: `Nouvelle réclamation de ${input.name}`, it: `Nuovo reclamo da ${input.name}`, ar: `شكوى جديدة من ${input.name}` },
+            title: { en: `New complaint from ${input.name}`, de: `Neue Beschwerde von ${input.name}`, fr: `Nouvelle réclamation de ${input.name}`, it: `Nuovo reclamo da ${input.name}` },
             href: "/admin/moderation/complaints",
           }),
         })),
@@ -229,7 +257,7 @@ export const useStore = create<Store>()(
           contacts: [{ ...input, id: uid("MSG"), read: false, createdAt: nowIso() }, ...s.contacts],
           notifications: notify(s, {
             kind: "contact",
-            title: { en: `New message: ${input.subject}`, de: `Neue Nachricht: ${input.subject}`, fr: `Nouveau message : ${input.subject}`, it: `Nuovo messaggio: ${input.subject}`, ar: `رسالة جديدة: ${input.subject}` },
+            title: { en: `New message: ${input.subject}`, de: `Neue Nachricht: ${input.subject}`, fr: `Nouveau message : ${input.subject}`, it: `Nuovo messaggio: ${input.subject}` },
             href: "/admin/inbox",
           }),
         })),
@@ -296,7 +324,7 @@ export const useStore = create<Store>()(
             fakeReports: [{ id: `FR-${101 + s.fakeReports.length}`, orderId, reason, status: "open", createdAt: nowIso() }, ...s.fakeReports],
             notifications: notify(s, {
               kind: "report",
-              title: { en: `Fake-lead report from ${partner?.name ?? "partner"}`, de: `Fake-Lead-Meldung von ${partner?.name ?? "Partner"}`, fr: `Signalement de faux lead par ${partner?.name ?? "un partenaire"}`, it: `Segnalazione di lead falso da ${partner?.name ?? "partner"}`, ar: `بلاغ طلب وهمي من ${partner?.name ?? "شريك"}` },
+              title: { en: `Fake-lead report from ${partner?.name ?? "partner"}`, de: `Fake-Lead-Meldung von ${partner?.name ?? "Partner"}`, fr: `Signalement de faux lead par ${partner?.name ?? "un partenaire"}`, it: `Segnalazione di lead falso da ${partner?.name ?? "partner"}` },
               href: "/admin/leads/fake-reports",
             }),
           };
@@ -310,7 +338,7 @@ export const useStore = create<Store>()(
           dues: [due, ...s.dues],
           notifications: notify(s, {
             kind: "due",
-            title: { en: `Payment receipt CHF ${input.amount} from ${partner?.name}`, de: `Zahlungsbeleg CHF ${input.amount} von ${partner?.name}`, fr: `Justificatif de paiement CHF ${input.amount} de ${partner?.name}`, it: `Ricevuta di pagamento CHF ${input.amount} da ${partner?.name}`, ar: `إيصال دفع ${input.amount} فرنك من ${partner?.name}` },
+            title: { en: `Payment receipt CHF ${input.amount} from ${partner?.name}`, de: `Zahlungsbeleg CHF ${input.amount} von ${partner?.name}`, fr: `Justificatif de paiement CHF ${input.amount} de ${partner?.name}`, it: `Ricevuta di pagamento CHF ${input.amount} da ${partner?.name}` },
             href: "/admin/finance/partner-dues",
           }),
         });
@@ -324,7 +352,7 @@ export const useStore = create<Store>()(
             removals: [{ id: `RR-${s.removals.length + 1}`, reviewId, partnerId, reason, status: "pending", createdAt: nowIso() }, ...s.removals],
             notifications: notify(s, {
               kind: "review",
-              title: { en: `Review removal requested by ${partner?.name}`, de: `Löschung einer Bewertung beantragt von ${partner?.name}`, fr: `Suppression d’avis demandée par ${partner?.name}`, it: `Rimozione recensione richiesta da ${partner?.name}`, ar: `طلب إزالة تقييم من ${partner?.name}` },
+              title: { en: `Review removal requested by ${partner?.name}`, de: `Löschung einer Bewertung beantragt von ${partner?.name}`, fr: `Suppression d’avis demandée par ${partner?.name}`, it: `Rimozione recensione richiesta da ${partner?.name}` },
               href: "/admin/moderation/removals",
             }),
           };
@@ -334,11 +362,11 @@ export const useStore = create<Store>()(
     }),
     {
       name: "kompass-prototype-v1",
-      // v2 added German, French and Italian to all content: earlier saves only hold EN/AR,
-      // so they start again from the (now five-language) seed, keeping the signed-in sessions.
-      version: 2,
+      // v2 added German, French and Italian; v3 dropped Arabic. Older saves start again from the
+      // current seed (EN/DE/FR/IT), keeping the signed-in sessions.
+      version: 3,
       migrate: (persisted, version) => {
-        if (version >= 2) return persisted as Store;
+        if (version >= 3) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

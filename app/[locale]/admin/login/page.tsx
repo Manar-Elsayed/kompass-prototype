@@ -70,7 +70,7 @@ export default function AdminLogin() {
               </button>
             </div>
             <Button type="submit" size="lg" loading={busy}>
-              {t("submit")} <ArrowRight className="flip-rtl" />
+              {t("submit")} <ArrowRight className="" />
             </Button>
           </form>
 

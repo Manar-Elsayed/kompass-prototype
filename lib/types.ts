@@ -2,11 +2,11 @@
  * Domain model for the Kompass ecosystem.
  * Shapes are derived from the legacy front `types/*.ts` and the admin
  * RTK Query endpoints (offers, companies, orders, reviews, complaints …),
- * normalised and made multilingual (EN / DE / FR / IT / AR).
+ * normalised and made multilingual (EN / DE / FR / IT).
  */
 
-export type Lang = "en" | "de" | "fr" | "it" | "ar";
-export const LANGS: readonly Lang[] = ["en", "de", "fr", "it", "ar"];
+export type Lang = "en" | "de" | "fr" | "it";
+export const LANGS: readonly Lang[] = ["en", "de", "fr", "it"];
 export type L10n = Record<Lang, string>;
 export type ID = string;
 
@@ -88,6 +88,23 @@ export interface FakeReport {
   reason: string;
   status: FakeReportStatus;
   createdAt: string;
+}
+
+/** Money Kompass gives back to a partner company: credited to its wallet or paid out to its bank. */
+export type RefundReason = "fake_lead" | "duplicate_lead" | "cancelled_job" | "wallet_payout" | "goodwill";
+export type RefundMethod = "wallet" | "bank";
+export type RefundStatus = "pending" | "refunded" | "rejected";
+export interface Refund {
+  id: ID;
+  partnerId: ID;
+  amount: number;
+  reason: RefundReason;
+  method: RefundMethod;
+  orderId?: ID; // the lead purchase being refunded, when there is one
+  note: string;
+  status: RefundStatus;
+  createdAt: string;
+  decidedAt?: string;
 }
 
 /* ---------- Partners ---------- */
@@ -381,6 +398,7 @@ export interface DB {
   fakeReports: FakeReport[];
   partners: Partner[];
   dues: PartnerDue[];
+  refunds: Refund[];
   reviews: Review[];
   removals: RemovalRequest[];
   complaints: Complaint[];

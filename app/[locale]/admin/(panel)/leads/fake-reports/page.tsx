@@ -28,6 +28,7 @@ export default function FakeReportsPage() {
   const orders = useStore((s) => s.orders);
   const offers = useStore((s) => s.offers);
   const patch = useStore((s) => s.patch);
+  const issueRefund = useStore((s) => s.issueRefund);
   const partnerMap = usePartnerMap();
   const { confirm, dialog } = useConfirm();
   const orderMap = Object.fromEntries(orders.map((o) => [o.id, o]));
@@ -43,7 +44,7 @@ export default function FakeReportsPage() {
         tone: "success",
         onConfirm: () => {
           patch("fakeReports", r.id, { status });
-          patch("partners", partner.id, { wallet: partner.wallet + order.price });
+          issueRefund({ partnerId: partner.id, amount: order.price, reason: "fake_lead", method: "wallet", orderId: order.id, note: r.reason });
           toast.success(t("admin.fake.refunded", { amount: order.price, name: partner.name }));
         },
       });

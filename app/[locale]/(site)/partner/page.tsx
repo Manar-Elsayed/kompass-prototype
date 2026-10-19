@@ -36,7 +36,7 @@ export default function PartnerLanding() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild variant="accent" size="lg">
                 <Link href="/partner/register">
-                  {t("apply")} <ArrowRight className="flip-rtl" />
+                  {t("apply")} <ArrowRight className="" />
                 </Link>
               </Button>
               <Button asChild size="lg" className="bg-white/10 text-white hover:bg-white/20">

@@ -23,21 +23,29 @@ const KOMPASS_IBAN = "CH44 0070 0110 0012 3456 7";
 export default function PaymentsPage() {
   const t = useTranslations("portal.payments");
   const td = useTranslations("admin.dues");
+  const tr = useTranslations("admin.refunds");
   const tt = useTranslations("common.table");
   const lang = useLang();
   const partner = useCurrentPartner()!;
   const dues = useStore((s) => s.dues).filter((d) => d.partnerId === partner.id);
   const orders = useStore((s) => s.orders).filter((o) => o.partnerId === partner.id);
-  const reports = useStore((s) => s.fakeReports);
+  const refunds = useStore((s) => s.refunds).filter((r) => r.partnerId === partner.id && r.status === "refunded");
   const [upload, setUpload] = useState(false);
 
   const pending = dues.filter((d) => d.status === "pending").reduce((a, d) => a + d.amount, 0);
   const spent = orders.reduce((a, o) => a + o.price, 0);
-  const refunds = reports.filter((r) => r.status === "confirmed" && orders.some((o) => o.id === r.orderId));
 
   const statement = [
     ...dues.filter((d) => d.status === "confirmed").map((d) => ({ at: d.createdAt, label: t("topup", { ref: d.reference }), amount: d.amount, kind: "in" as const })),
-    ...refunds.map((r) => ({ at: r.createdAt, label: t("refund"), amount: orders.find((o) => o.id === r.orderId)!.price, kind: "refund" as const })),
+    // the statement tracks the wallet: credits come in, a payout of the balance goes out to the bank
+    ...refunds
+      .filter((r) => r.method === "wallet" || r.reason === "wallet_payout")
+      .map((r) => ({
+        at: r.decidedAt ?? r.createdAt,
+        label: r.reason === "fake_lead" ? t("refund") : tr(`reasons.${r.reason}`),
+        amount: r.method === "wallet" ? r.amount : -r.amount,
+        kind: r.method === "wallet" ? ("refund" as const) : ("out" as const),
+      })),
     ...orders.map((o) => ({ at: o.createdAt, label: t("purchase", { id: o.offerId }), amount: -o.price, kind: "out" as const })),
   ].sort((a, b) => b.at.localeCompare(a.at));
 
@@ -96,6 +104,7 @@ export default function PaymentsPage() {
 function UploadDialog({ onClose }: { onClose: () => void }) {
   const t = useTranslations("portal.payments");
   const td = useTranslations("admin.dues");
+  const tr = useTranslations("admin.refunds");
   const tc = useTranslations("common");
   const partner = useCurrentPartner()!;
   const uploadPayment = useStore((s) => s.uploadPayment);

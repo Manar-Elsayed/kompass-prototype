@@ -49,11 +49,11 @@ flowchart LR
 | Two divergent stacks and design systems | One app, one token set (`app/globals.css`), one component set (`components/ui`) |
 | 15 flat admin menu entries | 8 task-based groups (`components/admin/nav.ts`) |
 | Route typos: `fack-offers`, `complains`, `Aplications`, `compnyDital` | Clean routes: `/admin/leads/fake-reports`, `/admin/moderation/complaints` |
-| Hardcoded per-column `headers = { en, de }` objects and German strings inside `en.json` | All copy lives in `messages/defs/*` as EN/AR pairs |
+| Hardcoded per-column `headers = { en, de }` objects and German strings inside `en.json` | All copy lives in `messages/defs/*` (English) with typed DE/FR/IT translations |
 | Wallet column hardcoded to `0 CHF` | Real wallet and ledger (`lib/mock/selectors.ts`) |
 | Ban and status toggles fire immediately | Confirm dialogs that explain the consequences (`useConfirm`) |
 | 20+ copied DataTable setups and ~20 Formik page forms (some over 20 KB) | One `DataTable` and one schema-driven `SchemaEditor` |
-| Empty `messages/*.json`, no RTL | Full EN + AR with RTL (logical CSS properties throughout) |
+| Empty `messages/*.json` | Full EN, DE, FR and IT for the UI and all CMS content |
 | Status colours differ on every page | One `StatusBadge` vocabulary |
 
 ## Next phase

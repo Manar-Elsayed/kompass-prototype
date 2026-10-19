@@ -69,7 +69,7 @@ export default function PortalLogin() {
               <Input type="password" defaultValue="prototype" dir="ltr" />
             </Field>
             <Button type="submit" size="lg" loading={busy} disabled={!partner}>
-              {t("submit")} <ArrowRight className="flip-rtl" />
+              {t("submit")} <ArrowRight className="" />
             </Button>
           </form>
 

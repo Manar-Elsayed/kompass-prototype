@@ -265,7 +265,7 @@ export default function LeadDetail() {
               />
               <Button asChild variant="ghost" size="sm" className="mt-4 -ms-2">
                 <Link href="/admin/leads">
-                  {t("admin.leads.title")} <ArrowRight className="flip-rtl" />
+                  {t("admin.leads.title")} <ArrowRight className="" />
                 </Link>
               </Button>
             </CardBody>

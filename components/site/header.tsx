@@ -87,7 +87,7 @@ export function SiteHeader() {
           <Button asChild variant="accent" className="hidden sm:inline-flex">
             <Link href="/#offer-form">
               {t("cta")}
-              <ArrowRight className="flip-rtl" />
+              <ArrowRight className="" />
             </Link>
           </Button>
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setOpen(true)} aria-label={t("menu")}>

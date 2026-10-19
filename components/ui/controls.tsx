@@ -22,7 +22,7 @@ export function Switch({ className, ...props }: React.ComponentProps<typeof Swit
       )}
       {...props}
     >
-      <SwitchP.Thumb className="pointer-events-none block size-4 rounded-full bg-white shadow-sm ring-0 transition-transform data-[state=unchecked]:translate-x-0 ltr:data-[state=checked]:translate-x-4 rtl:data-[state=checked]:-translate-x-4" />
+      <SwitchP.Thumb className="pointer-events-none block size-4 rounded-full bg-white shadow-sm ring-0 transition-transform data-[state=unchecked]:translate-x-0 data-[state=checked]:translate-x-4" />
     </SwitchP.Root>
   );
 }

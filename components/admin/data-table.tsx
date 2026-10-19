@@ -272,10 +272,10 @@ export function DataTable<T>({
             <span className="tabular-nums">{t("table.page", { page: pagination.pageIndex + 1, pages })}</span>
             <div className="flex gap-1">
               <Button variant="outline" size="icon-sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} aria-label={t("actions.previous")}>
-                <ChevronLeft className="flip-rtl" />
+                <ChevronLeft className="" />
               </Button>
               <Button variant="outline" size="icon-sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} aria-label={t("actions.next")}>
-                <ChevronRight className="flip-rtl" />
+                <ChevronRight className="" />
               </Button>
             </div>
           </div>

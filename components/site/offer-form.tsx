@@ -375,7 +375,7 @@ export function OfferForm({
             </p>
             <Button type="button" size="lg" onClick={next} className="w-full sm:w-auto">
               {t("common.actions.next")}
-              <ArrowRight className="flip-rtl" />
+              <ArrowRight className="" />
             </Button>
           </div>
         </div>
@@ -459,7 +459,7 @@ export function OfferForm({
 
           <div className="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:justify-between lg:col-span-2">
             <Button type="button" variant="ghost" onClick={() => setStep(1)}>
-              <ArrowLeft className="flip-rtl" />
+              <ArrowLeft className="" />
               {t("common.actions.back")}
             </Button>
             <Button type="submit" variant="accent" size="lg" loading={formState.isSubmitting}>

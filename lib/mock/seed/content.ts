@@ -2,7 +2,7 @@ import type { AdminUser, Blog, Config, Faq, L10n, ModelOffer, Role, SiteContent 
 import { daysAgo } from "./rng";
 
 /** Build a five-language string: en, ar, de, fr, it. */
-const l = (en: string, ar: string, de: string, fr: string, it: string): L10n => ({ en, ar, de, fr, it });
+const l = (en: string, de: string, fr: string, it: string): L10n => ({ en, de, fr, it });
 
 export const site: SiteContent = {
   general: {
@@ -10,12 +10,11 @@ export const site: SiteContent = {
     email: "hello@kompassumzug.ch",
     address: l(
       "Bahnhofstrasse 21, 8001 Zürich, Switzerland",
-      "بانهوفشتراسه 21، 8001 زيورخ، سويسرا",
       "Bahnhofstrasse 21, 8001 Zürich, Schweiz",
       "Bahnhofstrasse 21, 8001 Zürich, Suisse",
       "Bahnhofstrasse 21, 8001 Zürich, Svizzera",
     ),
-    hours: l("Mon–Fri 08:00–18:00", "الاثنين – الجمعة 08:00 – 18:00", "Mo–Fr 08:00–18:00", "Lun–ven 08:00–18:00", "Lun–ven 08:00–18:00"),
+    hours: l("Mon–Fri 08:00–18:00", "Mo–Fr 08:00–18:00", "Lun–ven 08:00–18:00", "Lun–ven 08:00–18:00"),
     socials: {
       facebook: "https://facebook.com",
       instagram: "https://instagram.com",
@@ -24,47 +23,42 @@ export const site: SiteContent = {
     },
     footerAbout: l(
       "Kompass is Switzerland's comparison platform for moving, cleaning and clearance services. One request — up to five offers from verified local companies.",
-      "كومباس هي منصة المقارنة السويسرية لخدمات النقل والتنظيف والإخلاء. طلب واحد — وما يصل إلى خمسة عروض من شركات محلية موثّقة.",
       "Kompass ist die Schweizer Vergleichsplattform für Umzugs-, Reinigungs- und Räumungsdienstleistungen. Eine Anfrage – bis zu fünf Offerten von geprüften lokalen Unternehmen.",
       "Kompass est la plateforme suisse de comparaison pour les déménagements, le nettoyage et le débarras. Une seule demande, jusqu'à cinq offres d'entreprises locales vérifiées.",
       "Kompass è la piattaforma svizzera di confronto per traslochi, pulizie e sgomberi. Una sola richiesta, fino a cinque offerte da aziende locali verificate.",
     ),
   },
   home: {
-    heroEyebrow: l("Switzerland's moving marketplace", "سوق النقل الأول في سويسرا", "Der Umzugsmarktplatz der Schweiz", "La place de marché suisse du déménagement", "Il marketplace svizzero dei traslochi"),
+    heroEyebrow: l("Switzerland's moving marketplace", "Der Umzugsmarktplatz der Schweiz", "La place de marché suisse du déménagement", "Il marketplace svizzero dei traslochi"),
     heroTitle: l(
       "Compare moving offers. Save up to 40%.",
-      "قارن عروض النقل ووفّر حتى 40%",
       "Umzugsofferten vergleichen. Bis zu 40 % sparen.",
       "Comparez les offres de déménagement. Économisez jusqu'à 40 %.",
       "Confronti le offerte di trasloco. Risparmi fino al 40%.",
     ),
     heroDescription: l(
       "Describe your move once and receive up to five binding quotes from verified Swiss moving companies — free and without obligation.",
-      "صف نقلك مرة واحدة واحصل على ما يصل إلى خمسة عروض ملزمة من شركات نقل سويسرية موثّقة — مجاناً ودون أي التزام.",
       "Beschreiben Sie Ihren Umzug einmal und erhalten Sie bis zu fünf verbindliche Offerten von geprüften Schweizer Umzugsfirmen – kostenlos und unverbindlich.",
       "Décrivez votre déménagement une seule fois et recevez jusqu'à cinq offres fermes d'entreprises de déménagement suisses vérifiées, gratuitement et sans engagement.",
       "Descriva il Suo trasloco una sola volta e riceva fino a cinque offerte vincolanti da ditte di traslochi svizzere verificate, gratuitamente e senza impegno.",
     ),
-    heroCta: l("Get free offers", "احصل على عروض مجانية", "Kostenlose Offerten erhalten", "Recevoir des offres gratuites", "Ricevere offerte gratuite"),
+    heroCta: l("Get free offers", "Kostenlose Offerten erhalten", "Recevoir des offres gratuites", "Ricevere offerte gratuite"),
     heroImage: "/images/hero.png",
     stats: [
-      { value: "12,400+", label: l("moves arranged", "عملية نقل منجزة", "vermittelte Umzüge", "déménagements organisés", "traslochi organizzati") },
-      { value: "180+", label: l("verified partners", "شريك موثّق", "geprüfte Partner", "partenaires vérifiés", "partner verificati") },
-      { value: "4.8/5", label: l("customer rating", "تقييم العملاء", "Kundenbewertung", "note des clients", "valutazione dei clienti") },
+      { value: "12,400+", label: l("moves arranged", "vermittelte Umzüge", "déménagements organisés", "traslochi organizzati") },
+      { value: "180+", label: l("verified partners", "geprüfte Partner", "partenaires vérifiés", "partner verificati") },
+      { value: "4.8/5", label: l("customer rating", "Kundenbewertung", "note des clients", "valutazione dei clienti") },
     ],
-    servicesTitle: l("Everything for your move", "كل ما تحتاجه لنقلك", "Alles für Ihren Umzug", "Tout pour votre déménagement", "Tutto per il Suo trasloco"),
+    servicesTitle: l("Everything for your move", "Alles für Ihren Umzug", "Tout pour votre déménagement", "Tutto per il Suo trasloco"),
     servicesSubtitle: l(
       "Choose a service and get tailored offers in 48 hours.",
-      "اختر خدمة واحصل على عروض مخصّصة خلال 48 ساعة.",
       "Wählen Sie eine Dienstleistung und erhalten Sie innert 48 Stunden passende Offerten.",
       "Choisissez un service et recevez des offres sur mesure en 48 heures.",
       "Scelga un servizio e riceva offerte su misura entro 48 ore.",
     ),
-    howTitle: l("How Kompass works", "كيف تعمل كومباس", "So funktioniert Kompass", "Comment fonctionne Kompass", "Come funziona Kompass"),
+    howTitle: l("How Kompass works", "So funktioniert Kompass", "Comment fonctionne Kompass", "Come funziona Kompass"),
     howSubtitle: l(
       "Three steps from request to moving day.",
-      "ثلاث خطوات من الطلب حتى يوم النقل.",
       "In drei Schritten von der Anfrage zum Umzugstag.",
       "Trois étapes de la demande au jour du déménagement.",
       "Tre passi dalla richiesta al giorno del trasloco.",
@@ -72,10 +66,9 @@ export const site: SiteContent = {
     steps: [
       {
         icon: "ClipboardList",
-        title: l("Describe your move", "صف نقلك", "Umzug beschreiben", "Décrivez votre déménagement", "Descriva il Suo trasloco"),
+        title: l("Describe your move", "Umzug beschreiben", "Décrivez votre déménagement", "Descriva il Suo trasloco"),
         description: l(
           "Fill in the 2-minute form with addresses, rooms and date.",
-          "املأ النموذج خلال دقيقتين بالعناوين وعدد الغرف والتاريخ.",
           "Füllen Sie das 2-Minuten-Formular mit Adressen, Zimmern und Datum aus.",
           "Remplissez le formulaire de 2 minutes avec les adresses, les pièces et la date.",
           "Compili il modulo in 2 minuti con indirizzi, locali e data.",
@@ -83,10 +76,9 @@ export const site: SiteContent = {
       },
       {
         icon: "Inbox",
-        title: l("Receive offers", "استلم العروض", "Offerten erhalten", "Recevez des offres", "Riceva le offerte"),
+        title: l("Receive offers", "Offerten erhalten", "Recevez des offres", "Riceva le offerte"),
         description: l(
           "Up to five verified companies contact you with binding quotes.",
-          "تتواصل معك حتى خمس شركات موثّقة بعروض ملزمة.",
           "Bis zu fünf geprüfte Unternehmen melden sich mit verbindlichen Offerten bei Ihnen.",
           "Jusqu'à cinq entreprises vérifiées vous contactent avec des offres fermes.",
           "Fino a cinque aziende verificate La contattano con offerte vincolanti.",
@@ -94,82 +86,73 @@ export const site: SiteContent = {
       },
       {
         icon: "BadgeCheck",
-        title: l("Choose & save", "اختر ووفّر", "Auswählen & sparen", "Choisissez & économisez", "Scelga & risparmi"),
+        title: l("Choose & save", "Auswählen & sparen", "Choisissez & économisez", "Scelga & risparmi"),
         description: l(
           "Compare prices and reviews, then book the best fit.",
-          "قارن الأسعار والتقييمات ثم احجز الأنسب.",
           "Vergleichen Sie Preise und Bewertungen und buchen Sie das passendste Angebot.",
           "Comparez les prix et les avis, puis réservez l'offre qui vous convient le mieux.",
           "Confronti prezzi e recensioni, poi prenoti l'offerta più adatta.",
         ),
       },
     ],
-    testimonialsTitle: l("What customers say", "ماذا يقول العملاء", "Das sagen unsere Kunden", "Ce que disent nos clients", "Cosa dicono i clienti"),
+    testimonialsTitle: l("What customers say", "Das sagen unsere Kunden", "Ce que disent nos clients", "Cosa dicono i clienti"),
     testimonialsSubtitle: l(
       "Real reviews from people who moved with Kompass.",
-      "تقييمات حقيقية من أشخاص انتقلوا مع كومباس.",
       "Echte Bewertungen von Menschen, die mit Kompass umgezogen sind.",
       "De vrais avis de personnes qui ont déménagé avec Kompass.",
       "Recensioni autentiche di persone che hanno traslocato con Kompass.",
     ),
-    faqTitle: l("Frequently asked questions", "الأسئلة الشائعة", "Häufig gestellte Fragen", "Questions fréquentes", "Domande frequenti"),
+    faqTitle: l("Frequently asked questions", "Häufig gestellte Fragen", "Questions fréquentes", "Domande frequenti"),
     faqSubtitle: l(
       "Everything you need to know before requesting offers.",
-      "كل ما تحتاج معرفته قبل طلب العروض.",
       "Alles, was Sie wissen müssen, bevor Sie Offerten anfragen.",
       "Tout ce qu'il faut savoir avant de demander des offres.",
       "Tutto ciò che deve sapere prima di richiedere offerte.",
     ),
     trustedTitle: l(
       "Trusted by leading Swiss movers",
-      "موثوق به من كبرى شركات النقل السويسرية",
       "Führende Schweizer Umzugsfirmen vertrauen uns",
       "La confiance des principaux déménageurs suisses",
       "Scelto dalle principali ditte di traslochi svizzere",
     ),
-    partnerCtaTitle: l("Are you a moving company?", "هل أنت شركة نقل؟", "Sind Sie ein Umzugsunternehmen?", "Vous êtes une entreprise de déménagement ?", "È una ditta di traslochi?"),
+    partnerCtaTitle: l("Are you a moving company?", "Sind Sie ein Umzugsunternehmen?", "Vous êtes une entreprise de déménagement ?", "È una ditta di traslochi?"),
     partnerCtaDescription: l(
       "Join 180+ partners who receive qualified leads in their region every day.",
-      "انضم إلى أكثر من 180 شريكاً يتلقّون طلبات مؤهلة في منطقتهم يومياً.",
       "Schliessen Sie sich über 180 Partnern an, die täglich qualifizierte Leads in ihrer Region erhalten.",
       "Rejoignez plus de 180 partenaires qui reçoivent chaque jour des leads qualifiés dans leur région.",
       "Si unisca agli oltre 180 partner che ricevono ogni giorno lead qualificati nella loro regione.",
     ),
-    partnerCtaButton: l("Become a partner", "كن شريكاً", "Partner werden", "Devenir partenaire", "Diventare partner"),
+    partnerCtaButton: l("Become a partner", "Partner werden", "Devenir partenaire", "Diventare partner"),
   },
   offerForm: {
-    title: l("Request your free offers", "اطلب عروضك المجانية", "Kostenlose Offerten anfordern", "Demandez vos offres gratuites", "Richieda le Sue offerte gratuite"),
+    title: l("Request your free offers", "Kostenlose Offerten anfordern", "Demandez vos offres gratuites", "Richieda le Sue offerte gratuite"),
     subtitle: l(
       "Takes about 2 minutes. No obligation.",
-      "يستغرق حوالي دقيقتين. دون أي التزام.",
       "Dauert etwa 2 Minuten. Unverbindlich.",
       "Environ 2 minutes. Sans engagement.",
       "Richiede circa 2 minuti. Senza impegno.",
     ),
-    step1: l("Your move", "تفاصيل النقل", "Ihr Umzug", "Votre déménagement", "Il Suo trasloco"),
-    step2: l("Contact details", "بيانات التواصل", "Kontaktangaben", "Coordonnées", "Dati di contatto"),
-    successTitle: l("Request received!", "تم استلام طلبك!", "Anfrage erhalten!", "Demande reçue !", "Richiesta ricevuta!"),
+    step1: l("Your move", "Ihr Umzug", "Votre déménagement", "Il Suo trasloco"),
+    step2: l("Contact details", "Kontaktangaben", "Coordonnées", "Dati di contatto"),
+    successTitle: l("Request received!", "Anfrage erhalten!", "Demande reçue !", "Richiesta ricevuta!"),
     successMessage: l(
       "Verified partners will contact you within 48 hours with their offers. Check your inbox for a confirmation.",
-      "سيتواصل معك شركاء موثّقون خلال 48 ساعة بعروضهم. تحقّق من بريدك للحصول على التأكيد.",
       "Geprüfte Partner melden sich innert 48 Stunden mit ihren Offerten bei Ihnen. Eine Bestätigung finden Sie in Ihrem Posteingang.",
       "Des partenaires vérifiés vous contacteront dans les 48 heures avec leurs offres. Consultez votre boîte de réception pour la confirmation.",
       "Partner verificati La contatteranno entro 48 ore con le loro offerte. Controlli la Sua casella di posta per la conferma.",
     ),
     note: l(
       "Your data is only shared with the companies you receive offers from.",
-      "لا تتم مشاركة بياناتك إلا مع الشركات التي تتلقى منها العروض.",
       "Ihre Daten werden nur an die Unternehmen weitergegeben, von denen Sie Offerten erhalten.",
       "Vos données sont uniquement transmises aux entreprises dont vous recevez des offres.",
       "I Suoi dati vengono condivisi solo con le aziende da cui riceve offerte.",
     ),
   },
   about: {
-    title: l("We make moving simple", "نجعل النقل بسيطاً", "Wir machen Umziehen einfach", "Nous simplifions le déménagement", "Rendiamo semplice il trasloco"),
-    subtitle: l("About Kompass", "عن كومباس", "Über Kompass", "À propos de Kompass", "Chi è Kompass"),
+    title: l("We make moving simple", "Wir machen Umziehen einfach", "Nous simplifions le déménagement", "Rendiamo semplice il trasloco"),
+    subtitle: l("About Kompass", "Über Kompass", "À propos de Kompass", "Chi è Kompass"),
     body: l(
       "Kompass was founded in Zürich to bring transparency to a fragmented market. We verify every partner, collect honest reviews and make comparing offers effortless.",
-      "تأسست كومباس في زيورخ لتجلب الشفافية إلى سوق مجزّأ. نتحقق من كل شريك ونجمع تقييمات صادقة ونجعل مقارنة العروض سهلة.",
       "Kompass wurde in Zürich gegründet, um Transparenz in einen fragmentierten Markt zu bringen. Wir prüfen jeden Partner, sammeln ehrliche Bewertungen und machen den Vergleich von Offerten mühelos.",
       "Kompass a été fondée à Zürich pour apporter de la transparence dans un marché fragmenté. Nous vérifions chaque partenaire, recueillons des avis honnêtes et rendons la comparaison des offres simple et rapide.",
       "Kompass è stata fondata a Zürich per portare trasparenza in un mercato frammentato. Verifichiamo ogni partner, raccogliamo recensioni oneste e rendiamo semplicissimo il confronto delle offerte.",
@@ -177,14 +160,12 @@ export const site: SiteContent = {
     image: "/images/about-hero.png",
     mission: l(
       "Help every household in Switzerland find a fair, reliable moving partner.",
-      "مساعدة كل أسرة في سويسرا على إيجاد شريك نقل عادل وموثوق.",
       "Jedem Haushalt in der Schweiz helfen, einen fairen und zuverlässigen Umzugspartner zu finden.",
       "Aider chaque ménage en Suisse à trouver un partenaire de déménagement équitable et fiable.",
       "Aiutare ogni economia domestica in Svizzera a trovare un partner di trasloco equo e affidabile.",
     ),
     vision: l(
       "The most trusted marketplace for home services in the DACH region.",
-      "أن نكون السوق الأكثر ثقة لخدمات المنازل في منطقة دول الداخ.",
       "Der vertrauenswürdigste Marktplatz für Dienstleistungen rund ums Zuhause in der DACH-Region.",
       "La place de marché la plus fiable pour les services à domicile dans la région DACH.",
       "Il marketplace più affidabile per i servizi per la casa nella regione DACH.",
@@ -192,20 +173,19 @@ export const site: SiteContent = {
     values: [
       {
         icon: "ShieldCheck",
-        title: l("Trust", "الثقة", "Vertrauen", "Confiance", "Fiducia"),
-        description: l("Verified companies and moderated reviews.", "شركات موثّقة وتقييمات خاضعة للإشراف.", "Geprüfte Unternehmen und moderierte Bewertungen.", "Entreprises vérifiées et avis modérés.", "Aziende verificate e recensioni moderate."),
+        title: l("Trust", "Vertrauen", "Confiance", "Fiducia"),
+        description: l("Verified companies and moderated reviews.", "Geprüfte Unternehmen und moderierte Bewertungen.", "Entreprises vérifiées et avis modérés.", "Aziende verificate e recensioni moderate."),
       },
       {
         icon: "Eye",
-        title: l("Transparency", "الشفافية", "Transparenz", "Transparence", "Trasparenza"),
-        description: l("Clear prices, no hidden fees.", "أسعار واضحة بلا رسوم خفية.", "Klare Preise, keine versteckten Gebühren.", "Des prix clairs, sans frais cachés.", "Prezzi chiari, nessun costo nascosto."),
+        title: l("Transparency", "Transparenz", "Transparence", "Trasparenza"),
+        description: l("Clear prices, no hidden fees.", "Klare Preise, keine versteckten Gebühren.", "Des prix clairs, sans frais cachés.", "Prezzi chiari, nessun costo nascosto."),
       },
       {
         icon: "HeartHandshake",
-        title: l("Fairness", "العدالة", "Fairness", "Équité", "Equità"),
+        title: l("Fairness", "Fairness", "Équité", "Equità"),
         description: l(
           "Fair lead prices for partners, free for customers.",
-          "أسعار عادلة للشركاء ومجانية للعملاء.",
           "Faire Lead-Preise für Partner, kostenlos für Kunden.",
           "Des prix de leads équitables pour les partenaires, gratuit pour les clients.",
           "Prezzi equi dei lead per i partner, gratuito per i clienti.",
@@ -213,29 +193,27 @@ export const site: SiteContent = {
       },
     ],
     numbers: [
-      { value: "2019", label: l("founded", "سنة التأسيس", "gegründet", "année de fondation", "anno di fondazione") },
-      { value: "26", label: l("cantons covered", "كانتوناً مغطى", "abgedeckte Kantone", "cantons couverts", "cantoni coperti") },
-      { value: "12k+", label: l("happy moves", "عملية نقل سعيدة", "gelungene Umzüge", "déménagements réussis", "traslochi riusciti") },
-      { value: "48h", label: l("average response", "متوسط وقت الرد", "durchschnittliche Antwortzeit", "délai de réponse moyen", "tempo medio di risposta") },
+      { value: "2019", label: l("founded", "gegründet", "année de fondation", "anno di fondazione") },
+      { value: "26", label: l("cantons covered", "abgedeckte Kantone", "cantons couverts", "cantoni coperti") },
+      { value: "12k+", label: l("happy moves", "gelungene Umzüge", "déménagements réussis", "traslochi riusciti") },
+      { value: "48h", label: l("average response", "durchschnittliche Antwortzeit", "délai de réponse moyen", "tempo medio di risposta") },
     ],
   },
   contact: {
-    title: l("Get in touch", "تواصل معنا", "Kontakt aufnehmen", "Contactez-nous", "Ci contatti"),
+    title: l("Get in touch", "Kontakt aufnehmen", "Contactez-nous", "Ci contatti"),
     subtitle: l(
       "Our team answers within one business day.",
-      "يرد فريقنا خلال يوم عمل واحد.",
       "Unser Team antwortet innert eines Arbeitstages.",
       "Notre équipe répond dans un délai d'un jour ouvrable.",
       "Il nostro team risponde entro un giorno lavorativo.",
     ),
-    formTitle: l("Send us a message", "أرسل لنا رسالة", "Senden Sie uns eine Nachricht", "Envoyez-nous un message", "Ci invii un messaggio"),
+    formTitle: l("Send us a message", "Senden Sie uns eine Nachricht", "Envoyez-nous un message", "Ci invii un messaggio"),
     image: "/images/contact.png",
   },
   companiesPage: {
-    title: l("Verified moving companies", "شركات نقل موثّقة", "Geprüfte Umzugsfirmen", "Entreprises de déménagement vérifiées", "Ditte di traslochi verificate"),
+    title: l("Verified moving companies", "Geprüfte Umzugsfirmen", "Entreprises de déménagement vérifiées", "Ditte di traslochi verificate"),
     subtitle: l(
       "Browse partners by service, region and rating.",
-      "تصفّح الشركاء حسب الخدمة والمنطقة والتقييم.",
       "Durchsuchen Sie Partner nach Dienstleistung, Region und Bewertung.",
       "Parcourez les partenaires par service, région et note.",
       "Sfogli i partner per servizio, regione e valutazione.",
@@ -243,10 +221,9 @@ export const site: SiteContent = {
     image: "/images/companies.png",
   },
   blogsPage: {
-    title: l("Moving guides & tips", "أدلة ونصائح النقل", "Umzugsratgeber & Tipps", "Guides & conseils déménagement", "Guide & consigli per il trasloco"),
+    title: l("Moving guides & tips", "Umzugsratgeber & Tipps", "Guides & conseils déménagement", "Guide & consigli per il trasloco"),
     subtitle: l(
       "Checklists, cost guides and expert advice.",
-      "قوائم مراجعة وأدلة تكاليف ونصائح الخبراء.",
       "Checklisten, Kostenübersichten und Expertentipps.",
       "Check-lists, guides des coûts et conseils d'experts.",
       "Checklist, guide ai costi e consigli degli esperti.",
@@ -254,27 +231,24 @@ export const site: SiteContent = {
     image: "/images/blogs-hero.png",
   },
   faqPage: {
-    title: l("Help centre", "مركز المساعدة", "Hilfe-Center", "Centre d'aide", "Centro assistenza"),
+    title: l("Help centre", "Hilfe-Center", "Centre d'aide", "Centro assistenza"),
     subtitle: l(
       "Answers to the most common questions.",
-      "إجابات على الأسئلة الأكثر شيوعاً.",
       "Antworten auf die häufigsten Fragen.",
       "Réponses aux questions les plus fréquentes.",
       "Risposte alle domande più frequenti.",
     ),
-    askTitle: l("Didn't find your answer?", "لم تجد إجابتك؟", "Keine Antwort gefunden?", "Vous n'avez pas trouvé de réponse ?", "Non ha trovato la risposta?"),
+    askTitle: l("Didn't find your answer?", "Keine Antwort gefunden?", "Vous n'avez pas trouvé de réponse ?", "Non ha trovato la risposta?"),
   },
   partnerPage: {
     title: l(
       "Grow your moving business with Kompass",
-      "نمِّ أعمال النقل لديك مع كومباس",
       "Lassen Sie Ihr Umzugsgeschäft mit Kompass wachsen",
       "Développez votre entreprise de déménagement avec Kompass",
       "Faccia crescere la Sua ditta di traslochi con Kompass",
     ),
     subtitle: l(
       "Qualified leads in your region. Pay only for what you buy.",
-      "طلبات مؤهلة في منطقتك. ادفع فقط مقابل ما تشتريه.",
       "Qualifizierte Leads in Ihrer Region. Sie bezahlen nur, was Sie kaufen.",
       "Des leads qualifiés dans votre région. Vous ne payez que ce que vous achetez.",
       "Lead qualificati nella Sua regione. Paga solo ciò che acquista.",
@@ -282,10 +256,9 @@ export const site: SiteContent = {
     benefits: [
       {
         icon: "Target",
-        title: l("Qualified leads", "طلبات مؤهلة", "Qualifizierte Leads", "Leads qualifiés", "Lead qualificati"),
+        title: l("Qualified leads", "Qualifizierte Leads", "Leads qualifiés", "Lead qualificati"),
         description: l(
           "Detailed requests with rooms, floors and dates.",
-          "طلبات مفصلة بعدد الغرف والطوابق والتواريخ.",
           "Detaillierte Anfragen mit Zimmern, Stockwerken und Terminen.",
           "Des demandes détaillées avec pièces, étages et dates.",
           "Richieste dettagliate con locali, piani e date.",
@@ -293,10 +266,9 @@ export const site: SiteContent = {
       },
       {
         icon: "Wallet",
-        title: l("No subscription", "بلا اشتراك", "Kein Abo", "Sans abonnement", "Nessun abbonamento"),
+        title: l("No subscription", "Kein Abo", "Sans abonnement", "Nessun abbonamento"),
         description: l(
           "Buy leads individually from the shop.",
-          "اشترِ الطلبات بشكل فردي من المتجر.",
           "Kaufen Sie Leads einzeln im Shop.",
           "Achetez les leads à l'unité dans la boutique.",
           "Acquisti i lead singolarmente nello shop.",
@@ -304,10 +276,9 @@ export const site: SiteContent = {
       },
       {
         icon: "Star",
-        title: l("Build reputation", "ابنِ سمعتك", "Reputation aufbauen", "Bâtissez votre réputation", "Costruisca la Sua reputazione"),
+        title: l("Build reputation", "Reputation aufbauen", "Bâtissez votre réputation", "Costruisca la Sua reputazione"),
         description: l(
           "Collect verified reviews on your profile.",
-          "اجمع تقييمات موثّقة على ملفك.",
           "Sammeln Sie verifizierte Bewertungen auf Ihrem Profil.",
           "Recueillez des avis vérifiés sur votre profil.",
           "Raccolga recensioni verificate sul Suo profilo.",
@@ -315,10 +286,9 @@ export const site: SiteContent = {
       },
       {
         icon: "LifeBuoy",
-        title: l("Fair-lead guarantee", "ضمان الطلب العادل", "Fair-Lead-Garantie", "Garantie lead équitable", "Garanzia lead equo"),
+        title: l("Fair-lead guarantee", "Fair-Lead-Garantie", "Garantie lead équitable", "Garanzia lead equo"),
         description: l(
           "Report fake leads and get credited.",
-          "أبلغ عن الطلبات الوهمية واسترد قيمتها.",
           "Melden Sie gefälschte Leads und erhalten Sie eine Gutschrift.",
           "Signalez les faux leads et obtenez un crédit.",
           "Segnali i lead falsi e riceva un accredito.",
@@ -328,10 +298,9 @@ export const site: SiteContent = {
     steps: [
       {
         icon: "FileText",
-        title: l("Apply online", "قدّم طلبك", "Online bewerben", "Postulez en ligne", "Si candidi online"),
+        title: l("Apply online", "Online bewerben", "Postulez en ligne", "Si candidi online"),
         description: l(
           "Company, contact and bank details in 5 minutes.",
-          "بيانات الشركة والتواصل والبنك في 5 دقائق.",
           "Firmen-, Kontakt- und Bankangaben in 5 Minuten.",
           "Coordonnées de l'entreprise, de contact et bancaires en 5 minutes.",
           "Dati aziendali, di contatto e bancari in 5 minuti.",
@@ -339,10 +308,9 @@ export const site: SiteContent = {
       },
       {
         icon: "FileSignature",
-        title: l("Sign the contract", "وقّع العقد", "Vertrag unterzeichnen", "Signez le contrat", "Firmi il contratto"),
+        title: l("Sign the contract", "Vertrag unterzeichnen", "Signez le contrat", "Firmi il contratto"),
         description: l(
           "We verify your documents and send the contract.",
-          "نتحقق من مستنداتك ونرسل العقد.",
           "Wir prüfen Ihre Unterlagen und senden Ihnen den Vertrag.",
           "Nous vérifions vos documents et vous envoyons le contrat.",
           "Verifichiamo i Suoi documenti e Le inviamo il contratto.",
@@ -350,20 +318,18 @@ export const site: SiteContent = {
       },
       {
         icon: "Rocket",
-        title: l("Start receiving leads", "ابدأ باستلام الطلبات", "Leads erhalten", "Recevez vos premiers leads", "Inizi a ricevere lead"),
+        title: l("Start receiving leads", "Leads erhalten", "Recevez vos premiers leads", "Inizi a ricevere lead"),
         description: l(
           "Buy leads that match your services and region.",
-          "اشترِ الطلبات المناسبة لخدماتك ومنطقتك.",
           "Kaufen Sie Leads, die zu Ihren Dienstleistungen und Ihrer Region passen.",
           "Achetez les leads qui correspondent à vos services et à votre région.",
           "Acquisti i lead adatti ai Suoi servizi e alla Sua regione.",
         ),
       },
     ],
-    ctaTitle: l("Ready to grow?", "مستعد للنمو؟", "Bereit zu wachsen?", "Prêt à vous développer ?", "Pronto a crescere?"),
+    ctaTitle: l("Ready to grow?", "Bereit zu wachsen?", "Prêt à vous développer ?", "Pronto a crescere?"),
     ctaDescription: l(
       "Applications are reviewed within 2 business days.",
-      "تتم مراجعة الطلبات خلال يومي عمل.",
       "Bewerbungen werden innert 2 Arbeitstagen geprüft.",
       "Les candidatures sont examinées dans un délai de 2 jours ouvrables.",
       "Le candidature vengono esaminate entro 2 giorni lavorativi.",
@@ -372,21 +338,18 @@ export const site: SiteContent = {
   legal: {
     imprint: l(
       "<h2>Imprint</h2><p><strong>Kompass Umzug GmbH</strong><br/>Bahnhofstrasse 21<br/>8001 Zürich, Switzerland</p><p>Commercial register: CHE-123.456.789<br/>Managing director: Laura Meier</p><p>Email: hello@kompassumzug.ch</p>",
-      "<h2>بيانات الناشر</h2><p><strong>كومباس أومتسوغ ش.ذ.م.م</strong><br/>بانهوفشتراسه 21<br/>8001 زيورخ، سويسرا</p><p>السجل التجاري: CHE-123.456.789<br/>المديرة العامة: لاورا ماير</p><p>البريد: hello@kompassumzug.ch</p>",
       "<h2>Impressum</h2><p><strong>Kompass Umzug GmbH</strong><br/>Bahnhofstrasse 21<br/>8001 Zürich, Schweiz</p><p>Handelsregister: CHE-123.456.789<br/>Geschäftsführerin: Laura Meier</p><p>E-Mail: hello@kompassumzug.ch</p>",
       "<h2>Mentions légales</h2><p><strong>Kompass Umzug GmbH</strong><br/>Bahnhofstrasse 21<br/>8001 Zürich, Suisse</p><p>Registre du commerce : CHE-123.456.789<br/>Gérante : Laura Meier</p><p>E-mail : hello@kompassumzug.ch</p>",
       "<h2>Impressum</h2><p><strong>Kompass Umzug GmbH</strong><br/>Bahnhofstrasse 21<br/>8001 Zürich, Svizzera</p><p>Registro di commercio: CHE-123.456.789<br/>Gerente: Laura Meier</p><p>E-mail: hello@kompassumzug.ch</p>",
     ),
     privacy: l(
       "<h2>Privacy policy</h2><p>We process personal data only to deliver offers you request. Data is shared with a maximum of five partner companies.</p><h3>Your rights</h3><ul><li>Access and correction</li><li>Deletion</li><li>Objection to processing</li></ul>",
-      "<h2>سياسة الخصوصية</h2><p>نعالج البيانات الشخصية فقط لتقديم العروض التي تطلبها. تتم مشاركة البيانات مع خمس شركات شريكة كحد أقصى.</p><h3>حقوقك</h3><ul><li>الاطلاع والتصحيح</li><li>الحذف</li><li>الاعتراض على المعالجة</li></ul>",
       "<h2>Datenschutzerklärung</h2><p>Wir bearbeiten Personendaten ausschliesslich, um Ihnen die angefragten Offerten zu vermitteln. Die Daten werden an höchstens fünf Partnerunternehmen weitergegeben.</p><h3>Ihre Rechte</h3><ul><li>Auskunft und Berichtigung</li><li>Löschung</li><li>Widerspruch gegen die Bearbeitung</li></ul>",
       "<h2>Politique de confidentialité</h2><p>Nous traitons les données personnelles uniquement pour vous fournir les offres que vous demandez. Les données sont transmises à cinq entreprises partenaires au maximum.</p><h3>Vos droits</h3><ul><li>Accès et rectification</li><li>Effacement</li><li>Opposition au traitement</li></ul>",
       "<h2>Informativa sulla privacy</h2><p>Trattiamo i dati personali esclusivamente per fornirLe le offerte da Lei richieste. I dati vengono condivisi con un massimo di cinque aziende partner.</p><h3>I Suoi diritti</h3><ul><li>Accesso e rettifica</li><li>Cancellazione</li><li>Opposizione al trattamento</li></ul>",
     ),
     terms: l(
       "<h2>Terms & conditions</h2><p>Kompass acts as an intermediary. Contracts for services are concluded directly between the customer and the partner company.</p><h3>Partners</h3><p>Lead prices are listed in the partner shop. Reported fake leads are reviewed within 5 business days.</p>",
-      "<h2>الشروط والأحكام</h2><p>تعمل كومباس كوسيط. تُبرم عقود الخدمات مباشرة بين العميل والشركة الشريكة.</p><h3>الشركاء</h3><p>أسعار الطلبات معروضة في متجر الشركاء. تتم مراجعة الطلبات الوهمية المبلّغ عنها خلال 5 أيام عمل.</p>",
       "<h2>Allgemeine Geschäftsbedingungen</h2><p>Kompass tritt als Vermittlerin auf. Verträge über Dienstleistungen werden direkt zwischen der Kundschaft und dem Partnerunternehmen abgeschlossen.</p><h3>Partner</h3><p>Die Lead-Preise sind im Partner-Shop aufgeführt. Gemeldete gefälschte Leads werden innert 5 Arbeitstagen geprüft.</p>",
       "<h2>Conditions générales</h2><p>Kompass agit en qualité d'intermédiaire. Les contrats de prestations sont conclus directement entre le client et l'entreprise partenaire.</p><h3>Partenaires</h3><p>Les prix des leads figurent dans la boutique partenaires. Les faux leads signalés sont examinés dans un délai de 5 jours ouvrables.</p>",
       "<h2>Condizioni generali</h2><p>Kompass agisce in qualità di intermediario. I contratti di servizio sono conclusi direttamente tra il cliente e l'azienda partner.</p><h3>Partner</h3><p>I prezzi dei lead sono indicati nello shop partner. I lead falsi segnalati vengono esaminati entro 5 giorni lavorativi.</p>",
@@ -396,19 +359,17 @@ export const site: SiteContent = {
     enabled: true,
     title: l(
       "Autumn offer: 10% off cleaning",
-      "عرض الخريف: خصم 10% على التنظيف",
       "Herbstangebot: 10 % Rabatt auf die Reinigung",
       "Offre d'automne : 10 % de réduction sur le nettoyage",
       "Offerta d'autunno: 10% di sconto sulla pulizia",
     ),
     body: l(
       "Book a move and end-of-tenancy cleaning together and save.",
-      "احجز النقل وتنظيف نهاية الإيجار معاً ووفّر.",
       "Buchen Sie Umzug und Umzugsreinigung zusammen und sparen Sie.",
       "Réservez ensemble le déménagement et le nettoyage de fin de bail et économisez.",
       "Prenoti insieme trasloco e pulizia di fine locazione e risparmi.",
     ),
-    cta: l("Request offers", "اطلب العروض", "Offerten anfragen", "Demander des offres", "Richiedere offerte"),
+    cta: l("Request offers", "Offerten anfragen", "Demander des offres", "Richiedere offerte"),
     href: "/#offer-form",
     delaySec: 8,
   },
@@ -418,10 +379,9 @@ export const faqs: Faq[] = [
   {
     id: "faq-1",
     order: 1,
-    question: l("Is Kompass really free?", "هل كومباس مجانية فعلاً؟", "Ist Kompass wirklich kostenlos?", "Kompass est-il vraiment gratuit ?", "Kompass è davvero gratuito?"),
+    question: l("Is Kompass really free?", "Ist Kompass wirklich kostenlos?", "Kompass est-il vraiment gratuit ?", "Kompass è davvero gratuito?"),
     answer: l(
       "Yes. Customers never pay Kompass. Partners pay a small fee per lead.",
-      "نعم. لا يدفع العملاء شيئاً لكومباس. يدفع الشركاء رسوماً صغيرة لكل طلب.",
       "Ja. Kunden bezahlen Kompass nie etwas. Partner zahlen eine kleine Gebühr pro Lead.",
       "Oui. Les clients ne paient jamais rien à Kompass. Les partenaires paient une petite commission par lead.",
       "Sì. I clienti non pagano mai nulla a Kompass. I partner pagano una piccola tariffa per ogni lead.",
@@ -430,10 +390,9 @@ export const faqs: Faq[] = [
   {
     id: "faq-2",
     order: 2,
-    question: l("How many offers will I receive?", "كم عدد العروض التي سأتلقاها؟", "Wie viele Offerten erhalte ich?", "Combien d'offres vais-je recevoir ?", "Quante offerte riceverò?"),
+    question: l("How many offers will I receive?", "Wie viele Offerten erhalte ich?", "Combien d'offres vais-je recevoir ?", "Quante offerte riceverò?"),
     answer: l(
       "You choose between 1 and 5 offers when you submit the form.",
-      "تختار بين عرض واحد وخمسة عروض عند إرسال النموذج.",
       "Beim Absenden des Formulars wählen Sie zwischen 1 und 5 Offerten.",
       "Vous choisissez entre 1 et 5 offres lors de l'envoi du formulaire.",
       "Al momento dell'invio del modulo sceglie tra 1 e 5 offerte.",
@@ -444,14 +403,12 @@ export const faqs: Faq[] = [
     order: 3,
     question: l(
       "How are partner companies verified?",
-      "كيف يتم التحقق من الشركات الشريكة؟",
       "Wie werden die Partnerunternehmen geprüft?",
       "Comment les entreprises partenaires sont-elles vérifiées ?",
       "Come vengono verificate le aziende partner?",
     ),
     answer: l(
       "We check the commercial register extract, liability insurance and signed contract before activation.",
-      "نتحقق من مستخرج السجل التجاري وتأمين المسؤولية والعقد الموقّع قبل التفعيل.",
       "Vor der Freischaltung prüfen wir den Handelsregisterauszug, die Haftpflichtversicherung und den unterzeichneten Vertrag.",
       "Avant l'activation, nous vérifions l'extrait du registre du commerce, l'assurance responsabilité civile et le contrat signé.",
       "Prima dell'attivazione verifichiamo l'estratto del registro di commercio, l'assicurazione di responsabilità civile e il contratto firmato.",
@@ -462,14 +419,12 @@ export const faqs: Faq[] = [
     order: 4,
     question: l(
       "Am I obliged to accept an offer?",
-      "هل أنا ملزم بقبول عرض؟",
       "Bin ich verpflichtet, eine Offerte anzunehmen?",
       "Suis-je obligé d'accepter une offre ?",
       "Sono obbligato ad accettare un'offerta?",
     ),
     answer: l(
       "No. Offers are free and without obligation.",
-      "لا. العروض مجانية ودون أي التزام.",
       "Nein. Die Offerten sind kostenlos und unverbindlich.",
       "Non. Les offres sont gratuites et sans engagement.",
       "No. Le offerte sono gratuite e senza impegno.",
@@ -480,14 +435,12 @@ export const faqs: Faq[] = [
     order: 5,
     question: l(
       "Can I complain about a company?",
-      "هل يمكنني تقديم شكوى ضد شركة؟",
       "Kann ich mich über ein Unternehmen beschweren?",
       "Puis-je déposer une réclamation contre une entreprise ?",
       "Posso presentare un reclamo su un'azienda?",
     ),
     answer: l(
       "Yes — use the complaint button on any company profile. Our team reviews every case.",
-      "نعم — استخدم زر الشكوى في أي ملف شركة. يراجع فريقنا كل حالة.",
       "Ja – nutzen Sie den Beschwerde-Button auf jedem Firmenprofil. Unser Team prüft jeden Fall.",
       "Oui, utilisez le bouton de réclamation présent sur chaque profil d'entreprise. Notre équipe examine chaque cas.",
       "Sì, utilizzi il pulsante di reclamo presente su ogni profilo aziendale. Il nostro team esamina ogni caso.",
@@ -498,14 +451,12 @@ export const faqs: Faq[] = [
     order: 6,
     question: l(
       "When should I request offers?",
-      "متى يجب أن أطلب العروض؟",
       "Wann sollte ich Offerten anfragen?",
       "Quand dois-je demander des offres ?",
       "Quando devo richiedere le offerte?",
     ),
     answer: l(
       "Ideally 4–8 weeks before your moving date.",
-      "يُفضّل قبل 4 إلى 8 أسابيع من موعد النقل.",
       "Idealerweise 4–8 Wochen vor Ihrem Umzugstermin.",
       "Idéalement 4 à 8 semaines avant la date de votre déménagement.",
       "Idealmente 4–8 settimane prima della data del trasloco.",
@@ -514,10 +465,9 @@ export const faqs: Faq[] = [
 ];
 
 /** Blog body: an intro paragraph per language, followed by shared guide sections. */
-const blogBody = (en: string, ar: string, de: string, fr: string, it: string) =>
+const blogBody = (en: string, de: string, fr: string, it: string) =>
   l(
     `<p>${en}</p><h2>Plan early</h2><p>Start with an inventory of every room. It helps companies quote accurately and avoids surprises on moving day.</p><h2>Compare more than price</h2><ul><li>Insurance coverage</li><li>Included packing material</li><li>Reviews from recent customers</li></ul><blockquote>Tip: request offers for the move and the cleaning together — many partners give a combined discount.</blockquote>`,
-    `<p>${ar}</p><h2>خطّط مبكراً</h2><p>ابدأ بجرد كل غرفة. يساعد ذلك الشركات على تقديم أسعار دقيقة ويجنّبك المفاجآت يوم النقل.</p><h2>قارن أكثر من السعر</h2><ul><li>تغطية التأمين</li><li>مواد التغليف المشمولة</li><li>تقييمات العملاء الأخيرة</li></ul><blockquote>نصيحة: اطلب عروض النقل والتنظيف معاً — يقدّم كثير من الشركاء خصماً مجمّعاً.</blockquote>`,
     `<p>${de}</p><h2>Frühzeitig planen</h2><p>Beginnen Sie mit einer Inventarliste für jedes Zimmer. So können die Firmen genau offerieren, und Sie vermeiden Überraschungen am Umzugstag.</p><h2>Mehr als nur den Preis vergleichen</h2><ul><li>Versicherungsschutz</li><li>Inbegriffenes Verpackungsmaterial</li><li>Aktuelle Kundenbewertungen</li></ul><blockquote>Tipp: Fragen Sie Offerten für Umzug und Reinigung gemeinsam an – viele Partner gewähren einen Kombirabatt.</blockquote>`,
     `<p>${fr}</p><h2>Planifiez tôt</h2><p>Commencez par faire l'inventaire de chaque pièce. Cela permet aux entreprises d'établir une offre précise et évite les surprises le jour du déménagement.</p><h2>Comparez plus que le prix</h2><ul><li>Couverture d'assurance</li><li>Matériel d'emballage inclus</li><li>Avis de clients récents</li></ul><blockquote>Conseil : demandez des offres pour le déménagement et le nettoyage en même temps, de nombreux partenaires accordent une remise combinée.</blockquote>`,
     `<p>${it}</p><h2>Pianifichi per tempo</h2><p>Inizi con un inventario di ogni stanza. Aiuta le aziende a formulare offerte precise ed evita sorprese il giorno del trasloco.</p><h2>Confronti più del solo prezzo</h2><ul><li>Copertura assicurativa</li><li>Materiale da imballaggio incluso</li><li>Recensioni di clienti recenti</li></ul><blockquote>Consiglio: richieda insieme le offerte per trasloco e pulizia, molti partner concedono uno sconto combinato.</blockquote>`,
@@ -534,21 +484,18 @@ export const blogs: Blog[] = [
     createdAt: daysAgo(4),
     title: l(
       "The ultimate moving checklist for Switzerland",
-      "قائمة النقل الشاملة في سويسرا",
       "Die ultimative Umzugscheckliste für die Schweiz",
       "La check-list de déménagement ultime pour la Suisse",
       "La checklist definitiva per il trasloco in Svizzera",
     ),
     excerpt: l(
       "Eight weeks to moving day: what to do, when.",
-      "ثمانية أسابيع حتى يوم النقل: ماذا تفعل ومتى.",
       "Acht Wochen bis zum Umzugstag: was wann zu tun ist.",
       "Huit semaines avant le jour J : que faire et quand.",
       "Otto settimane al giorno del trasloco: cosa fare e quando.",
     ),
     body: blogBody(
       "Moving in Switzerland comes with its own rules — from commune registration to strict flat handovers.",
-      "للنقل في سويسرا قواعده الخاصة — من التسجيل في البلدية إلى تسليم الشقق الصارم.",
       "Ein Umzug in der Schweiz hat seine eigenen Regeln – von der Anmeldung bei der Gemeinde bis zur strengen Wohnungsabgabe.",
       "Déménager en Suisse obéit à des règles bien précises, de l'annonce à la commune à la remise stricte de l'appartement.",
       "Traslocare in Svizzera comporta regole proprie, dalla notifica al Comune alla rigorosa riconsegna dell'appartamento.",
@@ -564,21 +511,18 @@ export const blogs: Blog[] = [
     createdAt: daysAgo(11),
     title: l(
       "How much does a move cost in 2026?",
-      "كم تكلّف عملية النقل في 2026؟",
       "Was kostet ein Umzug im Jahr 2026?",
       "Combien coûte un déménagement en 2026 ?",
       "Quanto costa un trasloco nel 2026?",
     ),
     excerpt: l(
       "Average prices by flat size and canton.",
-      "متوسط الأسعار حسب حجم الشقة والكانتون.",
       "Durchschnittspreise nach Wohnungsgrösse und Kanton.",
       "Prix moyens selon la taille du logement et le canton.",
       "Prezzi medi per dimensione dell'appartamento e cantone.",
     ),
     body: blogBody(
       "Prices vary widely by canton, floor and access. Here are realistic ranges.",
-      "تختلف الأسعار كثيراً حسب الكانتون والطابق وسهولة الوصول. إليك نطاقات واقعية.",
       "Die Preise variieren stark je nach Kanton, Stockwerk und Zugang. Hier finden Sie realistische Preisspannen.",
       "Les prix varient fortement selon le canton, l'étage et l'accès. Voici des fourchettes réalistes.",
       "I prezzi variano molto a seconda del cantone, del piano e dell'accesso. Ecco delle fasce realistiche.",
@@ -594,21 +538,18 @@ export const blogs: Blog[] = [
     createdAt: daysAgo(18),
     title: l(
       "Passing the flat handover first time",
-      "اجتياز تسليم الشقة من المرة الأولى",
       "Die Wohnungsabgabe auf Anhieb bestehen",
       "Réussir la remise de l'appartement du premier coup",
       "Superare la riconsegna dell'appartamento al primo colpo",
     ),
     excerpt: l(
       "What landlords check and how a guarantee protects you.",
-      "ما الذي يتحقق منه المالك وكيف يحميك الضمان.",
       "Was die Vermieterschaft prüft und wie eine Garantie Sie schützt.",
       "Ce que vérifie le bailleur et comment une garantie vous protège.",
       "Cosa controlla il locatore e come La protegge una garanzia.",
     ),
     body: blogBody(
       "The handover protocol decides whether you get your deposit back.",
-      "يحدد محضر التسليم ما إذا كنت ستسترد وديعتك.",
       "Das Abgabeprotokoll entscheidet darüber, ob Sie Ihre Mietkaution zurückerhalten.",
       "L'état des lieux de sortie détermine si vous récupérez votre garantie de loyer.",
       "Il verbale di riconsegna decide se Le verrà restituito il deposito cauzionale.",
@@ -624,21 +565,18 @@ export const blogs: Blog[] = [
     createdAt: daysAgo(25),
     title: l(
       "Moving an office over one weekend",
-      "نقل مكتب خلال عطلة نهاية أسبوع واحدة",
       "Büroumzug an einem einzigen Wochenende",
       "Déménager un bureau en un seul week-end",
       "Trasferire un ufficio in un solo fine settimana",
     ),
     excerpt: l(
       "A project plan template for zero downtime.",
-      "قالب خطة مشروع لنقل دون توقف.",
       "Eine Projektplan-Vorlage für einen Umzug ohne Ausfallzeit.",
       "Un modèle de plan de projet pour zéro interruption.",
       "Un modello di piano di progetto per un trasloco senza tempi di inattività.",
     ),
     body: blogBody(
       "With the right plan your team logs off on Friday and back in on Monday.",
-      "مع الخطة الصحيحة يغادر فريقك يوم الجمعة ويعود يوم الاثنين.",
       "Mit dem richtigen Plan meldet sich Ihr Team am Freitag ab und am Montag wieder an.",
       "Avec le bon plan, votre équipe se déconnecte le vendredi et se reconnecte le lundi.",
       "Con il piano giusto, il Suo team si disconnette il venerdì e si riconnette il lunedì.",
@@ -654,21 +592,18 @@ export const blogs: Blog[] = [
     createdAt: daysAgo(33),
     title: l(
       "Declutter first, move less",
-      "تخلّص من الفوضى أولاً وانقل أقل",
       "Erst ausmisten, dann leichter umziehen",
       "Désencombrez d'abord, déménagez moins",
       "Prima fare ordine, poi traslocare meno",
     ),
     excerpt: l(
       "Fewer boxes means a cheaper move.",
-      "صناديق أقل تعني نقلاً أرخص.",
       "Weniger Kartons bedeuten einen günstigeren Umzug.",
       "Moins de cartons, c'est un déménagement moins cher.",
       "Meno scatoloni significano un trasloco più economico.",
     ),
     body: blogBody(
       "Every cubic metre you don't move saves money.",
-      "كل متر مكعب لا تنقله يوفّر المال.",
       "Jeder Kubikmeter, den Sie nicht transportieren, spart Geld.",
       "Chaque mètre cube que vous ne déménagez pas vous fait économiser de l'argent.",
       "Ogni metro cubo che non trasporta Le fa risparmiare denaro.",
@@ -684,21 +619,18 @@ export const blogs: Blog[] = [
     createdAt: daysAgo(2),
     title: l(
       "Leaving Switzerland: customs made easy",
-      "مغادرة سويسرا: الجمارك بسهولة",
       "Wegzug aus der Schweiz: Zoll leicht gemacht",
       "Quitter la Suisse : la douane en toute simplicité",
       "Lasciare la Svizzera: la dogana resa facile",
     ),
     excerpt: l(
       "Removal goods, forms and timelines explained.",
-      "شرح الأمتعة والنماذج والجداول الزمنية.",
       "Übersiedlungsgut, Formulare und Fristen erklärt.",
       "Effets de déménagement, formulaires et délais expliqués.",
       "Masserizie, moduli e tempistiche spiegati.",
     ),
     body: blogBody(
       "International moves require a removal goods declaration.",
-      "يتطلب النقل الدولي تصريحاً بالأمتعة المنزلية.",
       "Für internationale Umzüge ist eine Zollanmeldung für Übersiedlungsgut erforderlich.",
       "Les déménagements internationaux nécessitent une déclaration d'effets de déménagement.",
       "I traslochi internazionali richiedono una dichiarazione delle masserizie di trasloco.",
@@ -710,8 +642,8 @@ export const modelOffers: ModelOffer[] = [
   {
     id: "mo-1",
     serviceId: "svc-private",
-    title: l("3.5-room flat", "شقة من 3.5 غرف", "3.5-Zimmer-Wohnung", "Appartement de 3.5 pièces", "Appartamento di 3.5 locali"),
-    route: l("Zürich → Winterthur", "زيورخ ← فينترتور", "Zürich → Winterthur", "Zürich → Winterthur", "Zürich → Winterthur"),
+    title: l("3.5-room flat", "3.5-Zimmer-Wohnung", "Appartement de 3.5 pièces", "Appartamento di 3.5 locali"),
+    route: l("Zürich → Winterthur", "Zürich → Winterthur", "Zürich → Winterthur", "Zürich → Winterthur"),
     rooms: "3.5",
     price: 1450,
     active: true,
@@ -719,8 +651,8 @@ export const modelOffers: ModelOffer[] = [
   {
     id: "mo-2",
     serviceId: "svc-cleaning",
-    title: l("Handover cleaning 4.5 rooms", "تنظيف تسليم 4.5 غرف", "Endreinigung 4.5 Zimmer", "Nettoyage de remise 4.5 pièces", "Pulizia di riconsegna 4.5 locali"),
-    route: l("Bern", "برن", "Bern", "Bern", "Bern"),
+    title: l("Handover cleaning 4.5 rooms", "Endreinigung 4.5 Zimmer", "Nettoyage de remise 4.5 pièces", "Pulizia di riconsegna 4.5 locali"),
+    route: l("Bern", "Bern", "Bern", "Bern"),
     rooms: "4.5",
     price: 980,
     active: true,
@@ -728,8 +660,8 @@ export const modelOffers: ModelOffer[] = [
   {
     id: "mo-3",
     serviceId: "svc-office",
-    title: l("Office, 12 workstations", "مكتب بـ 12 محطة عمل", "Büro, 12 Arbeitsplätze", "Bureau, 12 postes de travail", "Ufficio, 12 postazioni di lavoro"),
-    route: l("Basel → Liestal", "بازل ← ليستال", "Basel → Liestal", "Basel → Liestal", "Basel → Liestal"),
+    title: l("Office, 12 workstations", "Büro, 12 Arbeitsplätze", "Bureau, 12 postes de travail", "Ufficio, 12 postazioni di lavoro"),
+    route: l("Basel → Liestal", "Basel → Liestal", "Basel → Liestal", "Basel → Liestal"),
     rooms: "-",
     price: 6200,
     active: true,
@@ -752,10 +684,9 @@ export const roles: Role[] = [
   {
     id: "role-super",
     system: true,
-    name: l("Super admin", "مشرف عام", "Super-Admin", "Super-administrateur", "Super amministratore"),
+    name: l("Super admin", "Super-Admin", "Super-administrateur", "Super amministratore"),
     description: l(
       "Full access to every module.",
-      "وصول كامل إلى جميع الوحدات.",
       "Vollzugriff auf alle Module.",
       "Accès complet à tous les modules.",
       "Accesso completo a tutti i moduli.",
@@ -764,10 +695,9 @@ export const roles: Role[] = [
   },
   {
     id: "role-editor",
-    name: l("Content editor", "محرر المحتوى", "Inhaltsredaktor", "Rédacteur de contenu", "Redattore di contenuti"),
+    name: l("Content editor", "Inhaltsredaktor", "Rédacteur de contenu", "Redattore di contenuti"),
     description: l(
       "Website content, reviews and inbox.",
-      "محتوى الموقع والتقييمات والبريد.",
       "Website-Inhalte, Bewertungen und Posteingang.",
       "Contenu du site, avis et boîte de réception.",
       "Contenuti del sito, recensioni e posta in arrivo.",
@@ -776,10 +706,9 @@ export const roles: Role[] = [
   },
   {
     id: "role-finance",
-    name: l("Finance", "المالية", "Finanzen", "Finances", "Finanze"),
+    name: l("Finance", "Finanzen", "Finances", "Finanze"),
     description: l(
       "Dues, coupons, shop and partner wallets.",
-      "المستحقات والقسائم والمتجر ومحافظ الشركاء.",
       "Einzahlungen, Gutscheine, Shop und Partner-Wallets.",
       "Paiements, coupons, boutique et portefeuilles des partenaires.",
       "Pagamenti, coupon, shop e portafogli dei partner.",
@@ -788,10 +717,9 @@ export const roles: Role[] = [
   },
   {
     id: "role-support",
-    name: l("Support agent", "وكيل دعم", "Support-Mitarbeiter", "Agent de support", "Operatore di supporto"),
+    name: l("Support agent", "Support-Mitarbeiter", "Agent de support", "Operatore di supporto"),
     description: l(
       "Leads, complaints and customer messages.",
-      "الطلبات والشكاوى ورسائل العملاء.",
       "Leads, Beschwerden und Kundennachrichten.",
       "Leads, réclamations et messages clients.",
       "Lead, reclami e messaggi dei clienti.",

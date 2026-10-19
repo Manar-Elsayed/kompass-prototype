@@ -89,13 +89,10 @@ export default function FaqsAdmin() {
           <DialogHeader><DialogTitle>{draft?.id ? t("common.actions.edit") : tf("add")}</DialogTitle></DialogHeader>
           {draft && (
             <div className="grid gap-4 md:grid-cols-2">
-              {LANGS.map((l) => {
-                const dir = l === "ar" ? "rtl" : "ltr";
-                return [
-                  <Field key={`q-${l}`} label={`${tf("question")} · ${l.toUpperCase()}`} required={l === "en"}><Input dir={dir} value={draft.question[l]} onChange={(e) => setDraft({ ...draft, question: { ...draft.question, [l]: e.target.value } })} /></Field>,
-                  <Field key={`a-${l}`} label={`${tf("answer")} · ${l.toUpperCase()}`}><Textarea dir={dir} rows={3} value={draft.answer[l]} onChange={(e) => setDraft({ ...draft, answer: { ...draft.answer, [l]: e.target.value } })} /></Field>,
-                ];
-              })}
+              {LANGS.map((l) => [
+                  <Field key={`q-${l}`} label={`${tf("question")} · ${l.toUpperCase()}`} required={l === "en"}><Input value={draft.question[l]} onChange={(e) => setDraft({ ...draft, question: { ...draft.question, [l]: e.target.value } })} /></Field>,
+                  <Field key={`a-${l}`} label={`${tf("answer")} · ${l.toUpperCase()}`}><Textarea rows={3} value={draft.answer[l]} onChange={(e) => setDraft({ ...draft, answer: { ...draft.answer, [l]: e.target.value } })} /></Field>,
+              ])}
             </div>
           )}
           <DialogFooter>

@@ -64,7 +64,7 @@ export default function PortalDashboard() {
               <h2 className="text-lg font-bold text-ink">{t("fresh")}</h2>
               <p className="text-sm text-muted-foreground">{t("freshSub")}</p>
             </div>
-            <Button asChild variant="ghost" size="sm"><Link href="/portal/shop">{tn("shop")} <ArrowRight className="flip-rtl" /></Link></Button>
+            <Button asChild variant="ghost" size="sm"><Link href="/portal/shop">{tn("shop")} <ArrowRight className="" /></Link></Button>
           </div>
           {available.length ? (
             <div className="grid gap-4 md:grid-cols-2">

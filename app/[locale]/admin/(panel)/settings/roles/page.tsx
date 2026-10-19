@@ -107,7 +107,7 @@ export default function RolesPage() {
           {draft && (
             <div className="grid gap-4">
               {LANGS.map((l) => (
-                <Field key={l} label={`${t("common.fields.name")} · ${l.toUpperCase()}`}><Input value={draft[l]} onChange={(e) => setDraft({ ...draft, [l]: e.target.value })} dir={l === "ar" ? "rtl" : "ltr"} /></Field>
+                <Field key={l} label={`${t("common.fields.name")} · ${l.toUpperCase()}`}><Input value={draft[l]} onChange={(e) => setDraft({ ...draft, [l]: e.target.value })} /></Field>
               ))}
             </div>
           )}

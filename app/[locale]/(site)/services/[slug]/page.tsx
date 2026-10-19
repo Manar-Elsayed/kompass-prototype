@@ -47,7 +47,7 @@ export default function ServiceDetailPage() {
             </div>
             <Button asChild variant="accent" size="lg" className="mt-8">
               <a href="#request">
-                {t("services.request")} <ArrowRight className="flip-rtl" />
+                {t("services.request")} <ArrowRight className="" />
               </a>
             </Button>
           </div>

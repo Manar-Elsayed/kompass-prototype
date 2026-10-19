@@ -128,7 +128,7 @@ export default function LeadsPage() {
         filters={[
           { id: "status", label: t("common.fields.status"), options: STATUSES.map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (o) => o.status },
           { id: "service", label: t("common.fields.service"), options: services.map((s) => ({ value: s.id, label: L(s.name) })), get: (o) => o.serviceId },
-          { id: "lang", label: t("common.fields.language"), options: ["de", "en", "fr", "it", "ar"].map((l) => ({ value: l, label: t(`common.lang.${l}`) })), get: (o) => o.lang },
+          { id: "lang", label: t("common.fields.language"), options: ["de", "en", "fr", "it"].map((l) => ({ value: l, label: t(`common.lang.${l}`) })), get: (o) => o.lang },
         ]}
         rowClassName={(o) => (!o.active ? "opacity-60" : o.status === "new" ? "bg-info-soft/30" : undefined)}
       />

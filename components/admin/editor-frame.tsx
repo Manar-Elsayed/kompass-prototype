@@ -52,7 +52,7 @@ export function EditorFrame({
               <TabsList className="h-9">
                 <TabsTrigger value="both" className="h-7 text-xs"><Columns2 /> {t("sideBySide")}</TabsTrigger>
                 {LANGS.map((l) => (
-                  <TabsTrigger key={l} value={l} className="h-7 text-xs">{l === "ar" ? "ع" : l.toUpperCase()}</TabsTrigger>
+                  <TabsTrigger key={l} value={l} className="h-7 text-xs">{l.toUpperCase()}</TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>

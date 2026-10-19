@@ -131,8 +131,8 @@ export default function Dashboard() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid vertical={false} stroke={C.grid} />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke={C.axis} interval="preserveStartEnd" minTickGap={24} reversed={lang === "ar"} />
-                  <YAxis yAxisId="v" tickLine={false} axisLine={false} fontSize={11} stroke={C.axis} orientation={lang === "ar" ? "right" : "left"} />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke={C.axis} interval="preserveStartEnd" minTickGap={24} />
+                  <YAxis yAxisId="v" tickLine={false} axisLine={false} fontSize={11} stroke={C.axis} />
                   <YAxis yAxisId="o" hide />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Area isAnimationActive={false} yAxisId="v" type="monotone" dataKey="visitors" name={t("visitors")} stroke={C.primary} strokeWidth={2} fill="url(#gV)" />
@@ -173,7 +173,7 @@ export default function Dashboard() {
                     <Link href={href} className="group flex items-center gap-3 py-2.5 text-sm">
                       <I className="size-4 text-muted-foreground" />
                       <span className="flex-1 font-medium">{label}</span>
-                      <ArrowRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary flip-rtl" />
+                      <ArrowRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
                     </Link>
                   </li>
                 ))}
@@ -191,7 +191,7 @@ export default function Dashboard() {
             action={
               <Button asChild variant="ghost" size="sm">
                 <Link href="/admin/leads">
-                  {ta("viewAll")} <ArrowRight className="flip-rtl" />
+                  {ta("viewAll")} <ArrowRight className="" />
                 </Link>
               </Button>
             }

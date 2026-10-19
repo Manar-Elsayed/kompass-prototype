@@ -103,6 +103,7 @@ const STATUS_TONE: Record<string, "neutral" | "primary" | "accent" | "success" |
   read: "neutral",
   unread: "info",
   answered: "success",
+  refunded: "success",
 };
 
 /** Standardised status badge — one vocabulary for the whole ecosystem. */

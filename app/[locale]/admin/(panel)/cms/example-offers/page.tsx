@@ -61,7 +61,7 @@ export default function ExampleOffersAdmin() {
   };
   const l10n = (k: "title" | "route", l: Lang) => (
     <Field key={`${k}-${l}`} label={`${k === "title" ? t("common.fields.title") : tm("route")} · ${l.toUpperCase()}`}>
-      <Input dir={l === "ar" ? "rtl" : "ltr"} value={draft![k][l]} onChange={(e) => setDraft({ ...draft!, [k]: { ...draft![k], [l]: e.target.value } })} />
+      <Input value={draft![k][l]} onChange={(e) => setDraft({ ...draft!, [k]: { ...draft![k], [l]: e.target.value } })} />
     </Field>
   );
 

@@ -99,7 +99,7 @@
   --shadow-pop: var(--shadow-md);
   --shadow-float: var(--shadow-lg);
 
-  --font-sans: var(--font-latin), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-latin), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -116,11 +116,6 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-  }
-  /* Arabic reads better slightly larger with more leading */
-  :lang(ar) body {
-    font-family: var(--font-arabic), var(--font-latin), ui-sans-serif, system-ui, sans-serif;
-    line-height: 1.7;
   }
   ::selection {
     background: var(--primary-soft);
@@ -146,12 +141,6 @@
   padding-inline: 1rem;
   @media (width >= 640px) {
     padding-inline: 1.5rem;
-  }
-}
-
-@utility flip-rtl {
-  &:where([dir="rtl"], [dir="rtl"] *) {
-    transform: scaleX(-1);
   }
 }
 

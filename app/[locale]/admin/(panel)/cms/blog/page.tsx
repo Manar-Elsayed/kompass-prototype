@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { ExternalLink, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
-import type { Blog } from "@/lib/types";
+import { LANGS, type Blog } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, useServiceMap } from "@/lib/mock/hooks";
@@ -75,7 +75,7 @@ export default function BlogAdmin() {
       <DataTable
         data={blogs}
         columns={columns}
-        search={(b) => `${b.title.en} ${b.title.ar} ${b.slug}`}
+        search={(b) => `${LANGS.map((l) => b.title[l]).join(" ")} ${b.slug}`}
         onRowClick={(b) => router.push(`/admin/cms/blog/${b.id}`)}
         filters={[
           { id: "cat", label: tb("category"), options: services.map((s) => ({ value: s.id, label: L(s.name) })), get: (b) => b.serviceId },

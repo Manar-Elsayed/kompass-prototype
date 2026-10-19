@@ -25,7 +25,7 @@ export function PageHeader({
         <nav className="mb-2 flex flex-wrap items-center gap-1 text-sm text-muted-foreground" aria-label="Breadcrumb">
           {crumbs.map((c, i) => (
             <span key={i} className="flex items-center gap-1">
-              {i > 0 && <ChevronRight className="size-3.5 flip-rtl" />}
+              {i > 0 && <ChevronRight className="size-3.5" />}
               {c.href ? (
                 <Link href={c.href} className="hover:text-primary">
                   {c.label}

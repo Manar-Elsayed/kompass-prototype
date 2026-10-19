@@ -101,7 +101,7 @@ export function ServiceCard({ service, partnerCount }: { service: Service; partn
         )}
         <span className="inline-flex items-center gap-1 font-semibold text-primary">
           {t("request")}
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 flip-rtl" />
+          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
     </Link>
@@ -194,7 +194,7 @@ export function ReviewCard({ review, subtitle }: { review: Review; subtitle?: Re
   const comment = (lang !== "en" && KOMPASS_REVIEW_L10N[review.id]?.[lang]) || review.comment;
   return (
     <figure className="flex h-full flex-col rounded-2xl border border-border bg-surface p-6">
-      <Quote className="mb-3 size-7 text-accent/70 flip-rtl" />
+      <Quote className="mb-3 size-7 text-accent/70" />
       <Stars value={review.stars} />
       <blockquote className="mt-3 flex-1 text-[15px] leading-relaxed text-foreground">“{comment}”</blockquote>
       <figcaption className="mt-5 flex items-center gap-3 border-t pt-4">
@@ -239,7 +239,7 @@ export function CtaBand({
           <Button asChild variant="accent" size="lg" className="shrink-0">
             <Link href={href}>
               {cta}
-              <ArrowRight className="flip-rtl" />
+              <ArrowRight className="" />
             </Link>
           </Button>
         </div>

@@ -46,7 +46,7 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
       </div>
 
       <div className="mt-4 space-y-2 rounded-xl bg-surface-2/70 p-3 text-sm">
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5"><MapPin className="size-4 shrink-0 text-accent" />{offer.from.zip} {offer.from.city} <ArrowRight className="size-3.5 text-muted-foreground flip-rtl" /> {offer.to.zip} {offer.to.city}</p>
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5"><MapPin className="size-4 shrink-0 text-accent" />{offer.from.zip} {offer.from.city} <ArrowRight className="size-3.5 text-muted-foreground" /> {offer.to.zip} {offer.to.city}</p>
         <p className="flex items-center gap-2"><Building className="size-4 shrink-0 text-accent" />{tf("floor")} {offer.from.floor} → {offer.to.floor} · {tf("elevator")}: {offer.from.elevator ? "✓" : "✗"} / {offer.to.elevator ? "✓" : "✗"}</p>
         <p className="flex items-center gap-2"><Calendar className="size-4 shrink-0 text-accent" />{formatDate(offer.executionDate, lang)}</p>
         {!compact && offer.details && <p className="line-clamp-2 border-t pt-2 text-muted-foreground">“{offer.details}”</p>}

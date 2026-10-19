@@ -78,7 +78,6 @@ function L10nInputs({
   return (
     <div className={cn("grid gap-3", mode === "both" && "xl:grid-cols-2")}>
       {langs.map((l) => {
-        const dir = l === "ar" ? "rtl" : "ltr";
         const v = value?.[l] ?? "";
         const missing = !v.trim() || v === "<p></p>";
         return (
@@ -91,9 +90,9 @@ function L10nInputs({
             >
               {l}
             </span>
-            {kind === "text" && <Input value={v} dir={dir} onChange={(e) => onChange({ ...value, [l]: e.target.value })} />}
-            {kind === "textarea" && <Textarea value={v} dir={dir} rows={rows ?? 3} onChange={(e) => onChange({ ...value, [l]: e.target.value })} />}
-            {kind === "richtext" && <RichText value={v} dir={dir} onChange={(html) => onChange({ ...value, [l]: html })} />}
+            {kind === "text" && <Input value={v} onChange={(e) => onChange({ ...value, [l]: e.target.value })} />}
+            {kind === "textarea" && <Textarea value={v} rows={rows ?? 3} onChange={(e) => onChange({ ...value, [l]: e.target.value })} />}
+            {kind === "richtext" && <RichText value={v} onChange={(html) => onChange({ ...value, [l]: html })} />}
           </div>
         );
       })}

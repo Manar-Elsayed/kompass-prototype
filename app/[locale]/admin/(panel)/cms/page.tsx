@@ -41,7 +41,7 @@ export default function CmsIndex() {
                 <span className="block font-bold text-ink">{t(`pages.${s.key}`)}</span>
                 <span className="mt-0.5 block text-sm text-muted-foreground">{t(`pages.${s.key}Desc`)}</span>
               </span>
-              <ArrowRight className="mt-1 size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary flip-rtl" />
+              <ArrowRight className="mt-1 size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
             </Card>
           </Link>
         ))}

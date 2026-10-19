@@ -9,7 +9,7 @@ export function cn(...inputs: ClassValue[]) {
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** The same text in every language — for new records and free-text fields entered once. */
-export const l10n = (text = ""): L10n => ({ en: text, de: text, fr: text, it: text, ar: text });
+export const l10n = (text = ""): L10n => ({ en: text, de: text, fr: text, it: text });
 
 /** Fill the languages left blank with the English text. */
 export const withFallback = (v: L10n): L10n =>
@@ -17,13 +17,12 @@ export const withFallback = (v: L10n): L10n =>
 
 /** BCP 47 tag for date formatting per UI locale (Swiss variants for the national languages). */
 export function intlLocale(locale: string) {
-  return ({ de: "de-CH", fr: "fr-CH", it: "it-CH", ar: "ar" } as Record<string, string>)[locale] ?? "en-GB";
+  return ({ de: "de-CH", fr: "fr-CH", it: "it-CH" } as Record<string, string>)[locale] ?? "en-GB";
 }
 
-export function formatCHF(value: number, locale = "en") {
-  // Swiss grouping (1’450) for every Latin-script locale: fr-CH/it-CH grouping differs between
-  // Node and browser ICU builds, which would break hydration.
-  return new Intl.NumberFormat(locale === "ar" ? "ar-CH" : "de-CH", {
+/** Swiss grouping (CHF 1’450) in every language: fr-CH/it-CH grouping differs between Node and browser ICU builds, which would break hydration. */
+export function formatCHF(value: number, _locale = "en") {
+  return new Intl.NumberFormat("de-CH", {
     style: "currency",
     currency: "CHF",
     maximumFractionDigits: 0,
@@ -31,7 +30,7 @@ export function formatCHF(value: number, locale = "en") {
 }
 
 export function formatNumber(value: number, locale = "en") {
-  return new Intl.NumberFormat(locale === "ar" ? "ar" : locale === "en" ? "en-US" : "de-CH").format(value);
+  return new Intl.NumberFormat(locale === "en" ? "en-US" : "de-CH").format(value);
 }
 
 export function formatDate(

@@ -70,6 +70,7 @@ export const common: Built<typeof Def> = {
     read: "Letto",
     unread: "Non letto",
     answered: "Risposto",
+    refunded: "Rimborsato",
   },
   form: {
     required: "Campo obbligatorio",
@@ -131,7 +132,6 @@ export const common: Built<typeof Def> = {
   },
   lang: {
     en: "Inglese",
-    ar: "Arabo",
     de: "Tedesco",
     fr: "Francese",
     it: "Italiano",

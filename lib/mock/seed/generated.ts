@@ -11,6 +11,7 @@ import type {
   Order,
   Partner,
   PartnerDue,
+  Refund,
   RemovalRequest,
   Review,
   Visitor,
@@ -20,8 +21,8 @@ import { services } from "./catalog";
 import { createRng, daysAgo, daysAhead } from "./rng";
 
 const rng = createRng();
-/** Build a five-language string: en, ar, de, fr, it. */
-const l = (en: string, ar: string, de: string, fr: string, it: string): L10n => ({ en, ar, de, fr, it });
+/** Build a four-language string: en, de, fr, it. */
+const l = (en: string, de: string, fr: string, it: string): L10n => ({ en, de, fr, it });
 
 /* ---------- reference data ---------- */
 export const CITIES = [
@@ -59,35 +60,30 @@ const BANKS = ["UBS Switzerland AG", "Credit Suisse (UBS)", "Zürcher Kantonalba
 const ABOUT = [
   l(
     "Family-run moving company with 20 years of experience and a fleet of 12 trucks.",
-    "شركة نقل عائلية بخبرة 20 عاماً وأسطول من 12 شاحنة.",
     "Familiengeführtes Umzugsunternehmen mit 20 Jahren Erfahrung und einer Flotte von 12 Lastwagen.",
     "Entreprise de déménagement familiale forte de 20 ans d'expérience et d'une flotte de 12 camions.",
     "Ditta di traslochi a conduzione familiare con 20 anni di esperienza e una flotta di 12 camion.",
   ),
   l(
     "Specialists in fast city moves with fixed-price guarantees.",
-    "متخصصون في النقل السريع داخل المدن مع ضمان السعر الثابت.",
     "Spezialisiert auf schnelle Stadtumzüge mit Fixpreisgarantie.",
     "Spécialistes des déménagements urbains rapides avec garantie de prix fixe.",
     "Specialisti in traslochi urbani rapidi con garanzia di prezzo fisso.",
   ),
   l(
     "Combined moving and cleaning with acceptance guarantee.",
-    "نقل وتنظيف معاً مع ضمان القبول.",
     "Umzug und Reinigung aus einer Hand mit Abnahmegarantie.",
     "Déménagement et nettoyage combinés avec garantie de restitution.",
     "Trasloco e pulizia combinati con garanzia di accettazione.",
   ),
   l(
     "Premium relocation services for families and expats.",
-    "خدمات نقل مميزة للعائلات والمغتربين.",
     "Premium-Umzugsservice für Familien und Expats.",
     "Services de déménagement haut de gamme pour familles et expatriés.",
     "Servizi di trasloco premium per famiglie ed espatriati.",
   ),
   l(
     "Certified heavy-goods and piano transport across Switzerland.",
-    "نقل معتمد للبضائع الثقيلة والبيانو في جميع أنحاء سويسرا.",
     "Zertifizierte Schwer- und Klaviertransporte in der ganzen Schweiz.",
     "Transport certifié de charges lourdes et de pianos dans toute la Suisse.",
     "Trasporto certificato di carichi pesanti e pianoforti in tutta la Svizzera.",
@@ -180,7 +176,7 @@ export const offers: Offer[] = Array.from({ length: 128 }, (_, i) => {
     lastName: last,
     email: `${first.toLowerCase()}.${last.toLowerCase().replace(/ü/g, "ue")}@${rng.pick(["gmail.com", "bluewin.ch", "outlook.com", "gmx.ch"])}`,
     phone: phone(),
-    lang: rng.pick(["de", "de", "de", "en", "fr", "it", "ar"] as const),
+    lang: rng.pick(["de", "de", "de", "en", "fr", "it"] as const),
     ip: ip(),
     device: rng.pick(["desktop", "mobile", "mobile", "tablet"] as const),
     from: { street: `${rng.pick(STREETS)} ${rng.int(1, 99)}`, city: from.city, zip: from.zip, country: "CH", rooms, floor: String(rng.int(0, 6)), elevator: rng.chance(0.6) },
@@ -248,42 +244,36 @@ export const dues: PartnerDue[] = Array.from({ length: 22 }, (_, i) => {
 const KOMPASS_COMMENTS = [
   l(
     "Super easy! Got 4 offers within a day and saved almost CHF 600.",
-    "سهل جداً! حصلت على 4 عروض خلال يوم ووفرت قرابة 600 فرنك.",
     "Super einfach! Innert eines Tages 4 Offerten erhalten und fast CHF 600 gespart.",
     "Super simple ! J'ai reçu 4 offres en une journée et économisé près de CHF 600.",
     "Facilissimo! Ho ricevuto 4 offerte in un giorno e risparmiato quasi CHF 600.",
   ),
   l(
     "Great overview of companies, the reviews helped a lot.",
-    "نظرة عامة رائعة على الشركات، والتقييمات ساعدتني كثيراً.",
     "Toller Überblick über die Firmen, die Bewertungen haben sehr geholfen.",
     "Excellent aperçu des entreprises, les avis m'ont beaucoup aidé.",
     "Ottima panoramica delle aziende, le recensioni mi hanno aiutato molto.",
   ),
   l(
     "Fast, transparent and free. I'd use Kompass again.",
-    "سريع وشفاف ومجاني. سأستخدم كومباس مجدداً.",
     "Schnell, transparent und kostenlos. Ich würde Kompass wieder nutzen.",
     "Rapide, transparent et gratuit. J'utiliserais Kompass à nouveau.",
     "Veloce, trasparente e gratuito. Userei di nuovo Kompass.",
   ),
   l(
     "The form was quick and the movers were excellent.",
-    "النموذج سريع وشركة النقل كانت ممتازة.",
     "Das Formular war schnell ausgefüllt und das Umzugsteam war hervorragend.",
     "Le formulaire était rapide et les déménageurs excellents.",
     "Il modulo è stato veloce e i traslocatori eccellenti.",
   ),
   l(
     "Good service, but one company called a bit too often.",
-    "خدمة جيدة، لكن إحدى الشركات اتصلت أكثر من اللازم.",
     "Guter Service, aber eine Firma hat etwas zu oft angerufen.",
     "Bon service, mais une entreprise a appelé un peu trop souvent.",
     "Buon servizio, ma un'azienda ha chiamato un po' troppo spesso.",
   ),
   l(
     "Helpful support team when I had to change my date.",
-    "فريق دعم متعاون عندما احتجت لتغيير الموعد.",
     "Hilfsbereites Support-Team, als ich meinen Termin ändern musste.",
     "Équipe d'assistance serviable quand j'ai dû changer ma date.",
     "Team di assistenza disponibile quando ho dovuto cambiare la data.",
@@ -413,7 +403,7 @@ export const visitors: Visitor[] = Array.from({ length: 64 }, (_, i) => {
     browser: rng.pick(BROWSERS),
     city: c.city,
     country: rng.chance(0.9) ? "Switzerland" : rng.pick(["Germany", "Austria", "France", "Italy"]),
-    lang: rng.pick(["de", "de", "en", "fr", "it", "ar"]),
+    lang: rng.pick(["de", "de", "en", "fr", "it"]),
     pages: rng.int(1, 14),
     converted: rng.chance(0.18),
     lastSeen: daysAgo(Math.floor(i / 4), -rng.int(0, 20)),
@@ -440,7 +430,6 @@ export const notifications: Notification[] = [
     kind: "lead",
     title: l(
       `New lead ${offers[0].id} · ${offers[0].from.city}`,
-      `طلب جديد ${offers[0].id} · ${offers[0].from.city}`,
       `Neuer Lead ${offers[0].id} · ${offers[0].from.city}`,
       `Nouveau lead ${offers[0].id} · ${offers[0].from.city}`,
       `Nuovo lead ${offers[0].id} · ${offers[0].from.city}`,
@@ -454,7 +443,6 @@ export const notifications: Notification[] = [
     kind: "application",
     title: l(
       "New partner application: Fix&Fertig Räumungen",
-      "طلب شراكة جديد: Fix&Fertig Räumungen",
       "Neue Partnerbewerbung: Fix&Fertig Räumungen",
       "Nouvelle candidature de partenaire : Fix&Fertig Räumungen",
       "Nuova candidatura partner: Fix&Fertig Räumungen",
@@ -468,7 +456,6 @@ export const notifications: Notification[] = [
     kind: "due",
     title: l(
       "6 payment receipts waiting for approval",
-      "6 إيصالات دفع بانتظار الموافقة",
       "6 Zahlungsbelege warten auf Freigabe",
       "6 justificatifs de paiement en attente d'approbation",
       "6 ricevute di pagamento in attesa di approvazione",
@@ -482,7 +469,6 @@ export const notifications: Notification[] = [
     kind: "report",
     title: l(
       "Fake-lead report FR-101 opened",
-      "تم فتح بلاغ طلب وهمي FR-101",
       "Meldung zu gefälschtem Lead FR-101 eröffnet",
       "Signalement de faux lead FR-101 ouvert",
       "Segnalazione di lead falso FR-101 aperta",
@@ -496,7 +482,6 @@ export const notifications: Notification[] = [
     kind: "complaint",
     title: l(
       "New complaint about a partner",
-      "شكوى جديدة بخصوص شريك",
       "Neue Beschwerde über einen Partner",
       "Nouvelle réclamation concernant un partenaire",
       "Nuovo reclamo su un partner",
@@ -505,4 +490,55 @@ export const notifications: Notification[] = [
     read: true,
     createdAt: daysAgo(3),
   },
+];
+
+/* ---------- company refunds ---------- */
+// Own RNG stream so adding refunds doesn't shift any of the data generated above.
+const rrng = createRng(20261019);
+const orderById = Object.fromEntries(orders.map((o) => [o.id, o]));
+export const refunds: Refund[] = [
+  // every confirmed fake-lead report was refunded to the partner wallet
+  ...fakeReports
+    .filter((r) => r.status === "confirmed")
+    .map((r, i) => {
+      const o = orderById[r.orderId];
+      return {
+        id: `RF-${pad(i + 1, 3)}`,
+        partnerId: o.partnerId,
+        amount: o.price,
+        reason: "fake_lead" as const,
+        method: "wallet" as const,
+        orderId: o.id,
+        note: r.reason,
+        status: "refunded" as const,
+        createdAt: r.createdAt,
+        decidedAt: r.createdAt,
+      };
+    }),
+  ...(
+    [
+      ["duplicate_lead", "wallet", "pending", "Same customer bought twice under two lead IDs."],
+      ["wallet_payout", "bank", "pending", "Closing our Kompass account — please pay out the remaining wallet balance."],
+      ["cancelled_job", "wallet", "pending", "Customer cancelled the move before we could quote."],
+      ["goodwill", "wallet", "refunded", "Compensation for the shop outage on 2 October."],
+      ["duplicate_lead", "wallet", "refunded", "Lead appeared twice in the shop."],
+      ["wallet_payout", "bank", "refunded", "Season ended, unused top-up returned."],
+      ["cancelled_job", "bank", "rejected", "Customer cancelled after our site visit."],
+    ] as const
+  ).map(([reason, method, status, note], i) => {
+    const o = rrng.pick(orders);
+    const age = rrng.int(1, 40);
+    return {
+      id: `RF-${pad(i + 21, 3)}`,
+      partnerId: o.partnerId,
+      amount: reason === "wallet_payout" ? rrng.int(4, 18) * 10 : reason === "goodwill" ? 50 : o.price,
+      reason,
+      method,
+      orderId: reason === "wallet_payout" || reason === "goodwill" ? undefined : o.id,
+      note,
+      status,
+      createdAt: daysAgo(age),
+      decidedAt: status === "pending" ? undefined : daysAgo(Math.max(0, age - rrng.int(1, 3))),
+    };
+  }),
 ];

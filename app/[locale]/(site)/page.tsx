@@ -97,7 +97,7 @@ export default function HomePage() {
               </datalist>
               <Button type="submit" variant="accent" size="lg" className="h-12">
                 {L(home.heroCta)}
-                <ArrowRight className="flip-rtl" />
+                <ArrowRight className="" />
               </Button>
             </form>
             <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
@@ -136,7 +136,7 @@ export default function HomePage() {
                 <span className="text-lg font-extrabold text-ink">{avgSite.toFixed(1)}</span>
                 <span className="text-xs text-muted-foreground">/ 5</span>
               </div>
-              <div className="mt-1 flex -space-x-2 rtl:space-x-reverse">
+              <div className="mt-1 flex -space-x-2">
                 {kompassReviews.map((r) => (
                   <Avatar key={r.id} name={r.name} className="size-7 ring-2 ring-surface" />
                 ))}
@@ -255,7 +255,7 @@ export default function HomePage() {
           <SectionHeading align="start" className="mb-6" title={L(home.faqTitle)} subtitle={L(home.faqSubtitle)} />
           <Button asChild variant="outline">
             <Link href="/faqs">
-              {t("home.allFaqs")} <ArrowRight className="flip-rtl" />
+              {t("home.allFaqs")} <ArrowRight className="" />
             </Link>
           </Button>
         </div>
@@ -281,7 +281,7 @@ export default function HomePage() {
           action={
             <Button asChild variant="ghost">
               <Link href="/blogs">
-                {t("nav.blogs")} <ArrowRight className="flip-rtl" />
+                {t("nav.blogs")} <ArrowRight className="" />
               </Link>
             </Button>
           }

@@ -88,7 +88,7 @@ export default function InboxPage() {
               <>
                 <div className="flex items-start justify-between gap-3 border-b p-5">
                   <div className="flex items-start gap-3">
-                    <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={() => setSel(null)}><ArrowLeft className="flip-rtl" /></Button>
+                    <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={() => setSel(null)}><ArrowLeft className="" /></Button>
                     <Avatar name={msg.name} className="size-11" />
                     <div>
                       <p className="font-bold text-ink">{msg.name}</p>
@@ -110,7 +110,7 @@ export default function InboxPage() {
                 <div className="border-t bg-surface-2/50 p-4">
                   <Textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder={`${ti("reply")}…`} rows={3} className="bg-surface" />
                   <div className="mt-2 flex justify-end">
-                    <Button onClick={sendReply} loading={busy} disabled={reply.trim().length < 2}><Send className="flip-rtl" /> {ti("reply")}</Button>
+                    <Button onClick={sendReply} loading={busy} disabled={reply.trim().length < 2}><Send className="" /> {ti("reply")}</Button>
                   </div>
                 </div>
               </>
@@ -146,8 +146,8 @@ export default function InboxPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             {LANGS.map((l) => (
               <div key={l} className="grid gap-3">
-                <Field label={`${t("admin.cms.faq.question")} · ${l.toUpperCase()}`}><Input value={answer.q[l]} onChange={(e) => setAnswer({ ...answer, q: { ...answer.q, [l]: e.target.value } })} dir={l === "ar" ? "rtl" : "ltr"} /></Field>
-                <Field label={`${ti("answer")} · ${l.toUpperCase()}`}><Textarea rows={3} value={answer.a[l]} onChange={(e) => setAnswer({ ...answer, a: { ...answer.a, [l]: e.target.value } })} dir={l === "ar" ? "rtl" : "ltr"} /></Field>
+                <Field label={`${t("admin.cms.faq.question")} · ${l.toUpperCase()}`}><Input value={answer.q[l]} onChange={(e) => setAnswer({ ...answer, q: { ...answer.q, [l]: e.target.value } })} /></Field>
+                <Field label={`${ti("answer")} · ${l.toUpperCase()}`}><Textarea rows={3} value={answer.a[l]} onChange={(e) => setAnswer({ ...answer, a: { ...answer.a, [l]: e.target.value } })} /></Field>
               </div>
             ))}
           </div>

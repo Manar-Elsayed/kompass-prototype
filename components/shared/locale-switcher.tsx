@@ -15,12 +15,9 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   de: "Deutsch",
   fr: "Français",
   it: "Italiano",
-  ar: "العربية",
 };
 
-const arabicFont = (l: Locale) => (l === "ar" ? "font-[family-name:var(--font-arabic)]" : "");
-
-/** Language menu (EN · DE · FR · IT · ع). Keeps the current path. */
+/** Language menu (EN · DE · FR · IT). Keeps the current path. */
 export function LocaleSwitcher({ className, variant = "ghost" }: { className?: string; variant?: "ghost" | "light" }) {
   const locale = useLocale() as Locale;
   const t = useTranslations("common.lang");
@@ -50,14 +47,14 @@ export function LocaleSwitcher({ className, variant = "ghost" }: { className?: s
           )}
         >
           <Languages className="size-4" />
-          <span className={arabicFont(locale)}>{LOCALE_NAMES[locale]}</span>
+          <span>{LOCALE_NAMES[locale]}</span>
           <ChevronDown className="size-3.5 opacity-60" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
         {routing.locales.map((l) => (
-          <DropdownMenuItem key={l} lang={l} dir={l === "ar" ? "rtl" : "ltr"} onSelect={() => l !== locale && go(l)}>
-            <span className={cn("flex-1", arabicFont(l))}>{LOCALE_NAMES[l]}</span>
+          <DropdownMenuItem key={l} lang={l} onSelect={() => l !== locale && go(l)}>
+            <span className="flex-1">{LOCALE_NAMES[l]}</span>
             {l === locale && <Check className="!text-primary" />}
           </DropdownMenuItem>
         ))}

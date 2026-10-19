@@ -107,7 +107,7 @@ export default function PartnerProfile() {
               <Field label={tf("city")}><Input value={form.city} onChange={set("city")} /></Field>
               {LANGS.map((l) => (
                 <Field key={l} label={`${tp("about")} · ${l.toUpperCase()}`} className="sm:col-span-2">
-                  <Textarea rows={3} value={form.about[l] ?? ""} onChange={(e) => setForm((f) => ({ ...f, about: { ...f.about, [l]: e.target.value } }))} dir={l === "ar" ? "rtl" : "ltr"} />
+                  <Textarea rows={3} value={form.about[l] ?? ""} onChange={(e) => setForm((f) => ({ ...f, about: { ...f.about, [l]: e.target.value } }))} />
                 </Field>
               ))}
             </CardBody>

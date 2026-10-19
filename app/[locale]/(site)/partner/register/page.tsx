@@ -231,11 +231,11 @@ export default function PartnerRegisterPage() {
 
         <div className="mt-8 flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:justify-between">
           <Button variant="ghost" onClick={() => setStep((s) => s - 1)} disabled={step === 0}>
-            <ArrowLeft className="flip-rtl" /> {t("common.actions.back")}
+            <ArrowLeft className="" /> {t("common.actions.back")}
           </Button>
           {step < 3 ? (
             <Button onClick={next} size="lg">
-              {t("common.actions.next")} <ArrowRight className="flip-rtl" />
+              {t("common.actions.next")} <ArrowRight className="" />
             </Button>
           ) : (
             <Button variant="accent" size="lg" onClick={submit} loading={busy}>

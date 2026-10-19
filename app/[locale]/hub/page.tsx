@@ -113,7 +113,7 @@ export default function HubPage() {
                 <span className={cn("mb-4 flex size-12 items-center justify-center rounded-xl", tone)}><I className="size-6" /></span>
                 <h3 className="flex items-center gap-2 text-lg font-bold text-ink">{title} {!href && <Badge>{t("next")}</Badge>}</h3>
                 <p className="mt-2 flex-1 text-sm text-muted-foreground">{body}</p>
-                {href && <ArrowRight className="mt-4 size-5 text-primary transition group-hover:translate-x-1 flip-rtl" />}
+                {href && <ArrowRight className="mt-4 size-5 text-primary transition group-hover:translate-x-1" />}
               </div>
             );
             return href ? <Link key={title} href={href}>{inner}</Link> : <div key={title}>{inner}</div>;
@@ -137,7 +137,7 @@ export default function HubPage() {
                   <span className="flex items-center gap-3 md:justify-center">
                     <span className="hidden h-px flex-1 bg-border md:block" />
                     <span className="inline-flex items-center gap-2 rounded-xl border bg-surface px-3 py-2 text-sm font-semibold text-ink shadow-sm [&_svg]:size-4 [&_svg]:text-primary" >{f.icon}{f.entity}</span>
-                    <ArrowRight className="size-4 shrink-0 text-muted-foreground flip-rtl" />
+                    <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
                     <span className="hidden h-px flex-1 bg-border md:block" />
                   </span>
                   <span className={cn("inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-bold md:ms-auto", actor[f.to].cls)}>{actor[f.to].icon}{actor[f.to].label}</span>
@@ -165,7 +165,7 @@ export default function HubPage() {
                     <Link href={href} className="group flex items-start gap-3 rounded-lg p-2 text-sm transition hover:bg-primary-soft">
                       <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold text-muted-foreground group-hover:border-primary group-hover:text-primary">{i + 1}</span>
                       <span className="flex-1 font-medium">{label}</span>
-                      <ArrowRight className="mt-0.5 size-4 text-muted-foreground opacity-0 transition group-hover:opacity-100 flip-rtl" />
+                      <ArrowRight className="mt-0.5 size-4 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
                     </Link>
                   </li>
                 ))}
