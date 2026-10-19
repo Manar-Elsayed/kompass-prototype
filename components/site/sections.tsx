@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import type { Blog, Partner, Review, Service } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
 import { useL, useLang } from "@/lib/mock/hooks";
-import { KOMPASS_REVIEW_AR } from "@/lib/mock/seed";
+import { KOMPASS_REVIEW_L10N } from "@/lib/mock/seed";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/controls";
 import { Icon } from "@/components/shared/icon";
@@ -191,7 +191,7 @@ export function BlogCard({ blog, category }: { blog: Blog; category?: Service })
 
 export function ReviewCard({ review, subtitle }: { review: Review; subtitle?: React.ReactNode }) {
   const lang = useLang();
-  const comment = lang === "ar" && KOMPASS_REVIEW_AR[review.id] ? KOMPASS_REVIEW_AR[review.id] : review.comment;
+  const comment = (lang !== "en" && KOMPASS_REVIEW_L10N[review.id]?.[lang]) || review.comment;
   return (
     <figure className="flex h-full flex-col rounded-2xl border border-border bg-surface p-6">
       <Quote className="mb-3 size-7 text-accent/70 flip-rtl" />

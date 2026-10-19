@@ -5,8 +5,8 @@ import { useTranslations } from "next-intl";
 import { CalendarClock, ExternalLink, FileText, Info, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import type { Partner } from "@/lib/types";
-import { cn, formatDate } from "@/lib/utils";
+import { LANGS, type L10n, type Partner } from "@/lib/types";
+import { cn, formatDate, withFallback } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL, useLang } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/shared/icon";
 import { DL, PageHeader } from "@/components/admin/ui";
 
-type Editable = Pick<Partner, "email" | "phone" | "mobile" | "website" | "address" | "zip" | "city"> & { aboutEn: string; aboutAr: string };
+type Editable = Pick<Partner, "email" | "phone" | "mobile" | "website" | "address" | "zip" | "city"> & { about: L10n };
 
 export default function PartnerProfile() {
   const t = useTranslations("portal.profile");
@@ -40,8 +40,7 @@ export default function PartnerProfile() {
     address: partner.address,
     zip: partner.zip,
     city: partner.city,
-    aboutEn: partner.about.en,
-    aboutAr: partner.about.ar,
+    about: { ...partner.about },
   };
   const [form, setForm] = useState<Editable>(initial);
   const [busy, setBusy] = useState(false);
@@ -50,8 +49,7 @@ export default function PartnerProfile() {
 
   const save = async () => {
     setBusy(true);
-    const { aboutEn, aboutAr, ...rest } = form;
-    await mock(() => patch("partners", partner.id, { ...rest, about: { en: aboutEn, ar: aboutAr || aboutEn } }));
+    await mock(() => patch("partners", partner.id, { ...form, about: withFallback(form.about) }));
     setBusy(false);
     toast.success(t("saved"));
   };
@@ -107,8 +105,11 @@ export default function PartnerProfile() {
               <Field label={tf("street")} className="sm:col-span-2"><Input value={form.address} onChange={set("address")} /></Field>
               <Field label={tf("zip")}><Input value={form.zip} onChange={set("zip")} dir="ltr" /></Field>
               <Field label={tf("city")}><Input value={form.city} onChange={set("city")} /></Field>
-              <Field label={`${tp("about")} · EN`} className="sm:col-span-2"><Textarea rows={3} value={form.aboutEn} onChange={set("aboutEn")} dir="ltr" /></Field>
-              <Field label={`${tp("about")} · AR`} className="sm:col-span-2"><Textarea rows={3} value={form.aboutAr} onChange={set("aboutAr")} dir="rtl" /></Field>
+              {LANGS.map((l) => (
+                <Field key={l} label={`${tp("about")} · ${l.toUpperCase()}`} className="sm:col-span-2">
+                  <Textarea rows={3} value={form.about[l] ?? ""} onChange={(e) => setForm((f) => ({ ...f, about: { ...f.about, [l]: e.target.value } }))} dir={l === "ar" ? "rtl" : "ltr"} />
+                </Field>
+              ))}
             </CardBody>
           </Card>
           <Card>

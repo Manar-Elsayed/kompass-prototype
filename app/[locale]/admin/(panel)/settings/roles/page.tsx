@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Lock, Plus, Shield, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { PERMISSIONS, type Permission } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { LANGS, PERMISSIONS, type L10n, type Permission } from "@/lib/types";
+import { cn, l10n, withFallback } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL } from "@/lib/mock/hooks";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ export default function RolesPage() {
   const add = useStore((s) => s.add);
   const remove = useStore((s) => s.remove);
   const { confirm, dialog } = useConfirm();
-  const [draft, setDraft] = useState<null | { en: string; ar: string }>(null);
+  const [draft, setDraft] = useState<null | L10n>(null);
 
   const toggle = (roleId: string, perm: Permission, on: boolean) => {
     const r = roles.find((x) => x.id === roleId)!;
@@ -37,7 +37,7 @@ export default function RolesPage() {
 
   return (
     <>
-      <PageHeader title={tr("title")} subtitle={tr("subtitle")} actions={<Button onClick={() => setDraft({ en: "", ar: "" })}><Plus /> {tr("add")}</Button>} />
+      <PageHeader title={tr("title")} subtitle={tr("subtitle")} actions={<Button onClick={() => setDraft(l10n())}><Plus /> {tr("add")}</Button>} />
       <Card className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -106,8 +106,9 @@ export default function RolesPage() {
           <DialogHeader><DialogTitle>{tr("add")}</DialogTitle></DialogHeader>
           {draft && (
             <div className="grid gap-4">
-              <Field label={`${t("common.fields.name")} · EN`}><Input value={draft.en} onChange={(e) => setDraft({ ...draft, en: e.target.value })} dir="ltr" /></Field>
-              <Field label={`${t("common.fields.name")} · AR`}><Input value={draft.ar} onChange={(e) => setDraft({ ...draft, ar: e.target.value })} dir="rtl" /></Field>
+              {LANGS.map((l) => (
+                <Field key={l} label={`${t("common.fields.name")} · ${l.toUpperCase()}`}><Input value={draft[l]} onChange={(e) => setDraft({ ...draft, [l]: e.target.value })} dir={l === "ar" ? "rtl" : "ltr"} /></Field>
+              ))}
             </div>
           )}
           <DialogFooter>
@@ -115,7 +116,7 @@ export default function RolesPage() {
             <Button
               disabled={!draft?.en.trim()}
               onClick={() => {
-                add("roles", { id: `role-${Date.now()}`, name: { en: draft!.en, ar: draft!.ar || draft!.en }, description: { en: "", ar: "" }, permissions: ["dashboard"] });
+                add("roles", { id: `role-${Date.now()}`, name: withFallback(draft!), description: l10n(), permissions: ["dashboard"] });
                 setDraft(null);
                 toast.success(t("common.toast.created"));
               }}

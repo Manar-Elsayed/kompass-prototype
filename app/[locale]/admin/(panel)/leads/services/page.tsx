@@ -5,8 +5,8 @@ import { useTranslations } from "next-intl";
 import { FileEdit, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import type { Service } from "@/lib/types";
-import { formatCHF, slugify } from "@/lib/utils";
+import { LANGS, type L10n, type Service } from "@/lib/types";
+import { formatCHF, l10n, slugify, withFallback } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang } from "@/lib/mock/hooks";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { Icon, ICON_NAMES } from "@/components/shared/icon";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { PageHeader } from "@/components/admin/ui";
 
-type Draft = { id?: string; en: string; ar: string; icon: string; leadPrice: string; active: boolean };
+type Draft = { id?: string; name: L10n; icon: string; leadPrice: string; active: boolean };
 
 export default function ServicesAdmin() {
   const t = useTranslations();
@@ -33,19 +33,19 @@ export default function ServicesAdmin() {
   const [draft, setDraft] = useState<Draft | null>(null);
 
   const save = () => {
-    if (!draft || !draft.en.trim()) return;
+    if (!draft || !draft.name.en.trim()) return;
     const price = Number(draft.leadPrice) || 0;
     if (draft.id) {
       const s = services.find((x) => x.id === draft.id)!;
-      patch("services", draft.id, { name: { en: draft.en, ar: draft.ar || draft.en }, icon: draft.icon, leadPrice: price, active: draft.active, short: s.short });
+      patch("services", draft.id, { name: withFallback(draft.name), icon: draft.icon, leadPrice: price, active: draft.active, short: s.short });
     } else {
       const svc: Service = {
-        id: `svc-${slugify(draft.en)}`,
-        slug: slugify(draft.en),
+        id: `svc-${slugify(draft.name.en)}`,
+        slug: slugify(draft.name.en),
         icon: draft.icon,
-        name: { en: draft.en, ar: draft.ar || draft.en },
-        short: { en: "", ar: "" },
-        body: { en: "<p></p>", ar: "<p></p>" },
+        name: withFallback(draft.name),
+        short: l10n(),
+        body: l10n("<p></p>"),
         image: "/images/hero.png",
         features: [],
         tips: [],
@@ -97,7 +97,7 @@ export default function ServicesAdmin() {
       enableSorting: false,
       cell: ({ row: { original: s } }) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="icon-sm" aria-label={t("common.actions.edit")} onClick={() => setDraft({ id: s.id, en: s.name.en, ar: s.name.ar, icon: s.icon, leadPrice: String(s.leadPrice), active: s.active })}>
+          <Button variant="ghost" size="icon-sm" aria-label={t("common.actions.edit")} onClick={() => setDraft({ id: s.id, name: { ...s.name }, icon: s.icon, leadPrice: String(s.leadPrice), active: s.active })}>
             <Pencil />
           </Button>
           <Button asChild variant="ghost" size="sm">
@@ -116,12 +116,12 @@ export default function ServicesAdmin() {
         title={t("admin.services.title")}
         subtitle={t("admin.services.subtitle")}
         actions={
-          <Button onClick={() => setDraft({ en: "", ar: "", icon: "Truck", leadPrice: "30", active: true })}>
+          <Button onClick={() => setDraft({ name: l10n(), icon: "Truck", leadPrice: "30", active: true })}>
             <Plus /> {t("admin.services.add")}
           </Button>
         }
       />
-      <DataTable data={[...services].sort((a, b) => a.order - b.order)} columns={columns} search={(s) => `${s.name.en} ${s.name.ar} ${s.slug}`} />
+      <DataTable data={[...services].sort((a, b) => a.order - b.order)} columns={columns} search={(s) => `${LANGS.map((l) => s.name[l]).join(" ")} ${s.slug}`} />
 
       <Dialog open={!!draft} onOpenChange={(v) => !v && setDraft(null)}>
         <DialogContent>
@@ -131,12 +131,11 @@ export default function ServicesAdmin() {
           {draft && (
             <div className="grid gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={t("admin.services.nameEn")} required>
-                  <Input value={draft.en} onChange={(e) => setDraft({ ...draft, en: e.target.value })} dir="ltr" />
-                </Field>
-                <Field label={t("admin.services.nameAr")}>
-                  <Input value={draft.ar} onChange={(e) => setDraft({ ...draft, ar: e.target.value })} dir="rtl" />
-                </Field>
+                {LANGS.map((l) => (
+                  <Field key={l} label={`${t("common.fields.name")} · ${l.toUpperCase()}`} required={l === "en"}>
+                    <Input value={draft.name[l]} onChange={(e) => setDraft({ ...draft, name: { ...draft.name, [l]: e.target.value } })} dir={l === "ar" ? "rtl" : "ltr"} />
+                  </Field>
+                ))}
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label={t("admin.cms.fields.icon")}>
@@ -158,7 +157,7 @@ export default function ServicesAdmin() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDraft(null)}>{t("common.actions.cancel")}</Button>
-            <Button onClick={save} disabled={!draft?.en.trim()}>{t("common.actions.save")}</Button>
+            <Button onClick={save} disabled={!draft?.name.en.trim()}>{t("common.actions.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

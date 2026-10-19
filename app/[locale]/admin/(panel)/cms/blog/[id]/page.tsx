@@ -7,7 +7,7 @@ import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import type { Blog } from "@/lib/types";
-import { slugify } from "@/lib/utils";
+import { l10n, slugify } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
@@ -40,9 +40,9 @@ export default function BlogEditor() {
     id: "",
     slug: "",
     serviceId: services[0]?.id ?? "",
-    title: { en: "", ar: "" },
-    excerpt: { en: "", ar: "" },
-    body: { en: "<p></p>", ar: "<p></p>" },
+    title: l10n(),
+    excerpt: l10n(),
+    body: l10n("<p></p>"),
     image: "/images/blog.png",
     readMins: 5,
     published: false,

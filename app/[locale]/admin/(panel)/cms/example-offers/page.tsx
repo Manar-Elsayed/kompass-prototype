@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import type { ModelOffer } from "@/lib/types";
-import { formatCHF } from "@/lib/utils";
+import { LANGS, type Lang, type ModelOffer } from "@/lib/types";
+import { formatCHF, l10n as same } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { Button } from "@/components/ui/button";
@@ -59,8 +59,8 @@ export default function ExampleOffersAdmin() {
     toast.success(t("common.toast.saved"));
     setDraft(null);
   };
-  const l10n = (k: "title" | "route", l: "en" | "ar") => (
-    <Field label={`${k === "title" ? t("common.fields.title") : tm("route")} · ${l.toUpperCase()}`}>
+  const l10n = (k: "title" | "route", l: Lang) => (
+    <Field key={`${k}-${l}`} label={`${k === "title" ? t("common.fields.title") : tm("route")} · ${l.toUpperCase()}`}>
       <Input dir={l === "ar" ? "rtl" : "ltr"} value={draft![k][l]} onChange={(e) => setDraft({ ...draft!, [k]: { ...draft![k], [l]: e.target.value } })} />
     </Field>
   );
@@ -71,7 +71,7 @@ export default function ExampleOffersAdmin() {
         crumbs={[{ label: t("admin.cms.title"), href: "/admin/cms" }, { label: tm("title") }]}
         title={tm("title")}
         subtitle={tm("subtitle")}
-        actions={<Button onClick={() => setDraft({ id: "", serviceId: services[0].id, title: { en: "", ar: "" }, route: { en: "", ar: "" }, rooms: "3.5", price: 1200, active: true })}><Plus /> {tm("add")}</Button>}
+        actions={<Button onClick={() => setDraft({ id: "", serviceId: services[0].id, title: same(), route: same(), rooms: "3.5", price: 1200, active: true })}><Plus /> {tm("add")}</Button>}
       />
       <DataTable data={items} columns={columns} search={(m) => `${m.title.en} ${m.route.en}`} />
       <Dialog open={!!draft} onOpenChange={(v) => !v && setDraft(null)}>
@@ -79,10 +79,7 @@ export default function ExampleOffersAdmin() {
           <DialogHeader><DialogTitle>{draft?.id ? t("common.actions.edit") : tm("add")}</DialogTitle></DialogHeader>
           {draft && (
             <div className="grid gap-4 sm:grid-cols-2">
-              {l10n("title", "en")}
-              {l10n("title", "ar")}
-              {l10n("route", "en")}
-              {l10n("route", "ar")}
+              {LANGS.map((l) => [l10n("title", l), l10n("route", l)])}
               <Field label={t("common.fields.service")}><Select value={draft.serviceId} onValueChange={(v) => setDraft({ ...draft, serviceId: v })} options={services.map((s) => ({ value: s.id, label: L(s.name) }))} /></Field>
               <Field label={`${t("common.fields.price")} (CHF)`}><Input type="number" dir="ltr" value={draft.price} onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })} /></Field>
             </div>

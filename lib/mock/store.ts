@@ -142,7 +142,7 @@ export const useStore = create<Store>()(
           offers: [offer, ...s.offers],
           notifications: notify(s, {
             kind: "lead",
-            title: { en: `New lead ${offer.id} · ${offer.from.city}`, ar: `طلب جديد ${offer.id} · ${offer.from.city}` },
+            title: { en: `New lead ${offer.id} · ${offer.from.city}`, de: `Neuer Lead ${offer.id} · ${offer.from.city}`, fr: `Nouveau lead ${offer.id} · ${offer.from.city}`, it: `Nuovo lead ${offer.id} · ${offer.from.city}`, ar: `طلب جديد ${offer.id} · ${offer.from.city}` },
             href: `/admin/leads/${offer.id}`,
           }),
         });
@@ -167,7 +167,7 @@ export const useStore = create<Store>()(
           partners: [partner, ...s.partners],
           notifications: notify(s, {
             kind: "application",
-            title: { en: `New partner application: ${partner.name}`, ar: `طلب شراكة جديد: ${partner.name}` },
+            title: { en: `New partner application: ${partner.name}`, de: `Neue Partnerbewerbung: ${partner.name}`, fr: `Nouvelle candidature partenaire : ${partner.name}`, it: `Nuova candidatura partner: ${partner.name}`, ar: `طلب شراكة جديد: ${partner.name}` },
             href: `/admin/partners/applications`,
           }),
         });
@@ -209,7 +209,7 @@ export const useStore = create<Store>()(
           reviews: [{ ...input, id: uid("RV"), status: "pending", createdAt: nowIso() }, ...s.reviews],
           notifications: notify(s, {
             kind: "review",
-            title: { en: `New ${input.stars}★ review awaiting moderation`, ar: `تقييم جديد ${input.stars}★ بانتظار المراجعة` },
+            title: { en: `New ${input.stars}★ review awaiting moderation`, de: `Neue ${input.stars}★-Bewertung wartet auf Prüfung`, fr: `Nouvel avis ${input.stars}★ en attente de modération`, it: `Nuova recensione ${input.stars}★ in attesa di moderazione`, ar: `تقييم جديد ${input.stars}★ بانتظار المراجعة` },
             href: input.target === "kompass" ? "/admin/moderation/kompass-reviews" : "/admin/moderation/partner-reviews",
           }),
         })),
@@ -219,7 +219,7 @@ export const useStore = create<Store>()(
           complaints: [{ ...input, id: uid("CMP"), status: "pending", createdAt: nowIso() }, ...s.complaints],
           notifications: notify(s, {
             kind: "complaint",
-            title: { en: `New complaint from ${input.name}`, ar: `شكوى جديدة من ${input.name}` },
+            title: { en: `New complaint from ${input.name}`, de: `Neue Beschwerde von ${input.name}`, fr: `Nouvelle réclamation de ${input.name}`, it: `Nuovo reclamo da ${input.name}`, ar: `شكوى جديدة من ${input.name}` },
             href: "/admin/moderation/complaints",
           }),
         })),
@@ -229,7 +229,7 @@ export const useStore = create<Store>()(
           contacts: [{ ...input, id: uid("MSG"), read: false, createdAt: nowIso() }, ...s.contacts],
           notifications: notify(s, {
             kind: "contact",
-            title: { en: `New message: ${input.subject}`, ar: `رسالة جديدة: ${input.subject}` },
+            title: { en: `New message: ${input.subject}`, de: `Neue Nachricht: ${input.subject}`, fr: `Nouveau message : ${input.subject}`, it: `Nuovo messaggio: ${input.subject}`, ar: `رسالة جديدة: ${input.subject}` },
             href: "/admin/inbox",
           }),
         })),
@@ -296,7 +296,7 @@ export const useStore = create<Store>()(
             fakeReports: [{ id: `FR-${101 + s.fakeReports.length}`, orderId, reason, status: "open", createdAt: nowIso() }, ...s.fakeReports],
             notifications: notify(s, {
               kind: "report",
-              title: { en: `Fake-lead report from ${partner?.name ?? "partner"}`, ar: `بلاغ طلب وهمي من ${partner?.name ?? "شريك"}` },
+              title: { en: `Fake-lead report from ${partner?.name ?? "partner"}`, de: `Fake-Lead-Meldung von ${partner?.name ?? "Partner"}`, fr: `Signalement de faux lead par ${partner?.name ?? "un partenaire"}`, it: `Segnalazione di lead falso da ${partner?.name ?? "partner"}`, ar: `بلاغ طلب وهمي من ${partner?.name ?? "شريك"}` },
               href: "/admin/leads/fake-reports",
             }),
           };
@@ -310,7 +310,7 @@ export const useStore = create<Store>()(
           dues: [due, ...s.dues],
           notifications: notify(s, {
             kind: "due",
-            title: { en: `Payment receipt CHF ${input.amount} from ${partner?.name}`, ar: `إيصال دفع ${input.amount} فرنك من ${partner?.name}` },
+            title: { en: `Payment receipt CHF ${input.amount} from ${partner?.name}`, de: `Zahlungsbeleg CHF ${input.amount} von ${partner?.name}`, fr: `Justificatif de paiement CHF ${input.amount} de ${partner?.name}`, it: `Ricevuta di pagamento CHF ${input.amount} da ${partner?.name}`, ar: `إيصال دفع ${input.amount} فرنك من ${partner?.name}` },
             href: "/admin/finance/partner-dues",
           }),
         });
@@ -324,7 +324,7 @@ export const useStore = create<Store>()(
             removals: [{ id: `RR-${s.removals.length + 1}`, reviewId, partnerId, reason, status: "pending", createdAt: nowIso() }, ...s.removals],
             notifications: notify(s, {
               kind: "review",
-              title: { en: `Review removal requested by ${partner?.name}`, ar: `طلب إزالة تقييم من ${partner?.name}` },
+              title: { en: `Review removal requested by ${partner?.name}`, de: `Löschung einer Bewertung beantragt von ${partner?.name}`, fr: `Suppression d’avis demandée par ${partner?.name}`, it: `Rimozione recensione richiesta da ${partner?.name}`, ar: `طلب إزالة تقييم من ${partner?.name}` },
               href: "/admin/moderation/removals",
             }),
           };
@@ -334,7 +334,14 @@ export const useStore = create<Store>()(
     }),
     {
       name: "kompass-prototype-v1",
-      version: 1,
+      // v2 added German, French and Italian to all content: earlier saves only hold EN/AR,
+      // so they start again from the (now five-language) seed, keeping the signed-in sessions.
+      version: 2,
+      migrate: (persisted, version) => {
+        if (version >= 2) return persisted as Store;
+        const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
+        return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
+      },
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
       // persist data + sessions, never the action functions

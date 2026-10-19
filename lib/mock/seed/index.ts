@@ -44,5 +44,5 @@ export function createSeed(): DB {
   });
 }
 
-export { CITIES, KOMPASS_REVIEW_AR, trafficSeries } from "./generated";
+export { CITIES, KOMPASS_REVIEW_L10N, trafficSeries } from "./generated";
 export { NOW, DAY } from "./rng";

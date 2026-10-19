@@ -4,6 +4,7 @@ import type {
   Coupon,
   FakeReport,
   FaqQuestion,
+  L10n,
   LeadStatus,
   Notification,
   Offer,
@@ -19,7 +20,8 @@ import { services } from "./catalog";
 import { createRng, daysAgo, daysAhead } from "./rng";
 
 const rng = createRng();
-const l = (en: string, ar: string) => ({ en, ar });
+/** Build a five-language string: en, ar, de, fr, it. */
+const l = (en: string, ar: string, de: string, fr: string, it: string): L10n => ({ en, ar, de, fr, it });
 
 /* ---------- reference data ---------- */
 export const CITIES = [
@@ -55,11 +57,41 @@ const PARTNER_NAMES = [
 const BANKS = ["UBS Switzerland AG", "Credit Suisse (UBS)", "Zürcher Kantonalbank", "PostFinance", "Raiffeisen", "Berner Kantonalbank"];
 
 const ABOUT = [
-  l("Family-run moving company with 20 years of experience and a fleet of 12 trucks.", "شركة نقل عائلية بخبرة 20 عاماً وأسطول من 12 شاحنة."),
-  l("Specialists in fast city moves with fixed-price guarantees.", "متخصصون في النقل السريع داخل المدن مع ضمان السعر الثابت."),
-  l("Combined moving and cleaning with acceptance guarantee.", "نقل وتنظيف معاً مع ضمان القبول."),
-  l("Premium relocation services for families and expats.", "خدمات نقل مميزة للعائلات والمغتربين."),
-  l("Certified heavy-goods and piano transport across Switzerland.", "نقل معتمد للبضائع الثقيلة والبيانو في جميع أنحاء سويسرا."),
+  l(
+    "Family-run moving company with 20 years of experience and a fleet of 12 trucks.",
+    "شركة نقل عائلية بخبرة 20 عاماً وأسطول من 12 شاحنة.",
+    "Familiengeführtes Umzugsunternehmen mit 20 Jahren Erfahrung und einer Flotte von 12 Lastwagen.",
+    "Entreprise de déménagement familiale forte de 20 ans d'expérience et d'une flotte de 12 camions.",
+    "Ditta di traslochi a conduzione familiare con 20 anni di esperienza e una flotta di 12 camion.",
+  ),
+  l(
+    "Specialists in fast city moves with fixed-price guarantees.",
+    "متخصصون في النقل السريع داخل المدن مع ضمان السعر الثابت.",
+    "Spezialisiert auf schnelle Stadtumzüge mit Fixpreisgarantie.",
+    "Spécialistes des déménagements urbains rapides avec garantie de prix fixe.",
+    "Specialisti in traslochi urbani rapidi con garanzia di prezzo fisso.",
+  ),
+  l(
+    "Combined moving and cleaning with acceptance guarantee.",
+    "نقل وتنظيف معاً مع ضمان القبول.",
+    "Umzug und Reinigung aus einer Hand mit Abnahmegarantie.",
+    "Déménagement et nettoyage combinés avec garantie de restitution.",
+    "Trasloco e pulizia combinati con garanzia di accettazione.",
+  ),
+  l(
+    "Premium relocation services for families and expats.",
+    "خدمات نقل مميزة للعائلات والمغتربين.",
+    "Premium-Umzugsservice für Familien und Expats.",
+    "Services de déménagement haut de gamme pour familles et expatriés.",
+    "Servizi di trasloco premium per famiglie ed espatriati.",
+  ),
+  l(
+    "Certified heavy-goods and piano transport across Switzerland.",
+    "نقل معتمد للبضائع الثقيلة والبيانو في جميع أنحاء سويسرا.",
+    "Zertifizierte Schwer- und Klaviertransporte in der ganzen Schweiz.",
+    "Transport certifié de charges lourdes et de pianos dans toute la Suisse.",
+    "Trasporto certificato di carichi pesanti e pianoforti in tutta la Svizzera.",
+  ),
 ];
 
 const pad = (n: number, len = 2) => String(n).padStart(len, "0");
@@ -214,12 +246,48 @@ export const dues: PartnerDue[] = Array.from({ length: 22 }, (_, i) => {
 
 /* ---------- reviews ---------- */
 const KOMPASS_COMMENTS = [
-  l("Super easy! Got 4 offers within a day and saved almost CHF 600.", "سهل جداً! حصلت على 4 عروض خلال يوم ووفرت قرابة 600 فرنك."),
-  l("Great overview of companies, the reviews helped a lot.", "نظرة عامة رائعة على الشركات، والتقييمات ساعدتني كثيراً."),
-  l("Fast, transparent and free. I'd use Kompass again.", "سريع وشفاف ومجاني. سأستخدم كومباس مجدداً."),
-  l("The form was quick and the movers were excellent.", "النموذج سريع وشركة النقل كانت ممتازة."),
-  l("Good service, but one company called a bit too often.", "خدمة جيدة، لكن إحدى الشركات اتصلت أكثر من اللازم."),
-  l("Helpful support team when I had to change my date.", "فريق دعم متعاون عندما احتجت لتغيير الموعد."),
+  l(
+    "Super easy! Got 4 offers within a day and saved almost CHF 600.",
+    "سهل جداً! حصلت على 4 عروض خلال يوم ووفرت قرابة 600 فرنك.",
+    "Super einfach! Innert eines Tages 4 Offerten erhalten und fast CHF 600 gespart.",
+    "Super simple ! J'ai reçu 4 offres en une journée et économisé près de CHF 600.",
+    "Facilissimo! Ho ricevuto 4 offerte in un giorno e risparmiato quasi CHF 600.",
+  ),
+  l(
+    "Great overview of companies, the reviews helped a lot.",
+    "نظرة عامة رائعة على الشركات، والتقييمات ساعدتني كثيراً.",
+    "Toller Überblick über die Firmen, die Bewertungen haben sehr geholfen.",
+    "Excellent aperçu des entreprises, les avis m'ont beaucoup aidé.",
+    "Ottima panoramica delle aziende, le recensioni mi hanno aiutato molto.",
+  ),
+  l(
+    "Fast, transparent and free. I'd use Kompass again.",
+    "سريع وشفاف ومجاني. سأستخدم كومباس مجدداً.",
+    "Schnell, transparent und kostenlos. Ich würde Kompass wieder nutzen.",
+    "Rapide, transparent et gratuit. J'utiliserais Kompass à nouveau.",
+    "Veloce, trasparente e gratuito. Userei di nuovo Kompass.",
+  ),
+  l(
+    "The form was quick and the movers were excellent.",
+    "النموذج سريع وشركة النقل كانت ممتازة.",
+    "Das Formular war schnell ausgefüllt und das Umzugsteam war hervorragend.",
+    "Le formulaire était rapide et les déménageurs excellents.",
+    "Il modulo è stato veloce e i traslocatori eccellenti.",
+  ),
+  l(
+    "Good service, but one company called a bit too often.",
+    "خدمة جيدة، لكن إحدى الشركات اتصلت أكثر من اللازم.",
+    "Guter Service, aber eine Firma hat etwas zu oft angerufen.",
+    "Bon service, mais une entreprise a appelé un peu trop souvent.",
+    "Buon servizio, ma un'azienda ha chiamato un po' troppo spesso.",
+  ),
+  l(
+    "Helpful support team when I had to change my date.",
+    "فريق دعم متعاون عندما احتجت لتغيير الموعد.",
+    "Hilfsbereites Support-Team, als ich meinen Termin ändern musste.",
+    "Équipe d'assistance serviable quand j'ai dû changer ma date.",
+    "Team di assistenza disponibile quando ho dovuto cambiare la data.",
+  ),
 ];
 
 const PARTNER_COMMENTS = [
@@ -259,8 +327,9 @@ export const reviews: Review[] = [
   }),
 ];
 
-export const KOMPASS_REVIEW_AR: Record<string, string> = Object.fromEntries(
-  KOMPASS_COMMENTS.map((c, i) => [`RV-K${i + 1}`, c.ar]),
+/** Translations of the seeded Kompass reviews (stored in English as customers wrote them). */
+export const KOMPASS_REVIEW_L10N: Record<string, L10n> = Object.fromEntries(
+  KOMPASS_COMMENTS.map((c, i) => [`RV-K${i + 1}`, c]),
 );
 
 const lowReviews = reviews.filter((r) => r.target !== "kompass" && r.stars <= 3 && r.status === "approved");
@@ -366,9 +435,74 @@ export function trafficSeries(days = 30) {
 
 /* ---------- notifications ---------- */
 export const notifications: Notification[] = [
-  { id: "n-1", kind: "lead", title: l(`New lead ${offers[0].id} · ${offers[0].from.city}`, `طلب جديد ${offers[0].id} · ${offers[0].from.city}`), href: `/admin/leads/${offers[0].id}`, read: false, createdAt: offers[0].createdAt },
-  { id: "n-2", kind: "application", title: l("New partner application: Fix&Fertig Räumungen", "طلب شراكة جديد: Fix&Fertig Räumungen"), href: "/admin/partners/applications", read: false, createdAt: daysAgo(0, -3) },
-  { id: "n-3", kind: "due", title: l("6 payment receipts waiting for approval", "6 إيصالات دفع بانتظار الموافقة"), href: "/admin/finance/partner-dues", read: false, createdAt: daysAgo(1) },
-  { id: "n-4", kind: "report", title: l("Fake-lead report FR-101 opened", "تم فتح بلاغ طلب وهمي FR-101"), href: "/admin/leads/fake-reports", read: true, createdAt: daysAgo(2) },
-  { id: "n-5", kind: "complaint", title: l("New complaint about a partner", "شكوى جديدة بخصوص شريك"), href: "/admin/moderation/complaints", read: true, createdAt: daysAgo(3) },
+  {
+    id: "n-1",
+    kind: "lead",
+    title: l(
+      `New lead ${offers[0].id} · ${offers[0].from.city}`,
+      `طلب جديد ${offers[0].id} · ${offers[0].from.city}`,
+      `Neuer Lead ${offers[0].id} · ${offers[0].from.city}`,
+      `Nouveau lead ${offers[0].id} · ${offers[0].from.city}`,
+      `Nuovo lead ${offers[0].id} · ${offers[0].from.city}`,
+    ),
+    href: `/admin/leads/${offers[0].id}`,
+    read: false,
+    createdAt: offers[0].createdAt,
+  },
+  {
+    id: "n-2",
+    kind: "application",
+    title: l(
+      "New partner application: Fix&Fertig Räumungen",
+      "طلب شراكة جديد: Fix&Fertig Räumungen",
+      "Neue Partnerbewerbung: Fix&Fertig Räumungen",
+      "Nouvelle candidature de partenaire : Fix&Fertig Räumungen",
+      "Nuova candidatura partner: Fix&Fertig Räumungen",
+    ),
+    href: "/admin/partners/applications",
+    read: false,
+    createdAt: daysAgo(0, -3),
+  },
+  {
+    id: "n-3",
+    kind: "due",
+    title: l(
+      "6 payment receipts waiting for approval",
+      "6 إيصالات دفع بانتظار الموافقة",
+      "6 Zahlungsbelege warten auf Freigabe",
+      "6 justificatifs de paiement en attente d'approbation",
+      "6 ricevute di pagamento in attesa di approvazione",
+    ),
+    href: "/admin/finance/partner-dues",
+    read: false,
+    createdAt: daysAgo(1),
+  },
+  {
+    id: "n-4",
+    kind: "report",
+    title: l(
+      "Fake-lead report FR-101 opened",
+      "تم فتح بلاغ طلب وهمي FR-101",
+      "Meldung zu gefälschtem Lead FR-101 eröffnet",
+      "Signalement de faux lead FR-101 ouvert",
+      "Segnalazione di lead falso FR-101 aperta",
+    ),
+    href: "/admin/leads/fake-reports",
+    read: true,
+    createdAt: daysAgo(2),
+  },
+  {
+    id: "n-5",
+    kind: "complaint",
+    title: l(
+      "New complaint about a partner",
+      "شكوى جديدة بخصوص شريك",
+      "Neue Beschwerde über einen Partner",
+      "Nouvelle réclamation concernant un partenaire",
+      "Nuovo reclamo su un partner",
+    ),
+    href: "/admin/moderation/complaints",
+    read: true,
+    createdAt: daysAgo(3),
+  },
 ];

@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { ArrowDown, ArrowUp, ImageIcon, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
-import type { L10n } from "@/lib/types";
+import { LANGS, type L10n, type Lang } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -34,7 +34,7 @@ export type FieldDef =
   | { type: "group"; key: string; label: string; fields: FieldDef[] }
   | { type: "list"; key: string; label: string; fields: FieldDef[]; make: () => Record<string, unknown>; itemTitle?: (item: Record<string, unknown>, i: number) => string };
 
-export type LangMode = "both" | "en" | "ar";
+export type LangMode = "both" | Lang;
 
 type Obj = Record<string, unknown>;
 
@@ -74,7 +74,7 @@ function L10nInputs({
   kind: "text" | "textarea" | "richtext";
   rows?: number;
 }) {
-  const langs = mode === "both" ? (["en", "ar"] as const) : ([mode] as const);
+  const langs = mode === "both" ? LANGS : [mode];
   return (
     <div className={cn("grid gap-3", mode === "both" && "xl:grid-cols-2")}>
       {langs.map((l) => {

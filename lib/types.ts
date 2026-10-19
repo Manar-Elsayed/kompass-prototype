@@ -2,10 +2,11 @@
  * Domain model for the Kompass ecosystem.
  * Shapes are derived from the legacy front `types/*.ts` and the admin
  * RTK Query endpoints (offers, companies, orders, reviews, complaints …),
- * normalised and made bilingual (EN / AR).
+ * normalised and made multilingual (EN / DE / FR / IT / AR).
  */
 
-export type Lang = "en" | "ar";
+export type Lang = "en" | "de" | "fr" | "it" | "ar";
+export const LANGS: readonly Lang[] = ["en", "de", "fr", "it", "ar"];
 export type L10n = Record<Lang, string>;
 export type ID = string;
 

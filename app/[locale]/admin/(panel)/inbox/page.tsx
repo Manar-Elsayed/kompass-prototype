@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Mail, MailOpen, Phone, Reply, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import type { ContactMessage, FaqQuestion } from "@/lib/types";
-import { cn, formatDateTime, timeAgo } from "@/lib/utils";
+import { LANGS, type ContactMessage, type FaqQuestion } from "@/lib/types";
+import { cn, formatDateTime, l10n, timeAgo, withFallback } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
@@ -34,7 +34,7 @@ export default function InboxPage() {
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
   const [publish, setPublish] = useState<FaqQuestion | null>(null);
-  const [answer, setAnswer] = useState({ qEn: "", qAr: "", aEn: "", aAr: "" });
+  const [answer, setAnswer] = useState({ q: l10n(), a: l10n() });
 
   const msg = contacts.find((c) => c.id === sel);
   const open = (c: ContactMessage) => {
@@ -130,7 +130,7 @@ export default function InboxPage() {
               {q.answered ? (
                 <StatusBadge status="answered" />
               ) : (
-                <Button variant="secondary" onClick={() => { setPublish(q); setAnswer({ qEn: q.question, qAr: "", aEn: "", aAr: "" }); }}>
+                <Button variant="secondary" onClick={() => { setPublish(q); setAnswer({ q: { ...l10n(), en: q.question }, a: l10n() }); }}>
                   <Sparkles /> {ti("toFaq")}
                 </Button>
               )}
@@ -144,21 +144,23 @@ export default function InboxPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>{ti("toFaq")}</DialogTitle></DialogHeader>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={`${t("admin.cms.faq.question")} · EN`}><Input value={answer.qEn} onChange={(e) => setAnswer({ ...answer, qEn: e.target.value })} dir="ltr" /></Field>
-            <Field label={`${t("admin.cms.faq.question")} · AR`}><Input value={answer.qAr} onChange={(e) => setAnswer({ ...answer, qAr: e.target.value })} dir="rtl" /></Field>
-            <Field label={`${ti("answer")} · EN`}><Textarea rows={4} value={answer.aEn} onChange={(e) => setAnswer({ ...answer, aEn: e.target.value })} dir="ltr" /></Field>
-            <Field label={`${ti("answer")} · AR`}><Textarea rows={4} value={answer.aAr} onChange={(e) => setAnswer({ ...answer, aAr: e.target.value })} dir="rtl" /></Field>
+            {LANGS.map((l) => (
+              <div key={l} className="grid gap-3">
+                <Field label={`${t("admin.cms.faq.question")} · ${l.toUpperCase()}`}><Input value={answer.q[l]} onChange={(e) => setAnswer({ ...answer, q: { ...answer.q, [l]: e.target.value } })} dir={l === "ar" ? "rtl" : "ltr"} /></Field>
+                <Field label={`${ti("answer")} · ${l.toUpperCase()}`}><Textarea rows={3} value={answer.a[l]} onChange={(e) => setAnswer({ ...answer, a: { ...answer.a, [l]: e.target.value } })} dir={l === "ar" ? "rtl" : "ltr"} /></Field>
+              </div>
+            ))}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPublish(null)}>{t("common.actions.cancel")}</Button>
             <Button
-              disabled={!answer.qEn.trim() || !answer.aEn.trim()}
+              disabled={!answer.q.en.trim() || !answer.a.en.trim()}
               onClick={() => {
                 add("faqs", {
                   id: `faq-${Date.now()}`,
                   order: faqs.length + 1,
-                  question: { en: answer.qEn, ar: answer.qAr || answer.qEn },
-                  answer: { en: answer.aEn, ar: answer.aAr || answer.aEn },
+                  question: withFallback(answer.q),
+                  answer: withFallback(answer.a),
                 });
                 patch("faqQuestions", publish!.id, { answered: true });
                 setPublish(null);

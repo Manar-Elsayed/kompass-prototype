@@ -5,7 +5,7 @@ import { ArrowRight, Calendar, MapPin, Home } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang } from "@/lib/mock/hooks";
-import { formatCHF } from "@/lib/utils";
+import { formatCHF, intlLocale } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/shared/icon";
@@ -62,7 +62,7 @@ export default function PartnerLanding() {
               <div className="mt-5 space-y-3 rounded-2xl bg-surface-2 p-4 text-sm">
                 <p className="flex items-center gap-2"><MapPin className="size-4 text-accent" /> {sample.from.zip} {sample.from.city} → {sample.to.zip} {sample.to.city}</p>
                 <p className="flex items-center gap-2"><Home className="size-4 text-accent" /> {tf("floor")} {sample.from.floor} · {tf("elevator")}: {sample.from.elevator ? "✓" : "✗"}</p>
-                <p className="flex items-center gap-2"><Calendar className="size-4 text-accent" /> {new Date(sample.executionDate).toLocaleDateString(lang === "ar" ? "ar" : "en-GB")}</p>
+                <p className="flex items-center gap-2"><Calendar className="size-4 text-accent" /> {new Date(sample.executionDate).toLocaleDateString(intlLocale(lang))}</p>
               </div>
               <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                 <span>{sample.firstName[0]}. ••••• · ••• •• ••</span>

@@ -1,8 +1,9 @@
 import type { SiteContent } from "@/lib/types";
+import { l10n } from "@/lib/utils";
 import type { FieldDef } from "./schema-editor";
 
 type T = (key: string) => string;
-const e = () => ({ en: "", ar: "" });
+const e = () => l10n();
 
 export type PageKey = keyof SiteContent;
 

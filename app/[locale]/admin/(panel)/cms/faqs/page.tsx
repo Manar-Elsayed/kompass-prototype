@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import { ArrowDown, ArrowUp, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import type { Faq } from "@/lib/types";
+import { LANGS, type Faq } from "@/lib/types";
+import { l10n } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL } from "@/lib/mock/hooks";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ export default function FaqsAdmin() {
         actions={
           <>
             <Button asChild variant="outline"><Link href="/faqs" target="_blank"><ExternalLink /> {t("admin.cms.viewOnSite")}</Link></Button>
-            <Button onClick={() => setDraft({ id: "", order: 0, question: { en: "", ar: "" }, answer: { en: "", ar: "" } })}><Plus /> {tf("add")}</Button>
+            <Button onClick={() => setDraft({ id: "", order: 0, question: l10n(), answer: l10n() })}><Plus /> {tf("add")}</Button>
           </>
         }
       />
@@ -88,10 +89,13 @@ export default function FaqsAdmin() {
           <DialogHeader><DialogTitle>{draft?.id ? t("common.actions.edit") : tf("add")}</DialogTitle></DialogHeader>
           {draft && (
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label={`${tf("question")} · EN`} required><Input dir="ltr" value={draft.question.en} onChange={(e) => setDraft({ ...draft, question: { ...draft.question, en: e.target.value } })} /></Field>
-              <Field label={`${tf("question")} · AR`}><Input dir="rtl" value={draft.question.ar} onChange={(e) => setDraft({ ...draft, question: { ...draft.question, ar: e.target.value } })} /></Field>
-              <Field label={`${tf("answer")} · EN`}><Textarea dir="ltr" rows={5} value={draft.answer.en} onChange={(e) => setDraft({ ...draft, answer: { ...draft.answer, en: e.target.value } })} /></Field>
-              <Field label={`${tf("answer")} · AR`}><Textarea dir="rtl" rows={5} value={draft.answer.ar} onChange={(e) => setDraft({ ...draft, answer: { ...draft.answer, ar: e.target.value } })} /></Field>
+              {LANGS.map((l) => {
+                const dir = l === "ar" ? "rtl" : "ltr";
+                return [
+                  <Field key={`q-${l}`} label={`${tf("question")} · ${l.toUpperCase()}`} required={l === "en"}><Input dir={dir} value={draft.question[l]} onChange={(e) => setDraft({ ...draft, question: { ...draft.question, [l]: e.target.value } })} /></Field>,
+                  <Field key={`a-${l}`} label={`${tf("answer")} · ${l.toUpperCase()}`}><Textarea dir={dir} rows={3} value={draft.answer[l]} onChange={(e) => setDraft({ ...draft, answer: { ...draft.answer, [l]: e.target.value } })} /></Field>,
+                ];
+              })}
             </div>
           )}
           <DialogFooter>

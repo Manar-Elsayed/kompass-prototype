@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { Service } from "@/lib/types";
+import { l10n } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
@@ -13,7 +14,7 @@ import { EmptyState } from "@/components/shared/bits";
 import { EditorFrame } from "@/components/admin/editor-frame";
 import { SchemaEditor, cloneJson, type FieldDef, type LangMode } from "@/components/admin/schema-editor";
 
-const e = () => ({ en: "", ar: "" });
+const e = () => l10n();
 
 export default function ServiceContentEditor() {
   const { id } = useParams<{ id: string }>();

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, ArrowRight, Building2, Check, Landmark, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
-import { cn } from "@/lib/utils";
+import { cn, l10n } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
@@ -99,7 +99,7 @@ export default function PartnerRegisterPage() {
           city: f.city,
           zip: f.zip,
           canton: loc?.canton ?? "ZH",
-          about: { en: f.about, ar: f.about },
+          about: l10n(f.about),
           serviceIds: f.serviceIds,
           bank: { name: f.bankName, owner: f.bankOwner, iban: f.iban },
         }),

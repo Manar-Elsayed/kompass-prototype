@@ -10,7 +10,7 @@ import { useCurrentUser, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { finance, inLastDays, pctDelta, soldCount } from "@/lib/mock/selectors";
 import { trafficSeries } from "@/lib/mock/seed";
 import { C } from "@/lib/chart";
-import { formatCHF, formatDate, timeAgo } from "@/lib/utils";
+import { formatCHF, formatDate, formatNumber, timeAgo } from "@/lib/utils";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -113,7 +113,7 @@ export default function Dashboard() {
           />
           <CardBody>
             <div className="mb-4 flex flex-wrap gap-6 text-sm">
-              <Legend color={C.primary} label={t("visitors")} value={totVisitors.toLocaleString(lang === "ar" ? "ar" : "en")} />
+              <Legend color={C.primary} label={t("visitors")} value={formatNumber(totVisitors, lang)} />
               <Legend color={C.accent} label={t("leads")} value={totLeads} />
               <Legend color={C.success} label={t("conversion")} value={`${totVisitors ? ((totLeads / totVisitors) * 100).toFixed(2) : 0}%`} />
             </div>

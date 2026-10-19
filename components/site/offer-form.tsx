@@ -382,7 +382,7 @@ export function OfferForm({
       ) : (
         <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           <div className="grid gap-5">
-            <Field label={t("common.fields.title")} error={err(errors.gender?.message)} required>
+            <Field label={t("common.fields.salutation")} error={err(errors.gender?.message)} required>
               <Controller
                 control={control}
                 name="gender"

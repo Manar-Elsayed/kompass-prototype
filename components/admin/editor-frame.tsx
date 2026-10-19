@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LANGS } from "@/lib/types";
 import type { LangMode } from "./schema-editor";
 import { PageHeader } from "./ui";
 
@@ -50,8 +51,9 @@ export function EditorFrame({
             <Tabs value={mode} onValueChange={(v) => onMode(v as LangMode)}>
               <TabsList className="h-9">
                 <TabsTrigger value="both" className="h-7 text-xs"><Columns2 /> {t("sideBySide")}</TabsTrigger>
-                <TabsTrigger value="en" className="h-7 text-xs">EN</TabsTrigger>
-                <TabsTrigger value="ar" className="h-7 text-xs">ع</TabsTrigger>
+                {LANGS.map((l) => (
+                  <TabsTrigger key={l} value={l} className="h-7 text-xs">{l === "ar" ? "ع" : l.toUpperCase()}</TabsTrigger>
+                ))}
               </TabsList>
             </Tabs>
             {viewHref && (
