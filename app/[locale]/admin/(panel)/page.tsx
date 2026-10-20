@@ -2,20 +2,33 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { AlertTriangle, ArrowRight, Banknote, ClipboardList, Clock, FileWarning, MessageSquareWarning, Star, UserPlus, Wallet } from "lucide-react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Banknote,
+  ClipboardList,
+  Clock,
+  FileWarning,
+  FileX2,
+  MessageSquareReply,
+  ShieldAlert,
+  Star,
+  Trophy,
+  UserPlus,
+} from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
-import { useCurrentUser, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
-import { finance, inLastDays, pctDelta, soldCount } from "@/lib/mock/selectors";
-import { trafficSeries } from "@/lib/mock/seed";
+import { useCurrentUser, useL, useLang } from "@/lib/mock/hooks";
+import { canBuyLeads, dashboardStats, isExpiringSoon, isOverdue, needsFollowUp, periodRange, type Period } from "@/lib/mock/selectors";
+import { visitorsOnDay } from "@/lib/mock/seed";
 import { C } from "@/lib/chart";
-import { formatCHF, formatDate, formatNumber, timeAgo } from "@/lib/utils";
+import { cn, formatCHF, formatNumber } from "@/lib/utils";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/shared/bits";
-import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { PageHeader } from "@/components/admin/ui";
+import { PeriodPicker, currentMonth } from "@/components/admin/period-picker";
+import { Funnel } from "@/components/admin/funnel";
 
 const tooltipStyle = {
   borderRadius: 12,
@@ -27,218 +40,140 @@ const tooltipStyle = {
 
 export default function Dashboard() {
   const t = useTranslations("admin.dashboard");
-  const tw = useTranslations("admin.wallets");
-  const tn = useTranslations("admin.nav");
-  const tf = useTranslations("common.fields");
-  const ta = useTranslations("common.actions");
-  const tl = useTranslations("admin.leads");
+  const ts = useTranslations("admin.dashboard.stats");
   const L = useL();
   const lang = useLang();
-  const router = useRouter();
   const { user } = useCurrentUser();
   const db = useStore();
-  const serviceMap = useServiceMap();
-  const [range, setRange] = useState<"7" | "30">("30");
+  const [period, setPeriod] = useState<Period>(currentMonth);
 
-  const fin = finance(db);
-  const leads7 = db.offers.filter((o) => inLastDays(o.createdAt, 7)).length;
-  const leadsPrev7 = db.offers.filter((o) => inLastDays(o.createdAt, 7, 7)).length;
-  const income30 = db.orders.filter((o) => inLastDays(o.createdAt, 30)).reduce((a, o) => a + o.price, 0);
-  const incomePrev30 = db.orders.filter((o) => inLastDays(o.createdAt, 30, 30)).reduce((a, o) => a + o.price, 0);
-
-  const paid = db.offers.filter((o) => soldCount(db, o.id) > 0).length;
-  const ratio = db.offers.length ? Math.round((paid / db.offers.length) * 100) : 0;
-
-  const series = useMemo(() => {
-    const base = trafficSeries(30);
-    return base
-      .map((d) => {
-        const day = d.date.slice(0, 10);
-        const leads = db.offers.filter((o) => o.createdAt.slice(0, 10) === day).length;
-        return { ...d, offers: leads, label: formatDate(d.date, lang, { day: "2-digit", month: "short" }) };
-      })
-      .slice(range === "7" ? -7 : 0);
-  }, [db.offers, lang, range]);
-  const totVisitors = series.reduce((a, d) => a + d.visitors, 0);
-  const totLeads = series.reduce((a, d) => a + d.offers, 0);
-
+  const s = useMemo(() => dashboardStats(db, period, visitorsOnDay), [db, period]);
+  const { from, to } = periodRange(period);
   const byService = db.services
-    .filter((s) => s.active)
-    .map((s) => ({ name: L(s.name), value: db.offers.filter((o) => o.serviceId === s.id && inLastDays(o.createdAt, 90)).length }))
+    .filter((x) => x.active)
+    .map((x) => ({ name: L(x.name), value: db.offers.filter((o) => o.serviceId === x.id && Date.parse(o.createdAt) >= from && Date.parse(o.createdAt) < to).length }))
+    .filter((x) => x.value > 0)
     .sort((a, b) => b.value - a.value);
+  const maxBought = s.companies.perCompany[0]?.bought ?? 1;
+  const pct = (n: number, of: number) => (of ? Math.round((n / of) * 100) : 0);
 
+  // what needs a human now, most urgent first; empty items are hidden
   const todo = [
-    { icon: UserPlus, label: t("todoApplications", { count: db.partners.filter((p) => p.status === "pending" || p.status === "contract_sent").length }), href: "/admin/partners/applications" },
-    { icon: Banknote, label: t("todoDues", { count: db.dues.filter((d) => d.status === "pending").length }), href: "/admin/finance/partner-dues" },
-    { icon: Star, label: t("todoReviews", { count: db.reviews.filter((r) => r.status === "pending").length }), href: "/admin/moderation/partner-reviews" },
-    { icon: MessageSquareWarning, label: t("todoComplaints", { count: db.complaints.filter((c) => c.status === "pending").length }), href: "/admin/moderation/complaints" },
-    { icon: FileWarning, label: t("todoReports", { count: db.fakeReports.filter((r) => r.status === "open").length }), href: "/admin/leads/fake-reports" },
-  ];
-
-  const latest = db.offers.slice(0, 10);
+    { icon: MessageSquareReply, n: db.contacts.filter(needsFollowUp).length, label: "todoFollowUp", href: "/admin/inbox", urgent: true },
+    { icon: ShieldAlert, n: db.offers.filter((o) => o.status === "new").length, label: "todoReview", href: "/admin/leads", urgent: true },
+    { icon: Clock, n: db.offers.filter(isExpiringSoon).length, label: "todoExpiring", href: "/admin/leads" },
+    { icon: FileX2, n: db.partners.filter((p) => p.status === "approved" && !p.banned && !canBuyLeads(p)).length, label: "todoDocs", href: "/admin/partners" },
+    { icon: FileWarning, n: db.fakeReports.filter((r) => r.status === "open").length, label: "todoReports", href: "/admin/leads/fake-reports" },
+    { icon: Banknote, n: db.dues.filter((d) => d.status === "pending").length, label: "todoDues", href: "/admin/finance/partner-dues" },
+    { icon: AlertTriangle, n: db.invoices.filter(isOverdue).length, label: "todoInvoices", href: "/admin/finance/invoices" },
+    { icon: UserPlus, n: db.partners.filter((p) => p.status === "pending" || p.status === "contract_sent").length, label: "todoApplications", href: "/admin/partners/applications" },
+    { icon: Star, n: db.reviews.filter((r) => r.status === "pending").length, label: "todoReviews", href: "/admin/moderation/partner-reviews" },
+  ].filter((x) => x.n > 0);
 
   return (
     <>
-      <PageHeader
-        title={t("hello", { name: user?.name.split(" ")[0] ?? "" })}
-        subtitle={t("subtitle")}
-        actions={
-          <Button asChild>
-            <Link href="/admin/leads">
-              <ClipboardList /> {tn("offers")}
-            </Link>
-          </Button>
-        }
-      />
+      <PageHeader title={t("hello", { name: user?.name.split(" ")[0] ?? "" })} subtitle={t("subtitle")} actions={<PeriodPicker value={period} onChange={setPeriod} />} />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label={t("totalIncome")} value={formatCHF(fin.totalIncome, lang)} icon={<Banknote />} delta={pctDelta(income30, incomePrev30)} deltaLabel={t("vsLast")} href="/admin/leads/shop" />
-        <KpiCard label={t("creditDue")} value={formatCHF(fin.creditDue, lang)} icon={<Wallet />} tone="accent" href="/admin/finance/invoices" footer={fin.creditOverdue ? tw("overdue", { amount: formatCHF(fin.creditOverdue, lang) }) : undefined} />
-        <KpiCard label={t("partnerDues")} value={formatCHF(fin.pendingDues, lang)} icon={<Clock />} tone="warning" href="/admin/finance/partner-dues" footer={t("todoDues", { count: db.dues.filter((d) => d.status === "pending").length })} />
-        <KpiCard label={t("newLeads")} value={leads7} icon={<ClipboardList />} tone="info" delta={pctDelta(leads7, leadsPrev7)} deltaLabel={t("vsLast")} href="/admin/leads" />
-      </div>
-
-      <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_340px]">
-        <Card>
-          <CardHeader
-            title={t("traffic")}
-            description={t("trafficSub")}
-            action={
-              <Tabs value={range} onValueChange={(v) => setRange(v as "7" | "30")}>
-                <TabsList className="h-9">
-                  <TabsTrigger value="7" className="h-7 text-xs">{t("range7")}</TabsTrigger>
-                  <TabsTrigger value="30" className="h-7 text-xs">{t("range30")}</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            }
-          />
-          <CardBody>
-            <div className="mb-4 flex flex-wrap gap-6 text-sm">
-              <Legend color={C.primary} label={t("visitors")} value={formatNumber(totVisitors, lang)} />
-              <Legend color={C.accent} label={t("leads")} value={totLeads} />
-              <Legend color={C.success} label={t("conversion")} value={`${totVisitors ? ((totLeads / totVisitors) * 100).toFixed(2) : 0}%`} />
+      <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
+        <div className="min-w-0 space-y-4">
+          {/* A. offers */}
+          <Section title={t("sections.offers")} action={<Link href="/admin/leads" className="text-sm font-semibold text-primary hover:underline">{t("open.leads")}</Link>}>
+            <div className="grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-4">
+              <Stat label={ts("received")} value={s.offers.received} />
+              <Stat label={ts("sold")} value={s.offers.sold} hint={ts("ofReceived", { pct: pct(s.offers.sold, s.offers.received) })} />
+              <Stat label={ts("fake")} value={s.offers.fake} tone={s.offers.fake ? "danger" : undefined} />
+              <Stat label={ts("total")} value={s.offers.total} muted />
             </div>
-            <div className="h-64" dir="ltr">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={series} margin={{ left: -18, right: 8, top: 4 }}>
-                  <defs>
-                    <linearGradient id="gV" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={C.primary} stopOpacity={0.22} />
-                      <stop offset="100%" stopColor={C.primary} stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gO" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={C.accent} stopOpacity={0.25} />
-                      <stop offset="100%" stopColor={C.accent} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} stroke={C.grid} />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke={C.axis} interval="preserveStartEnd" minTickGap={24} />
-                  <YAxis yAxisId="v" tickLine={false} axisLine={false} fontSize={11} stroke={C.axis} />
-                  <YAxis yAxisId="o" hide />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Area isAnimationActive={false} yAxisId="v" type="monotone" dataKey="visitors" name={t("visitors")} stroke={C.primary} strokeWidth={2} fill="url(#gV)" />
-                  <Area isAnimationActive={false} yAxisId="o" type="monotone" dataKey="offers" name={t("leads")} stroke={C.accent} strokeWidth={2} fill="url(#gO)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardBody>
-        </Card>
-
-        <div className="grid gap-4">
-          <Card>
-            <CardHeader title={t("paidRatio")} description={t("paidRatioSub")} />
-            <CardBody className="flex items-center gap-5">
-              <div className="relative size-32 shrink-0">
+            {byService.length > 0 && (
+              <div className="mt-4 h-44" dir="ltr">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie isAnimationActive={false} data={[{ v: paid }, { v: db.offers.length - paid }]} dataKey="v" innerRadius={44} outerRadius={60} startAngle={90} endAngle={-270} stroke="none">
-                      <Cell fill={C.primary} />
-                      <Cell fill={C.muted} />
-                    </Pie>
-                  </PieChart>
+                  <BarChart data={byService} layout="vertical" margin={{ left: 0, right: 16 }}>
+                    <XAxis type="number" hide allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" width={130} tickLine={false} axisLine={false} fontSize={11} stroke={C.axis} />
+                    <Tooltip contentStyle={tooltipStyle} cursor={{ fill: C.surface2 }} />
+                    <Bar isAnimationActive={false} dataKey="value" name={ts("received")} fill={C.primary} radius={[0, 6, 6, 0]} barSize={12} />
+                  </BarChart>
                 </ResponsiveContainer>
-                <span className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-ink">{ratio}%</span>
               </div>
-              <div className="space-y-3 text-sm">
-                <Legend color={C.primary} label={t("paid")} value={paid} />
-                <Legend color={C.muted} label={t("unpaid")} value={db.offers.length - paid} />
-              </div>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardHeader title={t("todo")} />
-            <CardBody className="pt-3">
+            )}
+          </Section>
+
+          {/* B. companies */}
+          <Section title={t("sections.companies")} action={<Link href="/admin/partners/recommendations" className="text-sm font-semibold text-primary hover:underline">{t("open.reco")}</Link>}>
+            <div className="grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-3">
+              <Stat label={ts("registered")} value={s.companies.registered} />
+              <Stat label={ts("active")} value={s.companies.active} hint={ts("ofRegistered", { pct: pct(s.companies.active, s.companies.registered) })} />
+              <Stat label={ts("buyers")} value={s.companies.buyers} />
+            </div>
+            <p className="mb-2 mt-5 flex items-center gap-2 text-sm font-bold text-ink"><Trophy className="size-4 text-warning" /> {ts("perCompany")}</p>
+            {s.companies.perCompany.length ? (
+              <ol className="space-y-2">
+                {s.companies.perCompany.slice(0, 8).map((c, i) => (
+                  <li key={c.id} className="grid grid-cols-[1.5rem_minmax(0,12rem)_1fr_2.5rem] items-center gap-3 text-sm">
+                    <span className={cn("text-center font-bold", i < 3 ? "text-warning" : "text-muted-foreground")}>{i + 1}</span>
+                    <Link href={`/admin/partners/${c.id}`} className="truncate font-medium text-ink hover:text-primary">{c.name}</Link>
+                    <span className="h-2 rounded-full bg-primary/80" style={{ width: `${Math.max(6, (c.bought / maxBought) * 100)}%` }} aria-hidden />
+                    <span className="text-end font-semibold">{c.bought}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-sm text-muted-foreground">{ts("noBuyers")}</p>
+            )}
+          </Section>
+
+          {/* C. wallets & money */}
+          <Section
+            title={t("sections.money")}
+            action={
+              <span className="flex gap-3 text-sm font-semibold">
+                <Link href="/admin/finance/wallets" className="text-primary hover:underline">{t("open.wallets")}</Link>
+                <Link href="/admin/finance/refunds" className="text-primary hover:underline">{t("open.refunds")}</Link>
+              </span>
+            }
+          >
+            <div className="grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-4">
+              <Stat label={ts("toppedUpCompanies")} value={s.money.toppedUpCompanies} />
+              <Stat label={ts("toppedUp")} value={formatCHF(s.money.toppedUp, lang)} tone="success" />
+              <Stat label={ts("refundedFake")} value={formatCHF(s.money.refundedFake, lang)} hint={ts("refunds", { count: s.money.refundedFakeCount })} />
+              <Stat label={ts("credit")} value={formatCHF(s.money.credit, lang)} muted />
+            </div>
+          </Section>
+
+          {/* D. visitors & offer form */}
+          <Section title={t("sections.visitors")} action={<Link href="/admin/insights/offer-form" className="text-sm font-semibold text-primary hover:underline">{t("open.funnel")}</Link>}>
+            <div className="grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-5">
+              <Stat label={ts("visitors")} value={formatNumber(s.visitors.visitors, lang)} />
+              <Stat label={ts("notStarted")} value={formatNumber(s.visitors.notStarted, lang)} muted />
+              <Stat label={ts("notCompleted")} value={s.visitors.notCompleted} tone={s.visitors.notCompleted ? "warning" : undefined} />
+              <Stat label={ts("completed")} value={s.visitors.completed} tone="success" />
+              <Stat label={ts("fakeSubmitted")} value={s.visitors.fake} tone={s.visitors.fake ? "danger" : undefined} />
+            </div>
+            <Funnel steps={s.visitors.funnel} />
+          </Section>
+        </div>
+
+        <Card className="h-fit xl:sticky xl:top-20">
+          <CardHeader title={t("todo")} />
+          <CardBody className="pt-3">
+            {todo.length ? (
               <ul className="divide-y">
-                {todo.map(({ icon: I, label, href }) => (
-                  <li key={href}>
+                {todo.map(({ icon: I, n, label, href, urgent }) => (
+                  <li key={label}>
                     <Link href={href} className="group flex items-center gap-3 py-2.5 text-sm">
-                      <I className="size-4 text-muted-foreground" />
-                      <span className="flex-1 font-medium">{label}</span>
+                      <I className={cn("size-4", urgent ? "text-danger" : "text-muted-foreground")} />
+                      <span className={cn("flex-1", urgent ? "font-semibold text-ink" : "font-medium")}>{t(label, { count: n })}</span>
                       <ArrowRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
                     </Link>
                   </li>
                 ))}
               </ul>
-            </CardBody>
-          </Card>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_340px]">
-        <Card className="overflow-hidden">
-          <CardHeader
-            title={t("latest")}
-            description={t("latestSub")}
-            action={
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/admin/leads">
-                  {ta("viewAll")} <ArrowRight className="" />
-                </Link>
-              </Button>
-            }
-          />
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-2/60 text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-5 py-2.5 text-start font-semibold">#</th>
-                  <th className="px-5 py-2.5 text-start font-semibold">{tf("service")}</th>
-                  <th className="px-5 py-2.5 text-start font-semibold">{tl("route")}</th>
-                  <th className="px-5 py-2.5 text-start font-semibold">{tf("created")}</th>
-                  <th className="px-5 py-2.5 text-start font-semibold">{tf("status")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {latest.map((o) => (
-                  <tr key={o.id} className="cursor-pointer border-t hover:bg-surface-2/70" onClick={() => router.push(`/admin/leads/${o.id}`)}>
-                    <td className="px-5 py-3"><Mono>{o.id}</Mono></td>
-                    <td className="px-5 py-3">{L(serviceMap[o.serviceId]?.name)}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{o.from.city} → {o.to.city}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{timeAgo(o.createdAt, lang)}</td>
-                    <td className="px-5 py-3"><StatusBadge status={o.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-
-        <Card>
-          <CardHeader title={t("byService")} description="90d" />
-          <CardBody>
-            <div className="h-72" dir="ltr">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={byService} layout="vertical" margin={{ left: 0, right: 16 }}>
-                  <XAxis type="number" hide />
-                  <YAxis type="category" dataKey="name" width={120} tickLine={false} axisLine={false} fontSize={11} stroke={C.axis} />
-                  <Tooltip contentStyle={tooltipStyle} cursor={{ fill: C.surface2 }} />
-                  <Bar isAnimationActive={false} dataKey="value" name={t("leads")} fill={C.primary} radius={[0, 6, 6, 0]} barSize={14} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            {byService.length === 0 && (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground"><AlertTriangle className="size-4" /> –</p>
+            ) : (
+              <p className="py-4 text-sm text-muted-foreground">{t("allClear")}</p>
             )}
+            <Button asChild variant="outline" className="mt-3 w-full">
+              <Link href="/admin/leads"><ClipboardList /> {t("open.leads")}</Link>
+            </Button>
           </CardBody>
         </Card>
       </div>
@@ -246,12 +181,29 @@ export default function Dashboard() {
   );
 }
 
-function Legend({ color, label, value }: { color: string; label: string; value: React.ReactNode }) {
+function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="size-2.5 rounded-full" style={{ background: color }} />
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-bold text-ink">{value}</span>
+    <Card>
+      <CardHeader title={title} action={action} />
+      <CardBody>{children}</CardBody>
+    </Card>
+  );
+}
+
+/** One figure in a section's stat strip. */
+function Stat({ label, value, hint, tone, muted }: { label: string; value: React.ReactNode; hint?: string; tone?: "success" | "warning" | "danger"; muted?: boolean }) {
+  return (
+    <div className="bg-surface p-4">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "mt-1 text-2xl font-bold tabular-nums",
+          tone === "success" ? "text-success" : tone === "warning" ? "text-warning" : tone === "danger" ? "text-danger" : muted ? "text-muted-foreground" : "text-ink",
+        )}
+      >
+        {value}
+      </p>
+      {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }

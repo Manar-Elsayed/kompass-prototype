@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { notFound, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { BadgeCheck, Briefcase, Calendar, Globe, MapPin, MessageSquareWarning, PenLine, User } from "lucide-react";
+import { BadgeCheck, Briefcase, Calendar, Globe, MapPin, PenLine, User } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
 import { useL, usePartnerRatings } from "@/lib/mock/hooks";
@@ -13,7 +13,6 @@ import { Icon } from "@/components/shared/icon";
 import { Stars, EmptyState } from "@/components/shared/bits";
 import { OfferForm } from "@/components/site/offer-form";
 import { ReviewCard } from "@/components/site/sections";
-import { ComplaintDialog } from "@/components/site/complaint-dialog";
 import { ReviewDialog } from "@/components/site/review-form";
 
 export default function CompanyPage() {
@@ -27,7 +26,6 @@ export default function CompanyPage() {
   const allReviews = useStore((s) => s.reviews);
   const orders = useStore((s) => s.orders);
   const ratings = usePartnerRatings();
-  const [complaint, setComplaint] = useState(false);
   const [review, setReview] = useState(false);
 
   if (!partner || partner.status !== "approved" || partner.banned) notFound();
@@ -70,9 +68,6 @@ export default function CompanyPage() {
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => setReview(true)}>
                 <PenLine /> {t("writeReview")}
-              </Button>
-              <Button variant="ghost" onClick={() => setComplaint(true)}>
-                <MessageSquareWarning /> {t("report")}
               </Button>
               <Button asChild variant="accent">
                 <a href="#request">{t("requestOffer")}</a>
@@ -166,7 +161,6 @@ export default function CompanyPage() {
         <OfferForm defaultServiceId={partner.serviceIds[0]} />
       </section>
 
-      <ComplaintDialog open={complaint} onOpenChange={setComplaint} partnerId={partner.id} />
       <ReviewDialog open={review} onOpenChange={setReview} target={partner.id} />
     </>
   );

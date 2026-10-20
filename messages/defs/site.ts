@@ -23,7 +23,6 @@ export const site = {
     terms: "Terms",
     rights: "© {year} Kompass Umzug GmbH. All rights reserved.",
     madeIn: "Made with care in Zürich",
-    complaint: "Report a problem",
   },
   home: {
     trustLine: "Free · No obligation · Verified partners",
@@ -96,7 +95,6 @@ export const site = {
     jobs: "Jobs via Kompass",
     location: "Location",
     writeReview: "Write a review",
-    report: "Report a problem",
     ratingBreakdown: "Rating breakdown",
     customerReviews: "Customer reviews",
     togetherTitle: "Get an offer from {name}",
@@ -178,15 +176,6 @@ export const site = {
     commentPh: "What went well? What could be better?",
     sent: "Thanks! Your review will appear after moderation.",
     moderated: "All reviews are checked by our team before publishing.",
-  },
-  complaint: {
-    title: "Report a problem",
-    body: "Had an issue with a company or your request? Tell us and we'll investigate.",
-    kind: "About",
-    kindPartner: "A company",
-    kindOffer: "My request",
-    offerId: "Request reference (e.g. KO-10400)",
-    sent: "Complaint submitted. We'll contact you within 2 business days.",
   },
   popup: {
     dismiss: "No thanks",

@@ -1,7 +1,7 @@
 /**
  * Domain model for the Kompass ecosystem.
  * Shapes are derived from the legacy front `types/*.ts` and the admin
- * RTK Query endpoints (offers, companies, orders, reviews, complaints …),
+ * RTK Query endpoints (offers, companies, orders, reviews …),
  * normalised and made multilingual (EN / DE / FR / IT).
  */
 
@@ -266,19 +266,6 @@ export interface RemovalRequest {
   createdAt: string;
 }
 
-export interface Complaint {
-  id: ID;
-  kind: "partner" | "offer";
-  partnerId?: ID;
-  offerId?: ID;
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
-  status: ModerationStatus;
-  createdAt: string;
-}
-
 /* ---------- Commerce ---------- */
 export interface Coupon {
   id: ID;
@@ -303,7 +290,28 @@ export interface ContactMessage {
   subject: string;
   message: string;
   read: boolean;
+  /** When Kompass replied or called back. Without it for 24 hours the request is flagged for follow-up. */
+  handledAt?: string;
   createdAt: string;
+}
+
+/**
+ * One visitor's pass through the website offer form, so admin can see who started, how far they got
+ * and who left before submitting. started = touched the form; details = finished step 1 (service,
+ * addresses, date); contact = typed contact details on step 2; submitted = became an offer.
+ */
+export type FormStep = "started" | "details" | "contact" | "submitted";
+export interface FormSession {
+  id: ID;
+  step: FormStep;
+  serviceId?: ID;
+  name?: string;
+  email?: string;
+  phone?: string;
+  offerId?: ID;
+  device: "desktop" | "mobile" | "tablet";
+  startedAt: string;
+  updatedAt: string;
 }
 
 export interface FaqQuestion {
@@ -330,7 +338,7 @@ export interface Visitor {
 
 export interface Notification {
   id: ID;
-  kind: "lead" | "application" | "due" | "review" | "complaint" | "contact" | "report";
+  kind: "lead" | "application" | "due" | "review" | "contact" | "report";
   title: L10n;
   href: string;
   read: boolean;
@@ -496,10 +504,10 @@ export interface DB {
   invoices: Invoice[];
   files: CompanyFile[];
   messages: CompanyMessage[];
+  formSessions: FormSession[];
   nominations: Nomination[];
   reviews: Review[];
   removals: RemovalRequest[];
-  complaints: Complaint[];
   coupons: Coupon[];
   contacts: ContactMessage[];
   faqQuestions: FaqQuestion[];

@@ -1,9 +1,9 @@
 import type {
-  Complaint,
   ContactMessage,
   Coupon,
   FakeReport,
   FaqQuestion,
+  FormSession,
   L10n,
   LeadStatus,
   VerificationFlag,
@@ -409,30 +409,19 @@ export const removals: RemovalRequest[] = lowReviews.slice(0, 4).map((r, i) => (
   createdAt: daysAgo(rng.int(0, 15)),
 }));
 
-/* ---------- complaints ---------- */
-export const complaints: Complaint[] = Array.from({ length: 11 }, (_, i) => {
-  const kind = i % 3 === 0 ? "offer" : "partner";
-  const p = rng.pick(approved);
-  const o = rng.pick(offers.slice(0, 60));
-  return {
-    id: `CMP-${pad(i + 1, 3)}`,
-    kind,
-    partnerId: kind === "partner" ? p.id : undefined,
-    offerId: kind === "offer" ? o.id : undefined,
-    name: `${rng.pick([...FIRST_F, ...FIRST_M])} ${rng.pick(LAST)}`,
-    email: `complaint${i + 1}@mail.ch`,
-    phone: phone(),
-    message: rng.pick([
-      "The movers arrived 3 hours late and charged extra.",
-      "A wardrobe was damaged and the company does not respond.",
-      "I received calls from more companies than I selected.",
-      "The final invoice was much higher than the quote.",
-      "Nobody contacted me after submitting my request.",
-    ]),
-    status: i < 4 ? "pending" : rng.chance(0.6) ? "approved" : "rejected",
-    createdAt: daysAgo(i * 4 + rng.int(0, 3)),
-  };
-});
+/* ---------- (retired) complaints ---------- */
+// Complaints were removed from the product. Their generator made these RNG draws; keep making them so
+// every record generated after this point (contacts, questions, visitors…) stays exactly the same.
+for (let i = 0; i < 11; i++) {
+  rng.pick(approved);
+  rng.pick(offers.slice(0, 60));
+  rng.pick([...FIRST_F, ...FIRST_M]);
+  rng.pick(LAST);
+  phone();
+  rng.pick([0, 1, 2, 3, 4]);
+  if (i >= 4) rng.chance(0.6);
+  rng.int(0, 3);
+}
 
 /* ---------- coupons ---------- */
 export const coupons: Coupon[] = [
@@ -556,14 +545,14 @@ export const notifications: Notification[] = [
   },
   {
     id: "n-5",
-    kind: "complaint",
+    kind: "contact",
     title: l(
-      "New complaint about a partner",
-      "Neue Beschwerde über einen Partner",
-      "Nouvelle réclamation concernant un partenaire",
-      "Nuovo reclamo su un partner",
+      "Customer request waiting more than 24 hours",
+      "Kundenanfrage wartet seit über 24 Stunden",
+      "Demande client en attente depuis plus de 24 heures",
+      "Richiesta cliente in attesa da più di 24 ore",
     ),
-    href: "/admin/moderation/complaints",
+    href: "/admin/inbox",
     read: true,
     createdAt: daysAgo(3),
   },
@@ -764,3 +753,67 @@ export const nominations: Nomination[] = [
   { canton: "ZH", partnerIds: approved.filter((p) => p.canton === "ZH").slice(0, 2).map((p) => p.id) },
   { canton: "BE", partnerIds: approved.filter((p) => p.canton === "BE").slice(0, 1).map((p) => p.id) },
 ].filter((n) => n.partnerIds.length);
+
+/* ---------- offer-form sessions & contact follow-up ---------- */
+const srng = createRng(20261024);
+const STEPS_ABANDONED: FormSession["step"][] = ["started", "started", "started", "details", "details", "details", "contact", "contact"];
+const minutes = (iso: string, m: number) => new Date(Date.parse(iso) + m * 60_000).toISOString();
+
+export const formSessions: FormSession[] = [
+  // every website offer went through the form
+  ...offers
+    .filter((o) => o.source === "website")
+    .map((o, i) => {
+      const startedAt = minutes(o.createdAt, -srng.int(3, 18));
+      return {
+        id: `FS-${pad(i + 1, 4)}`,
+        step: "submitted" as const,
+        serviceId: o.serviceId,
+        name: `${o.firstName} ${o.lastName}`,
+        email: o.email,
+        phone: o.phone,
+        offerId: o.id,
+        device: o.device,
+        startedAt,
+        updatedAt: o.createdAt,
+      };
+    }),
+  // visitors who started the form and left before submitting (a few very recent ones left contact details)
+  ...Array.from({ length: 240 }, (_, i) => {
+    const recent = i < 14;
+    const step = recent && i % 2 === 0 ? ("contact" as const) : srng.pick(STEPS_ABANDONED);
+    const startedAt = daysAgo(recent ? srng.int(0, 9) : srng.int(0, 360), -srng.int(0, 14));
+    const first = srng.pick([...FIRST_F, ...FIRST_M]);
+    const last = srng.pick(LAST);
+    const withContact = step === "contact";
+    return {
+      id: `FS-${pad(i + 501, 4)}`,
+      step,
+      serviceId: srng.chance(0.85) ? srng.pick(services.filter((s) => s.active)).id : undefined,
+      ...(withContact
+        ? { name: `${first} ${last}`, email: `${first.toLowerCase()}.${last.toLowerCase().replace(/ü/g, "ue")}@${srng.pick(["gmail.com", "bluewin.ch", "gmx.ch"])}`, phone: phone2(srng) }
+        : {}),
+      device: srng.pick(["desktop", "mobile", "mobile", "tablet"] as const),
+      startedAt,
+      updatedAt: minutes(startedAt, srng.int(1, step === "started" ? 3 : 12)),
+    };
+  }),
+];
+function phone2(r: ReturnType<typeof createRng>) {
+  return `+41 7${r.int(5, 9)} ${r.int(100, 999)} ${pad(r.int(0, 99))} ${pad(r.int(0, 99))}`;
+}
+
+// Contact Us requests: most were answered within hours; a few have been waiting longer than 24 hours.
+contacts.forEach((c, i) => {
+  const ageHours = (NOW - Date.parse(c.createdAt)) / 3_600_000;
+  if (ageHours > 24 && i % 5 !== 1) c.handledAt = minutes(c.createdAt, srng.int(30, 20 * 60));
+});
+
+/** Website visitors on one day (YYYY-MM-DD), deterministic so any month or year can be summed. */
+export function visitorsOnDay(day: string) {
+  let h = 2166136261;
+  for (const ch of day) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const r = createRng(h);
+  const weekday = new Date(`${day}T12:00:00Z`).getUTCDay();
+  return (weekday === 0 || weekday === 6 ? 340 : 520) + r.int(-80, 160);
+}

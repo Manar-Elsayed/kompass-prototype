@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,6 +56,7 @@ export function OfferForm({
   className,
   bare,
   source = "website",
+  defaultContact,
   onCreated,
 }: {
   defaultServiceId?: string;
@@ -63,6 +64,8 @@ export function OfferForm({
   className?: string;
   bare?: boolean;
   source?: Offer["source"];
+  /** Prefill from an abandoned website form when admin completes the request for the customer. */
+  defaultContact?: { firstName?: string; lastName?: string; email?: string; phone?: string };
   onCreated?: (offer: Offer) => void;
 }) {
   const t = useTranslations();
@@ -72,6 +75,7 @@ export function OfferForm({
   const content = useStore((s) => s.site.offerForm);
   const maxOffers = useStore((s) => s.config.maxOffersPerLead);
   const submitOffer = useStore((s) => s.submitOffer);
+  const trackFormSession = useStore((s) => s.trackFormSession);
   const [step, setStep] = useState(1);
   const [done, setDone] = useState<Offer | null>(null);
 
@@ -87,19 +91,44 @@ export function OfferForm({
       executionDate: "",
       offersWanted: "3",
       details: "",
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
+      firstName: defaultContact?.firstName ?? "",
+      lastName: defaultContact?.lastName ?? "",
+      email: defaultContact?.email ?? "",
+      phone: defaultContact?.phone ?? "",
     } as Partial<FormValues> as FormValues,
   });
   const { register, control, handleSubmit, formState, setValue, watch, trigger, reset } = form;
+
+  // Website only: record how far this visitor gets, so admin sees who started and who left.
+  const sessionId = useRef<string | null>(null);
+  const track = (patch: Parameters<typeof trackFormSession>[1]) => {
+    if (source !== "website") return;
+    if (!sessionId.current) sessionId.current = `FS-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+    trackFormSession(sessionId.current, patch);
+  };
+  useEffect(() => {
+    if (source !== "website") return;
+    const sub = watch((v) => {
+      if (!sessionId.current) {
+        const device = typeof window !== "undefined" && window.innerWidth < 768 ? "mobile" : "desktop";
+        track({ step: "started", device, serviceId: v.serviceId || undefined });
+      }
+    });
+    return () => sub.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watch, source]);
+  const trackContact = () => {
+    const v = form.getValues();
+    if (!sessionId.current || !(v.email || v.phone)) return;
+    track({ step: "contact", name: `${v.firstName} ${v.lastName}`.trim() || undefined, email: v.email || undefined, phone: v.phone || undefined, serviceId: v.serviceId || undefined });
+  };
   const errors = formState.errors;
   const err = (msg?: string) => (msg ? t(`common.form.${msg}` as "common.form.required") : undefined);
 
   const next = async () => {
     const ok = await trigger(STEP1);
     if (ok) {
+      track({ step: "details", serviceId: form.getValues("serviceId") });
       setStep(2);
       document.getElementById("offer-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -127,6 +156,8 @@ export function OfferForm({
         }),
       900,
     );
+    track({ step: "submitted", offerId: offer.id, serviceId: offer.serviceId, name: `${offer.firstName} ${offer.lastName}`, email: offer.email, phone: offer.phone });
+    sessionId.current = null;
     if (onCreated) return onCreated(offer);
     setDone(offer);
   });
@@ -401,16 +432,16 @@ export function OfferForm({
             </Field>
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label={t("common.fields.firstName")} error={err(errors.firstName?.message)} required>
-                <Input {...register("firstName")} autoComplete="given-name" aria-invalid={!!errors.firstName} />
+                <Input {...register("firstName", { onBlur: trackContact })} autoComplete="given-name" aria-invalid={!!errors.firstName} />
               </Field>
               <Field label={t("common.fields.lastName")} error={err(errors.lastName?.message)} required>
                 <Input {...register("lastName")} autoComplete="family-name" aria-invalid={!!errors.lastName} />
               </Field>
               <Field label={t("common.fields.email")} error={err(errors.email?.message)} required>
-                <Input type="email" dir="ltr" {...register("email")} autoComplete="email" aria-invalid={!!errors.email} />
+                <Input type="email" dir="ltr" {...register("email", { onBlur: trackContact })} autoComplete="email" aria-invalid={!!errors.email} />
               </Field>
               <Field label={t("common.fields.phone")} error={err(errors.phone?.message)} required>
-                <Input type="tel" dir="ltr" placeholder="+41 79 123 45 67" {...register("phone")} autoComplete="tel" aria-invalid={!!errors.phone} />
+                <Input type="tel" dir="ltr" placeholder="+41 79 123 45 67" {...register("phone", { onBlur: trackContact })} autoComplete="tel" aria-invalid={!!errors.phone} />
               </Field>
             </div>
             <Controller
