@@ -6,6 +6,7 @@ import type {
   FaqQuestion,
   L10n,
   LeadStatus,
+  VerificationFlag,
   Notification,
   Offer,
   Order,
@@ -18,7 +19,7 @@ import type {
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { services } from "./catalog";
-import { createRng, daysAgo, daysAhead } from "./rng";
+import { NOW, createRng, daysAgo, daysAhead } from "./rng";
 
 const rng = createRng();
 /** Build a four-language string: en, de, fr, it. */
@@ -141,10 +142,20 @@ export const partners: Partner[] = PARTNER_NAMES.map((name, i) => {
 const approved = partners.filter((p) => p.status === "approved" && !p.banned);
 
 /* ---------- offers (leads) ---------- */
+// Status hint for offers older than 4 days, drawn by pool position. The positions keep the
+// original 15-slot pool's meaning (which slots were still open, which got no buyers) so the main
+// RNG stream, and everything generated after it, stays exactly as before. Final statuses are
+// derived from the facts once orders exist (sold out = Completed, past deadline = Expired).
 const STATUS_POOL: LeadStatus[] = [
-  "new", "new", "new", "in_progress", "in_progress", "in_progress", "partially_completed",
-  "completed", "completed", "completed", "completed", "partially_critical", "critical", "cancelled", "failed",
+  "in_progress", "in_progress", "in_progress", "in_progress", "in_progress", "in_progress", "in_progress",
+  "completed", "completed", "completed", "completed", "in_progress", "expired", "cancelled", "cancelled",
 ];
+const OPEN_SLOTS = new Set([0, 1, 2, 3, 4, 5, 6, 11]); // still on sale when generated
+const UNSOLD_SLOTS = new Set([0, 1, 2, 13]); // never bought by anyone
+const unsold = new Set<string>();
+// Second stream for the lifecycle details added later (flags, cancel reasons, sold-out top-ups).
+const lrng = createRng(20261020);
+const FLAG_POOL: VerificationFlag[] = ["duplicate", "invalid_phone", "invalid_email", "ip_burst"];
 const DETAILS = [
   "Piano on 2nd floor, needs special handling.",
   "Need packing material for kitchen.",
@@ -163,9 +174,13 @@ export const offers: Offer[] = Array.from({ length: 128 }, (_, i) => {
   const to = rng.chance(0.6) ? from : rng.pick(CITIES);
   const age = Math.floor((i / 128) * 180) + rng.int(0, 2); // spread over ~6 months, newest first
   const svc = rng.chance(0.55) ? services[0] : rng.pick(services.filter((s) => s.active));
-  const status: LeadStatus = age < 4 ? "new" : rng.pick(STATUS_POOL);
+  // recent offers: auto-checks flag ~1 in 3, which then wait in New for admin review
+  const flags: VerificationFlag[] = age < 4 && lrng.chance(0.35) ? lrng.sample(FLAG_POOL, lrng.int(1, 2)) : [];
+  const slot = age < 4 ? -1 : rng.int(0, STATUS_POOL.length - 1);
+  const status: LeadStatus = slot < 0 ? (flags.length ? "new" : "in_progress") : STATUS_POOL[slot];
+  if (slot < 0 || UNSOLD_SLOTS.has(slot)) unsold.add(`KO-${10400 - i}`);
   // open, recent leads move in the future so the partner shop always has stock
-  const open = age < 75 && ["new", "in_progress", "partially_completed", "partially_critical"].includes(status);
+  const open = age < 75 && (slot < 0 || OPEN_SLOTS.has(slot));
   const lead = rng.int(14, 60);
   const rooms = rng.pick(["1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5.5"]);
   return {
@@ -185,8 +200,13 @@ export const offers: Offer[] = Array.from({ length: 128 }, (_, i) => {
     deadline: daysAhead(open ? Math.max(2, lead - Math.round(age / 3) - 5) : -age + rng.int(5, 12)),
     offersWanted: rng.int(2, 5),
     details: rng.pick(DETAILS),
-    active: !["cancelled", "failed"].includes(status),
+    active: status !== "cancelled",
     status,
+    flags,
+    // slot 13 never sold: either side may have cancelled; slot 14 had buyers, so it was found to be fake
+    ...(status === "cancelled"
+      ? { cancelReason: slot === 14 || lrng.chance(0.5) ? ("fake" as const) : ("customer" as const), cancelledAt: daysAgo(Math.max(0, age - 2)) }
+      : {}),
     source: rng.chance(0.93) ? "website" : "admin",
     createdAt: daysAgo(age, -rng.int(0, 12)),
   };
@@ -195,7 +215,7 @@ export const offers: Offer[] = Array.from({ length: 128 }, (_, i) => {
 /* ---------- orders (leads bought by partners) ---------- */
 export const orders: Order[] = [];
 offers.forEach((o) => {
-  if (o.status === "new" || o.status === "cancelled") return;
+  if (unsold.has(o.id)) return;
   const svc = services.find((s) => s.id === o.serviceId)!;
   const buyers = rng.sample(approved, Math.min(o.offersWanted, rng.int(1, o.offersWanted)));
   buyers.forEach((p, j) => {
@@ -210,7 +230,31 @@ offers.forEach((o) => {
       createdAt: new Date(new Date(o.createdAt).getTime() + rng.int(1, 30) * 3_600_000).toISOString(),
     });
   });
+  // a Completed offer is, by definition, sold to every company the customer allowed
+  if (o.status === "completed" && buyers.length < o.offersWanted) {
+    const extra = lrng.sample(approved.filter((p) => !buyers.includes(p)), o.offersWanted - buyers.length);
+    extra.forEach((p) =>
+      orders.push({
+        id: `ORD-${pad(orders.length + 5001, 5)}`,
+        offerId: o.id,
+        partnerId: p.id,
+        channel: lrng.chance(0.4) ? "shop" : "dynamic",
+        price: svc.leadPrice,
+        executed: false,
+        createdAt: new Date(new Date(o.createdAt).getTime() + lrng.int(30, 60) * 3_600_000).toISOString(),
+      }),
+    );
+  }
 });
+
+// Keep every status consistent with the facts: sold out = Completed, past the deadline unsold = Expired.
+for (const o of offers) {
+  if (o.status === "cancelled" || o.status === "new") continue;
+  const sold = orders.filter((x) => x.offerId === o.id).length;
+  if (sold >= o.offersWanted) o.status = "completed";
+  else if (Date.parse(o.deadline) < NOW) o.status = "expired";
+  else if (o.status !== "in_progress") o.status = "in_progress";
+}
 
 export const fakeReports: FakeReport[] = rng.sample(orders, 9).map((o, i) => ({
   id: `FR-${pad(i + 101, 3)}`,
@@ -515,6 +559,22 @@ export const refunds: Refund[] = [
         decidedAt: r.createdAt,
       };
     }),
+  // offers cancelled as fake after companies bought them: every buyer got the price back
+  ...offers
+    .filter((o) => o.status === "cancelled" && o.cancelReason === "fake")
+    .flatMap((o) => orders.filter((x) => x.offerId === o.id && !fakeReports.some((r) => r.orderId === x.id && r.status === "confirmed")))
+    .map((x, i) => ({
+      id: `RF-${pad(i + 101, 3)}`,
+      partnerId: x.partnerId,
+      amount: x.price,
+      reason: "fake_lead" as const,
+      method: "wallet" as const,
+      orderId: x.id,
+      note: "Offer cancelled as fake by Kompass.",
+      status: "refunded" as const,
+      createdAt: offers.find((o) => o.id === x.offerId)!.cancelledAt!,
+      decidedAt: offers.find((o) => o.id === x.offerId)!.cancelledAt!,
+    })),
   ...(
     [
       ["duplicate_lead", "wallet", "pending", "Same customer bought twice under two lead IDs."],

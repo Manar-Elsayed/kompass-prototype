@@ -28,7 +28,7 @@ export default function FakeReportsPage() {
   const orders = useStore((s) => s.orders);
   const offers = useStore((s) => s.offers);
   const patch = useStore((s) => s.patch);
-  const issueRefund = useStore((s) => s.issueRefund);
+  const cancelOffer = useStore((s) => s.cancelOffer);
   const partnerMap = usePartnerMap();
   const { confirm, dialog } = useConfirm();
   const orderMap = Object.fromEntries(orders.map((o) => [o.id, o]));
@@ -38,14 +38,18 @@ export default function FakeReportsPage() {
     const order = orderMap[r.orderId];
     const partner = order && partnerMap[order.partnerId];
     if (status === "confirmed" && order && partner) {
+      // A confirmed fake means the offer itself is fake: cancel it and refund every company that bought it.
+      const buyers = orders.filter((o) => o.offerId === order.offerId);
+      const amount = buyers.reduce((a, o) => a + o.price, 0);
+      const names = buyers.map((o) => partnerMap[o.partnerId]?.name).filter(Boolean).join(", ");
       confirm({
         title: t("common.status.confirmed"),
-        body: t("admin.fake.refunded", { amount: order.price, name: partner.name }),
+        body: `${t("admin.leads.detail.cancelledFake")} · ${t("admin.fake.refunded", { amount, name: names })}`,
         tone: "success",
         onConfirm: () => {
+          cancelOffer(order.offerId, "fake", buyers.map((o) => o.id));
           patch("fakeReports", r.id, { status });
-          issueRefund({ partnerId: partner.id, amount: order.price, reason: "fake_lead", method: "wallet", orderId: order.id, note: r.reason });
-          toast.success(t("admin.fake.refunded", { amount: order.price, name: partner.name }));
+          toast.success(t("admin.fake.refunded", { amount, name: names }));
         },
       });
       return;

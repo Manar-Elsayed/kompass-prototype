@@ -74,7 +74,7 @@ export default function ShopPage() {
         onRowClick={setOpen}
         initialSort={[{ id: "date", desc: true }]}
         filters={[
-          { id: "channel", label: t("admin.shop.channel"), options: [{ value: "shop", label: t("admin.shop.shop") }, { value: "dynamic", label: t("admin.shop.dynamic") }], get: (x) => x.channel },
+          { id: "channel", label: t("admin.shop.channel"), options: (["shop", "dynamic", "manual"] as const).map((c) => ({ value: c, label: t(`admin.shop.${c}`) })), get: (x) => x.channel },
         ]}
       />
 

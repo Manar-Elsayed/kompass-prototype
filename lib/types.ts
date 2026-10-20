@@ -27,15 +27,16 @@ export interface Service {
 }
 
 /* ---------- Leads ---------- */
-export type LeadStatus =
-  | "new"
-  | "in_progress"
-  | "partially_completed"
-  | "partially_critical"
-  | "critical"
-  | "completed"
-  | "cancelled"
-  | "failed";
+/**
+ * Offer lifecycle. New = received and waiting for verification (auto-checks flagged it);
+ * In progress = verified and on sale; Completed = sold to as many companies as the customer chose;
+ * Expired = the customer's deadline passed before that; Cancelled = fake or withdrawn by the customer.
+ */
+export type LeadStatus = "new" | "in_progress" | "completed" | "expired" | "cancelled";
+/** Why an offer was cancelled — decides the money: fake offers are refunded, customer cancellations are not. */
+export type CancelReason = "fake" | "customer";
+/** Automatic checks run on every new offer; any hit holds it in New for admin review. */
+export type VerificationFlag = "duplicate" | "invalid_phone" | "invalid_email" | "ip_burst";
 
 export interface Address {
   street: string;
@@ -66,6 +67,14 @@ export interface Offer {
   details: string;
   active: boolean;
   status: LeadStatus;
+  flags: VerificationFlag[];
+  cancelReason?: CancelReason;
+  cancelledAt?: string;
+  verifiedAt?: string;
+  /** Pushed back to the top of the shop shortly before the deadline. */
+  repostedAt?: string;
+  /** When the customer was emailed the names of the companies that bought the offer. */
+  buyersNotifiedAt?: string;
   source: "website" | "admin";
   createdAt: string;
 }
@@ -74,8 +83,10 @@ export interface Order {
   id: ID;
   offerId: ID;
   partnerId: ID;
-  channel: "shop" | "dynamic";
+  /** shop = bought by the company; dynamic = auto-distributed; manual = assigned by an admin (e.g. urgent request). */
+  channel: "shop" | "dynamic" | "manual";
   price: number;
+  note?: string;
   couponCode?: string;
   executed: boolean;
   createdAt: string;

@@ -80,12 +80,8 @@ export function StarInput({ value, onChange }: { value: number; onChange: (v: nu
 const STATUS_TONE: Record<string, "neutral" | "primary" | "accent" | "success" | "warning" | "danger" | "info"> = {
   new: "info",
   in_progress: "primary",
-  partially_completed: "accent",
-  partially_critical: "warning",
-  critical: "danger",
   completed: "success",
   cancelled: "neutral",
-  failed: "danger",
   pending: "warning",
   approved: "success",
   rejected: "danger",

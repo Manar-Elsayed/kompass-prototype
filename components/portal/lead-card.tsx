@@ -8,6 +8,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import type { Offer } from "@/lib/types";
 import { cn, formatCHF, formatDate, timeAgo } from "@/lib/utils";
 import { quoteLead, useStore } from "@/lib/mock/store";
+import { isExpiringSoon } from "@/lib/mock/selectors";
 import { useCurrentPartner, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,10 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Icon } from "@/components/shared/icon";
 
-/** Shop card — the customer's identity stays hidden until the partner buys. */
+/**
+ * Shop card. Before purchase a company sees only what it needs to judge the job (service, area,
+ * rooms, floors, date, slots); the customer's name, contact details and street stay hidden.
+ */
 export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold: number; canBuy: boolean; compact?: boolean }) {
   const t = useTranslations("portal.shop");
   const tf = useTranslations("common.fields");
@@ -26,6 +30,7 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
   const svc = useServiceMap()[offer.serviceId];
   const [open, setOpen] = useState(false);
   const left = offer.offersWanted - sold;
+  const closing = !!offer.repostedAt || isExpiringSoon(offer);
 
   return (
     <Card className="flex min-w-0 flex-col p-5 transition hover:border-primary/30 hover:shadow-pop">
@@ -41,7 +46,10 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
         </div>
         <div className="text-end">
           <p className="text-lg font-extrabold text-primary">{formatCHF(svc?.leadPrice ?? 0, lang)}</p>
-          <Badge tone={left === 1 ? "danger" : "warning"} className="mt-0.5">{left === 1 ? t("lastSlot") : t("slots", { left, total: offer.offersWanted })}</Badge>
+          <div className="mt-0.5 flex flex-wrap justify-end gap-1">
+            {closing && <Badge tone="danger">{t("closingSoon")}</Badge>}
+            <Badge tone={left === 1 ? "danger" : "warning"}>{left === 1 ? t("lastSlot") : t("slots", { left, total: offer.offersWanted })}</Badge>
+          </div>
         </div>
       </div>
 
@@ -55,7 +63,7 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
           <Lock className="size-3.5 shrink-0" />
-          <span className="truncate">{offer.firstName} {offer.lastName[0]}. · {t("hidden")}</span>
+          <span className="truncate">{t("hidden")}</span>
         </p>
         <Button size="sm" variant="accent" disabled={!canBuy} onClick={() => setOpen(true)} className="shrink-0">
           <ShoppingCart /> {t("buy")}
