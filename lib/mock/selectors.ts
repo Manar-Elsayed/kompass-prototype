@@ -1,4 +1,4 @@
-import type { DB, Offer, VerificationFlag } from "@/lib/types";
+import { DOC_KEYS, type DB, type DocKey, type Offer, type Partner, type VerificationFlag } from "@/lib/types";
 import { NOW, DAY } from "./seed";
 
 /** Reference "now": the frozen seed date, or real time if later (for new entries). */
@@ -135,4 +135,57 @@ export function soldCount(db: Pick<DB, "orders">, offerId: string) {
 export function pctDelta(cur: number, prev: number) {
   if (!prev) return cur ? 100 : 0;
   return Math.round(((cur - prev) / prev) * 100);
+}
+
+/* ---------- company documents & performance ---------- */
+
+/** Days before a document's expiry when admin and the company are warned. */
+export const DOC_WARN_DAYS = 30;
+
+export type DocState = "ok" | "expiring" | "review" | "expired" | "missing";
+
+/**
+ * Where a company's required documents stand. `ok` means every document is uploaded, checked by
+ * Kompass and not expired — the condition for buying leads. `state` is the most urgent problem.
+ */
+export function documentState(p: Pick<Partner, "documents">) {
+  const now = refNow();
+  const missing: DocKey[] = [];
+  const expired: DocKey[] = [];
+  const expiring: DocKey[] = [];
+  const review: DocKey[] = [];
+  let next: { key: DocKey; date: string } | undefined;
+  for (const key of DOC_KEYS) {
+    const d = p.documents[key];
+    if (!d || d.status === "rejected") {
+      missing.push(key);
+      continue;
+    }
+    if (d.status === "pending_review") review.push(key);
+    if (d.expiresAt) {
+      const t = Date.parse(d.expiresAt);
+      if (t < now) expired.push(key);
+      else if (t - now <= DOC_WARN_DAYS * DAY) expiring.push(key);
+      if (!next || t < Date.parse(next.date)) next = { key, date: d.expiresAt };
+    }
+  }
+  const ok = !missing.length && !expired.length && !review.length;
+  const state: DocState = missing.length ? "missing" : expired.length ? "expired" : review.length ? "review" : expiring.length ? "expiring" : "ok";
+  return { ok, state, missing, expired, expiring, review, next };
+}
+
+/** A company may buy (or be assigned) leads only when approved, not banned and its documents are in order. */
+export const canBuyLeads = (p: Pick<Partner, "status" | "banned" | "documents">) => p.status === "approved" && !p.banned && documentState(p).ok;
+
+/**
+ * Performance used to rank companies for recommendations: leads bought in the last 90 days,
+ * average approved rating and how recently the company was active.
+ */
+export function companyScore(db: Pick<DB, "orders" | "reviews">, p: Pick<Partner, "id" | "lastSeen">) {
+  const bought90 = db.orders.filter((o) => o.partnerId === p.id && inLastDays(o.createdAt, 90)).length;
+  const rated = db.reviews.filter((r) => r.target === p.id && r.status === "approved");
+  const rating = rated.length ? rated.reduce((a, r) => a + r.stars, 0) / rated.length : 0;
+  const idleDays = Math.max(0, (refNow() - Date.parse(p.lastSeen)) / DAY);
+  const score = Math.round(bought90 * 10 + rating * 8 + Math.max(0, 14 - idleDays));
+  return { bought90, rating, reviews: rated.length, idleDays: Math.round(idleDays), score };
 }

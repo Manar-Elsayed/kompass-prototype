@@ -7,7 +7,8 @@ import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useHydrated, useLang } from "@/lib/mock/hooks";
-import { availableLeads, refNow } from "@/lib/mock/selectors";
+import { availableLeads, canBuyLeads, documentState } from "@/lib/mock/selectors";
+import type { DocKey } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/controls";
 import { Dialog, DialogTitle, SheetContent } from "@/components/ui/dialog";
@@ -181,14 +182,15 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
   );
 }
 
-/** Account-state banners: suspended, contract expired or expiring soon. */
+/** Account-state banners: suspended, or documents missing / expired / being checked / expiring soon. */
 function StatusBanner() {
   const t = useTranslations("portal.shell");
+  const tp = useTranslations("admin.partners");
   const lang = useLang();
   const partner = useCurrentPartner()!;
   const email = useStore((s) => s.config.supportEmail);
-  const exp = partner.expiresAt ? Date.parse(partner.expiresAt) : Infinity;
-  const days = (exp - refNow()) / 86_400_000;
+  const docs = documentState(partner);
+  const names = (keys: DocKey[]) => keys.map((k) => tp(k)).join(", ");
   let tone = "";
   let text = "";
   let Icon = AlertTriangle;
@@ -196,26 +198,32 @@ function StatusBanner() {
     tone = "bg-danger-soft text-danger";
     text = t("banned");
     Icon = ShieldOff;
-  } else if (days < 0) {
+  } else if (docs.missing.length || docs.expired.length) {
     tone = "bg-danger-soft text-danger";
-    text = t("expired", { date: formatDate(partner.expiresAt!, lang) });
-  } else if (days < 30) {
+    text = t("docsBlocked", { docs: names([...docs.missing, ...docs.expired]) });
+  } else if (docs.review.length) {
+    tone = "bg-info-soft text-info";
+    text = t("docsReview", { docs: names(docs.review) });
+  } else if (docs.expiring.length && docs.next) {
     tone = "bg-warning-soft text-warning";
-    text = t("expiresSoon", { date: formatDate(partner.expiresAt!, lang) });
+    text = t("docsExpiring", { doc: tp(docs.next.key), date: formatDate(docs.next.date, lang) });
   }
   if (!text) return null;
   return (
     <div className={cn("flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm font-semibold sm:px-6 lg:px-8", tone)} role="status">
       <Icon className="size-4 shrink-0" />
       <span className="flex-1">{text}</span>
-      <a href={`mailto:${email}`} className="underline underline-offset-2">{t("support")}</a>
+      {partner.banned ? (
+        <a href={`mailto:${email}`} className="underline underline-offset-2">{t("support")}</a>
+      ) : (
+        <Link href="/portal/profile" className="underline underline-offset-2">{t("updateDocs")}</Link>
+      )}
     </div>
   );
 }
 
-/** True when the partner may buy leads (not banned, contract valid). */
+/** True when the partner may buy leads: approved, not banned, all documents checked and unexpired. */
 export function useCanBuy() {
   const partner = useCurrentPartner();
-  if (!partner) return false;
-  return !partner.banned && partner.status === "approved" && (!partner.expiresAt || Date.parse(partner.expiresAt) >= refNow());
+  return partner ? canBuyLeads(partner) : false;
 }

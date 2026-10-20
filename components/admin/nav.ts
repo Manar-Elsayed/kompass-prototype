@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { Permission } from "@/lib/types";
 import type { Store } from "@/lib/mock/store";
+import { documentState } from "@/lib/mock/selectors";
 
 export interface NavItem {
   key: string; // admin.nav.<key>
@@ -56,9 +57,11 @@ export const NAV: NavGroup[] = [
     icon: Users,
     perm: "partners",
     items: [
-      { key: "partners", href: "/admin/partners", perm: "partners" },
+      { key: "partners", href: "/admin/partners", perm: "partners", badge: (s) => s.partners.filter((p) => p.status === "approved" && !p.banned && !documentState(p).ok).length },
       { key: "applications", href: "/admin/partners/applications", perm: "partners", badge: (s) => s.partners.filter((p) => p.status === "pending" || p.status === "contract_sent").length },
       { key: "activity", href: "/admin/partners/activity", perm: "partners" },
+      { key: "recommendations", href: "/admin/partners/recommendations", perm: "partners" },
+      { key: "files", href: "/admin/partners/files", perm: "partners" },
     ],
   },
   {

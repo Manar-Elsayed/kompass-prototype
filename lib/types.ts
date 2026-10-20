@@ -120,6 +120,38 @@ export interface Refund {
   decidedAt?: string;
 }
 
+/* ---------- Company files & messages ---------- */
+export type FileCategory = "logo" | "photo" | "document" | "other";
+/** File manager entry: images and documents kept for a company (the three required documents live on the partner). */
+export interface CompanyFile {
+  id: ID;
+  partnerId: ID;
+  name: string;
+  category: FileCategory;
+  url: string;
+  size: number; // bytes
+  uploadedBy: "admin" | "company";
+  uploadedAt: string;
+}
+
+/** A message Kompass sent a company from the dashboard (shown in its portal; emailed too when channel is email). */
+export interface CompanyMessage {
+  id: ID;
+  partnerId: ID;
+  subject: string;
+  body: string;
+  channel: "email" | "portal";
+  byUserId?: ID;
+  createdAt: string;
+  readAt?: string;
+}
+
+/** Companies admin nominated for a region (canton), in priority order: they are offered new leads there first. */
+export interface Nomination {
+  canton: string;
+  partnerIds: ID[];
+}
+
 /* ---------- Wallet money-in & invoices ---------- */
 /**
  * How money reached a wallet besides an uploaded receipt (PartnerDue):
@@ -157,7 +189,20 @@ export interface Invoice {
 }
 
 /* ---------- Partners ---------- */
+/** Application submitted → documents under review (pending / contract sent) → approved, or rejected. */
 export type PartnerStatus = "pending" | "contract_sent" | "approved" | "rejected";
+
+/** The three documents every company needs. A company can buy leads only while all three are valid and unexpired. */
+export type DocKey = "contract" | "insurance" | "register";
+export const DOC_KEYS: readonly DocKey[] = ["contract", "insurance", "register"];
+/** valid = checked by Kompass; pending_review = (re)uploaded by the company, not yet checked; rejected = not accepted. */
+export type DocStatus = "valid" | "pending_review" | "rejected";
+export interface CompanyDoc {
+  file: string;
+  uploadedAt: string;
+  expiresAt?: string;
+  status: DocStatus;
+}
 
 export interface Partner {
   id: ID;
@@ -179,10 +224,9 @@ export interface Partner {
   status: PartnerStatus;
   banned: boolean;
   featured: boolean;
-  expiresAt?: string;
   wallet: number;
   bank: { name: string; owner: string; iban: string };
-  documents: { contract?: string; insurance?: string; register?: string };
+  documents: Partial<Record<DocKey, CompanyDoc>>;
   lastSeen: string;
   createdAt: string;
 }
@@ -450,6 +494,9 @@ export interface DB {
   refunds: Refund[];
   topups: WalletTopup[];
   invoices: Invoice[];
+  files: CompanyFile[];
+  messages: CompanyMessage[];
+  nominations: Nomination[];
   reviews: Review[];
   removals: RemovalRequest[];
   complaints: Complaint[];

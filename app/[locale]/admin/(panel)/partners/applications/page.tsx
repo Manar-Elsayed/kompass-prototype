@@ -168,7 +168,7 @@ export default function ApplicationsPage() {
                   {(["contract", "insurance", "register"] as const).map((k) => (
                     <li key={k} className="flex items-center justify-between">
                       <span>{t(`admin.partners.${k}`)}</span>
-                      {open.documents[k] ? <Badge tone="success"><Check /> {open.documents[k]}</Badge> : <Badge>{t("admin.partners.notUploaded")}</Badge>}
+                      {open.documents[k] ? <Badge tone={open.documents[k]!.status === "valid" ? "success" : open.documents[k]!.status === "rejected" ? "danger" : "info"}><Check /> {open.documents[k]!.file} · {t(`admin.partners.docs.status.${open.documents[k]!.status}`)}</Badge> : <Badge>{t("admin.partners.notUploaded")}</Badge>}
                     </li>
                   ))}
                 </ul>

@@ -12,6 +12,11 @@ import type {
   Order,
   Partner,
   PartnerDue,
+  CompanyDoc,
+  DocStatus,
+  CompanyFile,
+  CompanyMessage,
+  Nomination,
   Refund,
   WalletTopup,
   Invoice,
@@ -98,7 +103,10 @@ const phone = () => `+41 7${rng.int(5, 9)} ${rng.int(100, 999)} ${pad(rng.int(0,
 const ip = () => `${rng.int(31, 213)}.${rng.int(0, 255)}.${rng.int(0, 255)}.${rng.int(1, 254)}`;
 
 /* ---------- partners ---------- */
-export const partners: Partner[] = PARTNER_NAMES.map((name, i) => {
+// Raw records keep the original shape (contract expiry + file names) so the RNG stream is unchanged;
+// they are turned into dated, checked documents below with a separate stream.
+type RawPartner = Omit<Partner, "documents"> & { expiresAt?: string; documents: { contract?: string; insurance?: string; register?: string } };
+const rawPartners: RawPartner[] = PARTNER_NAMES.map((name, i) => {
   const loc = CITIES[i % CITIES.length];
   const status: Partner["status"] = i < 19 ? "approved" : i < 22 ? "pending" : i < 24 ? "contract_sent" : "rejected";
   const nSvc = rng.int(1, 4);
@@ -138,6 +146,29 @@ export const partners: Partner[] = PARTNER_NAMES.map((name, i) => {
           : { register: rng.chance(0.5) ? "hr-extract.pdf" : undefined },
     lastSeen: daysAgo(rng.int(0, 20), -rng.int(0, 10)),
     createdAt: status === "approved" ? daysAgo(rng.int(60, 700)) : daysAgo(rng.int(0, 12)),
+  };
+});
+
+const drng = createRng(20261022);
+export const partners: Partner[] = rawPartners.map(({ expiresAt, documents: uploaded, ...p }, i) => {
+  const doc = (file: string | undefined, status: DocStatus, expires?: string): CompanyDoc | undefined =>
+    file ? { file, uploadedAt: p.createdAt, status, ...(expires ? { expiresAt: expires } : {}) } : undefined;
+  if (p.status !== "approved") {
+    // still applying: what they uploaded waits for Kompass to check it
+    return { ...p, documents: { insurance: doc(uploaded.insurance, "pending_review"), register: doc(uploaded.register, "pending_review") } };
+  }
+  const demo = i === 0; // the demo portal account must be able to buy
+  return {
+    ...p,
+    documents: {
+      contract: doc(uploaded.contract, "valid", demo ? daysAhead(220) : expiresAt),
+      // one company has uploaded its renewed insurance, which Kompass still has to check
+      insurance:
+        i === 4
+          ? { file: "insurance-2027.pdf", uploadedAt: daysAgo(1), status: "pending_review", expiresAt: daysAhead(365) }
+          : doc(uploaded.insurance, "valid", daysAhead(demo ? 140 : drng.int(-20, 380))),
+      register: doc(uploaded.register, "valid", daysAhead(demo ? 300 : drng.int(15, 420))),
+    },
   };
 });
 
@@ -711,3 +742,25 @@ for (const p of partners) {
       });
   }
 }
+
+/* ---------- company files, messages, regional nominations ---------- */
+const frng = createRng(20261023);
+const PHOTOS = ["/images/hero.png", "/images/companies.png", "/images/start-now.png", "/images/about-hero.png"];
+export const files: CompanyFile[] = approved.slice(0, 12).flatMap((p, i) => [
+  { id: `F-${pad(i * 3 + 1, 4)}`, partnerId: p.id, name: "logo.svg", category: "logo" as const, url: "/brand/icon.svg", size: frng.int(8, 40) * 1024, uploadedBy: "company" as const, uploadedAt: daysAgo(frng.int(30, 200)) },
+  { id: `F-${pad(i * 3 + 2, 4)}`, partnerId: p.id, name: "team-truck.jpg", category: "photo" as const, url: frng.pick(PHOTOS), size: frng.int(300, 1400) * 1024, uploadedBy: "company" as const, uploadedAt: daysAgo(frng.int(10, 150)) },
+  ...(i % 3 === 0
+    ? [{ id: `F-${pad(i * 3 + 3, 4)}`, partnerId: p.id, name: "price-list-2026.pdf", category: "document" as const, url: "#", size: frng.int(80, 400) * 1024, uploadedBy: "admin" as const, uploadedAt: daysAgo(frng.int(5, 60)) }]
+    : []),
+]);
+
+export const messages: CompanyMessage[] = [
+  { id: "MSG-0001", partnerId: "p-001", subject: "Welcome to the new partner portal", body: "Your wallet, invoices and documents are now all in one place. Reply to this email if anything looks wrong.", channel: "email", byUserId: "u-1", createdAt: daysAgo(6) },
+  { id: "MSG-0002", partnerId: "p-001", subject: "Insurance renewal", body: "Your liability insurance runs out in a few months. Please upload the renewed certificate in your profile when you have it.", channel: "portal", byUserId: "u-3", createdAt: daysAgo(2) },
+];
+
+// priority companies per canton chosen by admin (first one is offered new leads there first)
+export const nominations: Nomination[] = [
+  { canton: "ZH", partnerIds: approved.filter((p) => p.canton === "ZH").slice(0, 2).map((p) => p.id) },
+  { canton: "BE", partnerIds: approved.filter((p) => p.canton === "BE").slice(0, 1).map((p) => p.id) },
+].filter((n) => n.partnerIds.length);
