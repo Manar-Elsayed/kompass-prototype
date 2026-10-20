@@ -558,7 +558,7 @@ export const blogs: Blog[] = [
   {
     id: "blog-4",
     slug: "office-move-weekend",
-    serviceId: "svc-office",
+    serviceId: "svc-private",
     image: "/images/companies.png",
     readMins: 7,
     published: true,
@@ -612,7 +612,7 @@ export const blogs: Blog[] = [
   {
     id: "blog-6",
     slug: "moving-abroad-customs",
-    serviceId: "svc-international",
+    serviceId: "svc-private",
     image: "/images/blogs-hero.png",
     readMins: 8,
     published: false,
@@ -659,11 +659,11 @@ export const modelOffers: ModelOffer[] = [
   },
   {
     id: "mo-3",
-    serviceId: "svc-office",
-    title: l("Office, 12 workstations", "Büro, 12 Arbeitsplätze", "Bureau, 12 postes de travail", "Ufficio, 12 postazioni di lavoro"),
-    route: l("Basel → Liestal", "Basel → Liestal", "Basel → Liestal", "Basel → Liestal"),
-    rooms: "-",
-    price: 6200,
+    serviceId: "svc-move-clean",
+    title: l("3.5 rooms: move + handover cleaning", "3.5 Zimmer: Umzug + Endreinigung", "3.5 pièces : déménagement + nettoyage de remise", "3.5 locali: trasloco + pulizia di riconsegna"),
+    route: l("Lausanne → Vevey", "Lausanne → Vevey", "Lausanne → Vevey", "Lausanne → Vevey"),
+    rooms: "3.5",
+    price: 2650,
     active: true,
   },
 ];

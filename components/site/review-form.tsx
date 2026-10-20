@@ -9,19 +9,30 @@ import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StarInput } from "@/components/shared/bits";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function ReviewForm({ target: fixedTarget, onDone }: { target?: string; onDone?: () => void }) {
+/**
+ * target "kompass" (default) reviews the platform; a company id reviews that company and needs the
+ * request (offerId) it was booked through.
+ */
+export function ReviewForm({
+  target = "kompass",
+  offerId,
+  defaults,
+  onDone,
+}: {
+  target?: string;
+  offerId?: string;
+  defaults?: { name?: string; email?: string };
+  onDone?: () => void;
+}) {
   const t = useTranslations();
-  const partners = useStore((s) => s.partners);
   const submitReview = useStore((s) => s.submitReview);
-  const [target, setTarget] = useState(fixedTarget ?? "kompass");
   const [stars, setStars] = useState(0);
-  const [form, setForm] = useState({ name: "", email: "", comment: "" });
+  const [form, setForm] = useState({ name: defaults?.name ?? "", email: defaults?.email ?? "", comment: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -36,7 +47,7 @@ export function ReviewForm({ target: fixedTarget, onDone }: { target?: string; o
     setErrors(err);
     if (Object.keys(err).length) return;
     setBusy(true);
-    await mock(() => submitReview({ target, stars, ...form }));
+    await mock(() => submitReview({ target, offerId, stars, ...form }));
     setBusy(false);
     setDone(true);
     toast.success(t("site.review.sent"));
@@ -57,18 +68,6 @@ export function ReviewForm({ target: fixedTarget, onDone }: { target?: string; o
 
   return (
     <form onSubmit={submit} className="grid gap-5" noValidate>
-      {!fixedTarget && (
-        <Field label={t("site.review.about")}>
-          <Select
-            value={target}
-            onValueChange={setTarget}
-            options={[
-              { value: "kompass", label: t("site.review.kompass") },
-              ...partners.filter((p) => p.status === "approved" && !p.banned).map((p) => ({ value: p.id, label: p.name })),
-            ]}
-          />
-        </Field>
-      )}
       <Field label={t("site.review.stars")} error={errors.stars} required>
         <StarInput value={stars} onChange={setStars} />
       </Field>
@@ -93,16 +92,22 @@ export function ReviewForm({ target: fixedTarget, onDone }: { target?: string; o
   );
 }
 
-export function ReviewDialog({ open, onOpenChange, target }: { open: boolean; onOpenChange: (v: boolean) => void; target?: string }) {
+export function ReviewDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  ...form
+}: { open: boolean; onOpenChange: (v: boolean) => void; title?: string; description?: string } & Omit<React.ComponentProps<typeof ReviewForm>, "onDone">) {
   const t = useTranslations("site.review");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t("title")}</DialogTitle>
-          <DialogDescription>{t("moderated")}</DialogDescription>
+          <DialogTitle>{title ?? t("title")}</DialogTitle>
+          <DialogDescription>{description ?? t("moderated")}</DialogDescription>
         </DialogHeader>
-        {open && <ReviewForm target={target} onDone={() => onOpenChange(false)} />}
+        {open && <ReviewForm {...form} onDone={() => onOpenChange(false)} />}
       </DialogContent>
     </Dialog>
   );

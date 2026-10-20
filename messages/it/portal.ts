@@ -109,6 +109,19 @@ export const portal: Built<typeof Def> = {
     call: "Chiama",
     email: "E-mail",
     empty: "Ancora nessun lead. Acquisti il primo nello shop.",
+    choiceCol: "Scelta del cliente",
+    choice: {
+      you: "Ha prenotato voi",
+      other: "Ha scelto un’altra ditta",
+      pending: "Non ancora deciso",
+    },
+    choiceHint: {
+      you: "Il cliente ha comunicato a Kompass di avervi prenotato. Rispettate la data e confermate i dettagli.",
+      other: "Il cliente ha prenotato un’altra ditta per questo lavoro.",
+      pending: "Il cliente non ci ha ancora detto quale ditta ha prenotato.",
+    },
+    noShowAgainst: "Il cliente ha segnalato che non vi siete presentati. Kompass vi contatterà.",
+    bookedBy: "Prenotato da {name}",
   },
   payments: {
     topUpOnline: "Ricarica online",

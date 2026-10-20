@@ -79,7 +79,7 @@ export default function HomePage() {
                 onValueChange={(v) => setQuick((q) => ({ ...q, serviceId: v }))}
                 placeholder={t("offerForm.serviceLabel")}
                 className="h-12 border-0 shadow-none"
-                options={active.map((s) => ({ value: s.id, label: L(s.name) }))}
+                options={active.filter((s) => !s.comingSoon).map((s) => ({ value: s.id, label: L(s.name) }))}
               />
               <Input
                 value={quick.zip}
@@ -164,7 +164,7 @@ export default function HomePage() {
       {/* ---------- SERVICES ---------- */}
       <section className="container-page py-20">
         <SectionHeading title={L(home.servicesTitle)} subtitle={L(home.servicesSubtitle)} />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {active.map((s) => (
             <ServiceCard key={s.id} service={s} partnerCount={livePartners.filter((p) => p.serviceIds.includes(s.id)).length} />
           ))}
@@ -223,6 +223,7 @@ export default function HomePage() {
                 </div>
               ))}
           </div>
+          <p className="mt-4 text-xs text-muted-foreground">{t("estimate.examples")}</p>
         </section>
       )}
 

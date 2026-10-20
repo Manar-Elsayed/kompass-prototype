@@ -31,8 +31,9 @@ export default function RatingsPage() {
         </div>
       </div>
       <div className="h-fit rounded-3xl border border-border bg-surface p-6 shadow-pop lg:sticky lg:top-28">
-        <h2 className="mb-5 text-xl font-bold text-ink">{t("title")}</h2>
-        <ReviewForm />
+        <h2 className="text-xl font-bold text-ink">{t("kompassTitle")}</h2>
+        <p className="mb-5 mt-1 text-sm text-muted-foreground">{t("kompassHint")}</p>
+        <ReviewForm target="kompass" />
       </div>
     </section>
   );

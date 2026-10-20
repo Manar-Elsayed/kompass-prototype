@@ -54,7 +54,14 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
           header: tr("target"),
           accessorFn: (r: Review) => partnerMap[r.target]?.name ?? "–",
           cell: ({ row: { original: r } }: { row: { original: Review } }) => (
-            <Link href={`/admin/partners/${r.target}`} className="font-semibold text-primary hover:underline">{partnerMap[r.target]?.name}</Link>
+            <span>
+              <Link href={`/admin/partners/${r.target}`} className="block font-semibold text-primary hover:underline">{partnerMap[r.target]?.name}</Link>
+              {r.offerId && (
+                <Link href={`/admin/leads/${r.offerId}`} className="text-xs text-muted-foreground hover:text-primary">
+                  {tr("verifiedBooking", { id: r.offerId })}
+                </Link>
+              )}
+            </span>
           ),
         } as ColumnDef<Review, unknown>]
       : []),

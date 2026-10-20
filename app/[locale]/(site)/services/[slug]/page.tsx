@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/shared/icon";
 import { OfferForm } from "@/components/site/offer-form";
 import { BlogCard, Prose, SectionHeading } from "@/components/site/sections";
+import { PriceEstimate } from "@/components/site/request-bits";
 
 export default function ServiceDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -45,11 +46,18 @@ export default function ServiceDetailPage() {
               <span className="inline-flex items-center gap-1.5"><Clock className="size-4 text-accent" />{t("services.leadTime")}</span>
               <span className="inline-flex items-center gap-1.5"><Users className="size-4 text-accent" />{t("services.partnersFor", { count })}</span>
             </div>
-            <Button asChild variant="accent" size="lg" className="mt-8">
-              <a href="#request">
-                {t("services.request")} <ArrowRight className="" />
-              </a>
-            </Button>
+            {service.comingSoon ? (
+              <p className="mt-8 inline-flex rounded-full bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground">{t("estimate.soonLong")}</p>
+            ) : (
+              <>
+                <PriceEstimate service={service} className="mt-6 max-w-md bg-surface" />
+                <Button asChild variant="accent" size="lg" className="mt-6">
+                  <a href="#request">
+                    {t("services.request")} <ArrowRight className="" />
+                  </a>
+                </Button>
+              </>
+            )}
           </div>
           <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-surface-2">
             <Image src={service.image} alt="" fill className="object-cover" sizes="(min-width:1024px) 600px, 100vw" priority />
@@ -93,9 +101,11 @@ export default function ServiceDetailPage() {
         </div>
       </section>
 
-      <section id="request" className="container-page scroll-mt-24 py-16">
-        <OfferForm defaultServiceId={service.id} />
-      </section>
+      {!service.comingSoon && (
+        <section id="request" className="container-page scroll-mt-24 py-16">
+          <OfferForm defaultServiceId={service.id} />
+        </section>
+      )}
 
       {related.length > 0 && (
         <section className="container-page pb-8">
