@@ -101,21 +101,59 @@ export interface FakeReport {
   createdAt: string;
 }
 
-/** Money Kompass gives back to a partner company: credited to its wallet or paid out to its bank. */
-export type RefundReason = "fake_lead" | "duplicate_lead" | "cancelled_job" | "wallet_payout" | "goodwill";
-export type RefundMethod = "wallet" | "bank";
+/**
+ * Money Kompass gives back to a company, always into its wallet. Policy: a purchase is refunded
+ * only when the offer is confirmed fake; a customer cancelling a real request is never refunded.
+ * "manual" is the admin exception — a refund to any company, with the reason written down.
+ */
+export type RefundReason = "fake_lead" | "manual";
 export type RefundStatus = "pending" | "refunded" | "rejected";
 export interface Refund {
   id: ID;
   partnerId: ID;
   amount: number;
   reason: RefundReason;
-  method: RefundMethod;
   orderId?: ID; // the lead purchase being refunded, when there is one
   note: string;
   status: RefundStatus;
   createdAt: string;
   decidedAt?: string;
+}
+
+/* ---------- Wallet money-in & invoices ---------- */
+/**
+ * How money reached a wallet besides an uploaded receipt (PartnerDue):
+ * online = the company paid by card / TWINT in the portal; admin = Kompass recorded a payment;
+ * credit = Kompass advanced the amount now and invoiced it for later ("pay later").
+ */
+export type TopupMethod = "online" | "admin" | "credit";
+export type PayMethod = "card" | "twint" | "bank_transfer" | "cash";
+export interface WalletTopup {
+  id: ID; // TU-0001
+  partnerId: ID;
+  amount: number;
+  method: TopupMethod;
+  payMethod?: PayMethod;
+  reference: string;
+  note: string;
+  byUserId?: ID; // admin who recorded it
+  invoiceId?: ID; // credit: the invoice for the amount owed
+  createdAt: string;
+}
+
+/** Invoice for credit given now and paid later. "Overdue" is derived: due and past dueAt. */
+export type InvoiceStatus = "due" | "paid";
+export interface Invoice {
+  id: ID; // INV-2026-0001
+  partnerId: ID;
+  topupId: ID;
+  amount: number;
+  status: InvoiceStatus;
+  issuedAt: string;
+  dueAt: string;
+  paidAt?: string;
+  paidMethod?: PayMethod;
+  paidReference?: string;
 }
 
 /* ---------- Partners ---------- */
@@ -410,6 +448,8 @@ export interface DB {
   partners: Partner[];
   dues: PartnerDue[];
   refunds: Refund[];
+  topups: WalletTopup[];
+  invoices: Invoice[];
   reviews: Review[];
   removals: RemovalRequest[];
   complaints: Complaint[];

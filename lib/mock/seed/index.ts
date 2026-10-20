@@ -14,6 +14,8 @@ import {
   partners,
   refunds,
   removals,
+  topups,
+  invoices,
   reviews,
   visitors,
 } from "./generated";
@@ -28,6 +30,8 @@ export function createSeed(): DB {
     partners,
     dues,
     refunds,
+    topups,
+    invoices,
     reviews,
     removals,
     complaints,

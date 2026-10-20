@@ -100,6 +100,9 @@ const STATUS_TONE: Record<string, "neutral" | "primary" | "accent" | "success" |
   unread: "info",
   answered: "success",
   refunded: "success",
+  due: "warning",
+  paid: "success",
+  overdue: "danger",
 };
 
 /** Standardised status badge — one vocabulary for the whole ecosystem. */

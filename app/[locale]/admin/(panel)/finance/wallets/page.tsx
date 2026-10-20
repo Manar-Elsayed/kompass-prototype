@@ -1,0 +1,134 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+import { ArrowDownLeft, HandCoins, Plus, Wallet } from "lucide-react";
+import { Link } from "@/i18n/navigation";
+import type { Partner } from "@/lib/types";
+import { cn, formatCHF, formatDate } from "@/lib/utils";
+import { useStore } from "@/lib/mock/store";
+import { useLang } from "@/lib/mock/hooks";
+import { inLastDays, walletLedger } from "@/lib/mock/selectors";
+import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/controls";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DataTable, type ColumnDef } from "@/components/admin/data-table";
+import { KpiCard, PageHeader } from "@/components/admin/ui";
+import { CreditDialog, TopUpDialog } from "@/components/admin/wallet-actions";
+import { WalletLedger } from "@/components/shared/wallet-ledger";
+
+type Row = Partner & ReturnType<typeof walletLedger>;
+
+export default function WalletsPage() {
+  const t = useTranslations();
+  const tw = useTranslations("admin.wallets");
+  const lang = useLang();
+  const orders = useStore((s) => s.orders);
+  const dues = useStore((s) => s.dues);
+  const topups = useStore((s) => s.topups);
+  const refunds = useStore((s) => s.refunds);
+  const invoices = useStore((s) => s.invoices);
+  const partners = useStore((s) => s.partners);
+  const [history, setHistory] = useState<string | null>(null);
+  const [topUp, setTopUp] = useState<string | null>(null);
+  const [credit, setCredit] = useState<string | null>(null);
+
+  const db = useMemo(() => ({ orders, dues, topups, refunds, invoices, partners }), [orders, dues, topups, refunds, invoices, partners]);
+  const rows: Row[] = useMemo(() => partners.filter((p) => p.status === "approved").map((p) => ({ ...p, ...walletLedger(db, p.id) })), [partners, db]);
+  const total = rows.reduce((a, r) => a + r.wallet, 0);
+  const topped30 =
+    dues.filter((d) => d.status === "confirmed" && inLastDays(d.createdAt, 30)).reduce((a, d) => a + d.amount, 0) +
+    topups.filter((x) => x.method !== "credit" && inLastDays(x.createdAt, 30)).reduce((a, x) => a + x.amount, 0);
+  const creditDue = rows.reduce((a, r) => a + r.creditDue, 0);
+  const overdue = rows.reduce((a, r) => a + r.creditOverdue, 0);
+  const byId = (id: string | null) => rows.find((r) => r.id === id);
+
+  const columns: ColumnDef<Row, unknown>[] = [
+    {
+      id: "name",
+      header: t("common.fields.company"),
+      accessorFn: (r) => r.name,
+      cell: ({ row: { original: r } }) => (
+        <span className="flex items-center gap-2 font-semibold text-ink">
+          <Avatar name={r.name} square className="size-8" />
+          {r.name}
+        </span>
+      ),
+    },
+    { id: "balance", header: tw("balance"), accessorFn: (r) => r.wallet, cell: (c) => <span className="font-bold text-ink">{formatCHF(c.getValue() as number, lang)}</span> },
+    { id: "toppedUp", header: tw("toppedUp"), accessorFn: (r) => r.toppedUp, cell: (c) => <span className="text-success">{formatCHF(c.getValue() as number, lang)}</span> },
+    { id: "spent", header: tw("spent"), accessorFn: (r) => r.spent, cell: (c) => formatCHF(c.getValue() as number, lang) },
+    { id: "refunded", header: tw("refunded"), accessorFn: (r) => r.refunded, cell: (c) => <span className="text-muted-foreground">{formatCHF(c.getValue() as number, lang)}</span> },
+    {
+      id: "credit",
+      header: tw("creditDue"),
+      accessorFn: (r) => r.creditDue,
+      cell: ({ row: { original: r } }) =>
+        r.creditDue ? (
+          <span className={cn("font-semibold", r.creditOverdue ? "text-danger" : "text-warning")}>{formatCHF(r.creditDue, lang)}</span>
+        ) : (
+          <span className="text-muted-foreground">–</span>
+        ),
+    },
+    { id: "last", header: tw("lastMove"), accessorFn: (r) => r.lastAt ?? "", cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{c.getValue() ? formatDate(c.getValue() as string, lang) : "–"}</span> },
+    {
+      id: "actions",
+      header: "",
+      enableSorting: false,
+      cell: ({ row: { original: r } }) => (
+        <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <Button size="sm" variant="outline" onClick={() => setTopUp(r.id)}><Plus /> {tw("topUp")}</Button>
+          <Button size="sm" variant="ghost" onClick={() => setCredit(r.id)}><HandCoins /> {tw("addCredit")}</Button>
+        </div>
+      ),
+    },
+  ];
+
+  const open = byId(history);
+  const topUpRow = byId(topUp);
+  const creditRow = byId(credit);
+
+  return (
+    <>
+      <PageHeader title={tw("title")} subtitle={tw("subtitle")} />
+      <div className="mb-4 grid gap-4 sm:grid-cols-3">
+        <KpiCard label={tw("total")} value={formatCHF(total, lang)} icon={<Wallet />} />
+        <KpiCard label={tw("topped30")} value={formatCHF(topped30, lang)} icon={<ArrowDownLeft />} tone="success" />
+        <KpiCard
+          label={tw("creditDue")}
+          value={formatCHF(creditDue, lang)}
+          icon={<HandCoins />}
+          tone="warning"
+          href="/admin/finance/invoices"
+          footer={overdue ? tw("overdue", { amount: formatCHF(overdue, lang) }) : undefined}
+        />
+      </div>
+      <DataTable data={rows} columns={columns} search={(r) => r.name} initialSort={[{ id: "balance", desc: true }]} onRowClick={(r) => setHistory(r.id)} />
+
+      {open && (
+        <Dialog open onOpenChange={(v) => !v && setHistory(null)}>
+          <DialogContent className="max-w-xl p-0">
+            <DialogHeader className="p-6 pb-0">
+              <DialogTitle>{open.name}</DialogTitle>
+              <DialogDescription>
+                {tw("balance")}: <strong className="text-ink">{formatCHF(open.wallet, lang)}</strong> · {tw("spent")}: {formatCHF(open.spent, lang)} · {tw("refunded")}: {formatCHF(open.refunded, lang)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-2 px-6">
+              <Button size="sm" variant="outline" onClick={() => setTopUp(open.id)}><Plus /> {tw("topUp")}</Button>
+              <Button size="sm" variant="ghost" onClick={() => setCredit(open.id)}><HandCoins /> {tw("addCredit")}</Button>
+              <Button asChild size="sm" variant="link" className="ms-auto">
+                <Link href={`/admin/partners/${open.id}`}>{t("admin.nav.partners")}</Link>
+              </Button>
+            </div>
+            <div className="max-h-[60dvh] overflow-y-auto border-t pb-2">
+              <WalletLedger entries={open.entries} />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+      {topUpRow && <TopUpDialog partner={topUpRow} onClose={() => setTopUp(null)} />}
+      {creditRow && <CreditDialog partner={creditRow} onClose={() => setCredit(null)} />}
+    </>
+  );
+}

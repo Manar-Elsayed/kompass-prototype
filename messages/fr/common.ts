@@ -67,6 +67,9 @@ export const common: Built<typeof Def> = {
     unread: "Non lu",
     answered: "Répondu",
     refunded: "Remboursé",
+    due: "À payer",
+    paid: "Payée",
+    overdue: "En retard",
   },
   form: {
     required: "Ce champ est obligatoire",

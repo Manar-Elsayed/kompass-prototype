@@ -13,8 +13,11 @@ import type {
   Order,
   Partner,
   PartnerDue,
+  Invoice,
+  PayMethod,
   Refund,
   Review,
+  WalletTopup,
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { createSeed } from "./seed";
@@ -44,8 +47,13 @@ interface Actions {
   decideApplication: (id: string, decision: "contract_sent" | "approved" | "rejected", expiresAt?: string) => void;
   decideDue: (id: string, status: "confirmed" | "canceled") => void;
   /** Admin-issued refund: recorded as refunded straight away and applied to the wallet. */
-  issueRefund: (input: Pick<Refund, "partnerId" | "amount" | "reason" | "method" | "orderId" | "note">) => Refund;
+  issueRefund: (input: Pick<Refund, "partnerId" | "amount" | "reason" | "orderId" | "note">) => Refund;
   decideRefund: (id: string, status: "refunded" | "rejected") => void;
+  /** Money in: an online card/TWINT payment from the portal, or a payment admin recorded. */
+  topUpWallet: (input: Pick<WalletTopup, "partnerId" | "amount" | "payMethod" | "reference" | "note" | "byUserId"> & { method: "online" | "admin" }) => WalletTopup;
+  /** Pay later: credit the wallet now and issue an invoice due in `termDays`. */
+  addCredit: (input: { partnerId: string; amount: number; termDays: number; note: string; byUserId?: string }) => Invoice;
+  markInvoicePaid: (id: string, payMethod: PayMethod, reference: string) => void;
   submitReview: (input: Pick<Review, "target" | "name" | "email" | "stars" | "comment">) => void;
   submitComplaint: (input: Omit<Complaint, "id" | "status" | "createdAt">) => void;
   submitContact: (input: Omit<ContactMessage, "id" | "read" | "createdAt">) => void;
@@ -121,11 +129,9 @@ export function quoteLead(
 const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
 const nowIso = () => new Date().toISOString();
 
-/** How a refund moves the partner wallet: wallet credits add to it, a bank payout of the wallet balance takes from it. */
-const walletDelta = (r: Pick<Refund, "amount" | "method" | "reason">) =>
-  r.method === "wallet" ? r.amount : r.reason === "wallet_payout" ? -r.amount : 0;
-const applyRefund = (partners: Partner[], r: Pick<Refund, "partnerId" | "amount" | "method" | "reason">) =>
-  partners.map((p) => (p.id === r.partnerId ? { ...p, wallet: Math.max(0, p.wallet + walletDelta(r)) } : p));
+/** Money into (or, negative, out of) one company's wallet. */
+const credit = (partners: Partner[], partnerId: string, amount: number) =>
+  partners.map((p) => (p.id === partnerId ? { ...p, wallet: Math.max(0, p.wallet + amount) } : p));
 
 /**
  * Book a purchase: charge the wallet and, when this fills the customer's quota, close the offer
@@ -245,7 +251,7 @@ export const useStore = create<Store>()(
         const at = nowIso();
         const next = Math.max(0, ...get().refunds.map((r) => Number(r.id.slice(3)) || 0)) + 1;
         const refund: Refund = { ...input, id: `RF-${String(next).padStart(3, "0")}`, status: "refunded", createdAt: at, decidedAt: at };
-        set((s) => ({ refunds: [refund, ...s.refunds], partners: applyRefund(s.partners, refund) }));
+        set((s) => ({ refunds: [refund, ...s.refunds], partners: credit(s.partners, refund.partnerId, refund.amount) }));
         return refund;
       },
 
@@ -255,9 +261,34 @@ export const useStore = create<Store>()(
           if (!refund || refund.status !== "pending") return {};
           return {
             refunds: s.refunds.map((r) => (r.id === id ? { ...r, status, decidedAt: nowIso() } : r)),
-            partners: status === "refunded" ? applyRefund(s.partners, refund) : s.partners,
+            partners: status === "refunded" ? credit(s.partners, refund.partnerId, refund.amount) : s.partners,
           };
         }),
+
+      topUpWallet: ({ method, ...input }) => {
+        const s = get();
+        const topup: WalletTopup = { ...input, method, id: `TU-${String(s.topups.length + 1).padStart(4, "0")}`, createdAt: nowIso() };
+        set({ topups: [topup, ...s.topups], partners: credit(s.partners, topup.partnerId, topup.amount) });
+        return topup;
+      },
+
+      addCredit: ({ partnerId, amount, termDays, note, byUserId }) => {
+        const s = get();
+        const at = nowIso();
+        const year = new Date(at).getFullYear();
+        const next = Math.max(0, ...s.invoices.map((i) => Number(i.id.split("-").pop()) || 0)) + 1;
+        const invoiceId = `INV-${year}-${String(next).padStart(4, "0")}`;
+        const topupId = `TU-${String(s.topups.length + 1).padStart(4, "0")}`;
+        const invoice: Invoice = { id: invoiceId, partnerId, topupId, amount, status: "due", issuedAt: at, dueAt: new Date(Date.now() + termDays * 86_400_000).toISOString() };
+        const topup: WalletTopup = { id: topupId, partnerId, amount, method: "credit", reference: invoiceId, note, byUserId, invoiceId, createdAt: at };
+        set({ topups: [topup, ...s.topups], invoices: [invoice, ...s.invoices], partners: credit(s.partners, partnerId, amount) });
+        return invoice;
+      },
+
+      markInvoicePaid: (id, payMethod, reference) =>
+        set((s) => ({
+          invoices: s.invoices.map((i) => (i.id === id && i.status === "due" ? { ...i, status: "paid", paidAt: nowIso(), paidMethod: payMethod, paidReference: reference } : i)),
+        })),
 
       decideDue: (id, status) =>
         set((s) => {
@@ -426,10 +457,17 @@ export const useStore = create<Store>()(
         }));
         // money only moves for fake offers: a customer changing their mind is not refundable
         if (reason !== "fake") return;
-        const { orders, fakeReports, issueRefund } = get();
+        const { orders, fakeReports, refunds, issueRefund, decideRefund } = get();
         for (const order of orders.filter((o) => o.offerId === id && refundOrderIds.includes(o.id))) {
+          // a company that had already claimed this purchase gets its waiting claim paid, not a second refund
+          const claim = refunds.find((r) => r.orderId === order.id && r.status === "pending");
+          if (claim) {
+            decideRefund(claim.id, "refunded");
+            continue;
+          }
+          if (refunds.some((r) => r.orderId === order.id && r.status === "refunded")) continue;
           const report = fakeReports.find((r) => r.orderId === order.id);
-          issueRefund({ partnerId: order.partnerId, amount: order.price, reason: "fake_lead", method: "wallet", orderId: order.id, note: report?.reason ?? "Offer cancelled as fake by Kompass." });
+          issueRefund({ partnerId: order.partnerId, amount: order.price, reason: "fake_lead", orderId: order.id, note: report?.reason ?? "Offer cancelled as fake by Kompass." });
         }
       },
 
@@ -493,10 +531,10 @@ export const useStore = create<Store>()(
     {
       name: "kompass-prototype-v1",
       // v2 added German, French and Italian; v3 dropped Arabic; v4 moved offers to the five-status
-      // lifecycle. Older saves start again from the current seed, keeping the signed-in sessions.
-      version: 4,
+      // lifecycle; v5 added wallet top-ups, credit invoices and the fake-only refund policy. Older saves start again from the current seed, keeping the signed-in sessions.
+      version: 5,
       migrate: (persisted, version) => {
-        if (version >= 4) return persisted as Store;
+        if (version >= 5) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },
