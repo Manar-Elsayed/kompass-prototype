@@ -10,21 +10,73 @@ export function inLastDays(iso: string, days: number, offsetDays = 0) {
   return t <= end && t > end - days * DAY;
 }
 
-export function partnerLedger(db: Pick<DB, "orders" | "dues">, partnerId: string) {
-  const purchased = db.orders.filter((o) => o.partnerId === partnerId).reduce((a, o) => a + o.price, 0);
-  const paid = db.dues.filter((d) => d.partnerId === partnerId && d.status === "confirmed").reduce((a, d) => a + d.amount, 0);
-  const pending = db.dues.filter((d) => d.partnerId === partnerId && d.status === "pending").reduce((a, d) => a + d.amount, 0);
-  const leads = db.orders.filter((o) => o.partnerId === partnerId).length;
-  return { purchased, paid, pending, leads, outstanding: Math.max(0, purchased - paid) };
+/* ---------- wallet ledger ---------- */
+
+export type LedgerKind = "receipt" | "online" | "admin" | "credit" | "purchase" | "refund";
+export interface LedgerEntry {
+  id: string; // the source record (due, top-up, order or refund)
+  at: string;
+  kind: LedgerKind;
+  amount: number; // signed: money in > 0, purchases < 0
+  reference: string; // receipt / payment reference, or the lead id for purchases
+  payMethod?: string;
 }
 
-export function finance(db: Pick<DB, "orders" | "dues" | "partners">) {
+type LedgerDB = Pick<DB, "orders" | "dues" | "topups" | "refunds" | "invoices" | "partners">;
+
+/** Overdue = an unpaid credit invoice past its due date. */
+export const isOverdue = (inv: { status: string; dueAt: string }) => inv.status === "due" && Date.parse(inv.dueAt) < refNow();
+
+/**
+ * Every movement of one company's wallet, newest first. The wallet is the single balance:
+ * receipts confirmed by admin, online payments, admin top-ups and credit add money; lead
+ * purchases take it out; refunds (fake offers or admin exceptions) put it back.
+ */
+export function walletLedger(db: LedgerDB, partnerId: string) {
+  const entries: LedgerEntry[] = [
+    ...db.dues
+      .filter((d) => d.partnerId === partnerId && d.status === "confirmed")
+      .map((d) => ({ id: d.id, at: d.createdAt, kind: "receipt" as const, amount: d.amount, reference: d.reference, payMethod: d.method })),
+    ...db.topups
+      .filter((x) => x.partnerId === partnerId)
+      .map((x) => ({ id: x.id, at: x.createdAt, kind: x.method, amount: x.amount, reference: x.reference, payMethod: x.payMethod })),
+    ...db.orders
+      .filter((o) => o.partnerId === partnerId)
+      .map((o) => ({ id: o.id, at: o.createdAt, kind: "purchase" as const, amount: -o.price, reference: o.offerId })),
+    ...db.refunds
+      .filter((r) => r.partnerId === partnerId && r.status === "refunded")
+      .map((r) => ({ id: r.id, at: r.decidedAt ?? r.createdAt, kind: "refund" as const, amount: r.amount, reference: r.orderId ?? r.id })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
+
+  const sum = (kinds: LedgerKind[]) => entries.filter((e) => kinds.includes(e.kind)).reduce((a, e) => a + e.amount, 0);
+  const invoices = db.invoices.filter((i) => i.partnerId === partnerId);
+  const due = invoices.filter((i) => i.status === "due");
+  return {
+    entries,
+    balance: db.partners.find((p) => p.id === partnerId)?.wallet ?? 0,
+    toppedUp: sum(["receipt", "online", "admin"]),
+    credit: sum(["credit"]),
+    spent: -sum(["purchase"]),
+    refunded: sum(["refund"]),
+    leads: entries.filter((e) => e.kind === "purchase").length,
+    creditDue: due.reduce((a, i) => a + i.amount, 0),
+    creditOverdue: due.filter(isOverdue).reduce((a, i) => a + i.amount, 0),
+    lastAt: entries[0]?.at,
+  };
+}
+
+/** Platform money totals for the dashboard. */
+export function finance(db: LedgerDB) {
   const totalIncome = db.orders.reduce((a, o) => a + o.price, 0);
   const pendingDues = db.dues.filter((d) => d.status === "pending").reduce((a, d) => a + d.amount, 0);
-  const kompassDues = db.partners
-    .filter((p) => p.status === "approved")
-    .reduce((a, p) => a + partnerLedger(db, p.id).outstanding, 0);
-  return { totalIncome, pendingDues, kompassDues };
+  const due = db.invoices.filter((i) => i.status === "due");
+  return {
+    totalIncome,
+    pendingDues,
+    creditDue: due.reduce((a, i) => a + i.amount, 0),
+    creditOverdue: due.filter(isOverdue).reduce((a, i) => a + i.amount, 0),
+    walletTotal: db.partners.filter((p) => p.status === "approved").reduce((a, p) => a + p.wallet, 0),
+  };
 }
 
 /** Whole days until the customer's deadline (negative once it has passed). */

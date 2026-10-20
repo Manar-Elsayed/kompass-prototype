@@ -13,13 +13,15 @@ import type {
   Partner,
   PartnerDue,
   Refund,
+  WalletTopup,
+  Invoice,
   RemovalRequest,
   Review,
   Visitor,
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { services } from "./catalog";
-import { NOW, createRng, daysAgo, daysAhead } from "./rng";
+import { DAY, NOW, createRng, daysAgo, daysAhead } from "./rng";
 
 const rng = createRng();
 /** Build a four-language string: en, de, fr, it. */
@@ -551,7 +553,6 @@ export const refunds: Refund[] = [
         partnerId: o.partnerId,
         amount: o.price,
         reason: "fake_lead" as const,
-        method: "wallet" as const,
         orderId: o.id,
         note: r.reason,
         status: "refunded" as const,
@@ -568,37 +569,145 @@ export const refunds: Refund[] = [
       partnerId: x.partnerId,
       amount: x.price,
       reason: "fake_lead" as const,
-      method: "wallet" as const,
       orderId: x.id,
       note: "Offer cancelled as fake by Kompass.",
       status: "refunded" as const,
       createdAt: offers.find((o) => o.id === x.offerId)!.cancelledAt!,
       decidedAt: offers.find((o) => o.id === x.offerId)!.cancelledAt!,
     })),
+  // claims still waiting: the company reported the lead as fake and Kompass is still checking
+  ...fakeReports
+    .filter((r) => r.status === "pending")
+    .map((r, i) => {
+      const o = orderById[r.orderId];
+      return {
+        id: `RF-${pad(i + 21, 3)}`,
+        partnerId: o.partnerId,
+        amount: o.price,
+        reason: "fake_lead" as const,
+        orderId: o.id,
+        note: r.reason,
+        status: "pending" as const,
+        createdAt: r.createdAt,
+      };
+    }),
   ...(
     [
-      ["duplicate_lead", "wallet", "pending", "Same customer bought twice under two lead IDs."],
-      ["wallet_payout", "bank", "pending", "Closing our Kompass account — please pay out the remaining wallet balance."],
-      ["cancelled_job", "wallet", "pending", "Customer cancelled the move before we could quote."],
-      ["goodwill", "wallet", "refunded", "Compensation for the shop outage on 2 October."],
-      ["duplicate_lead", "wallet", "refunded", "Lead appeared twice in the shop."],
-      ["wallet_payout", "bank", "refunded", "Season ended, unused top-up returned."],
-      ["cancelled_job", "bank", "rejected", "Customer cancelled after our site visit."],
+      // the customer was real and cancelled: policy says no refund
+      ["fake_lead", "rejected", "Customer cancelled after our site visit.", true],
+      // admin exceptions, each with its reason written down
+      ["manual", "refunded", "Compensation for the shop outage on 2 October.", false],
+      ["manual", "refunded", "Coupon WELCOME20 was not applied at checkout.", true],
     ] as const
-  ).map(([reason, method, status, note], i) => {
+  ).map(([reason, status, note, withOrder], i) => {
     const o = rrng.pick(orders);
     const age = rrng.int(1, 40);
     return {
-      id: `RF-${pad(i + 21, 3)}`,
+      id: `RF-${pad(i + 41, 3)}`,
       partnerId: o.partnerId,
-      amount: reason === "wallet_payout" ? rrng.int(4, 18) * 10 : reason === "goodwill" ? 50 : o.price,
+      amount: withOrder ? (reason === "manual" ? Math.round(o.price * 0.2) : o.price) : 50,
       reason,
-      method,
-      orderId: reason === "wallet_payout" || reason === "goodwill" ? undefined : o.id,
+      orderId: withOrder ? o.id : undefined,
       note,
       status,
       createdAt: daysAgo(age),
-      decidedAt: status === "pending" ? undefined : daysAgo(Math.max(0, age - rrng.int(1, 3))),
+      decidedAt: daysAgo(Math.max(0, age - rrng.int(1, 3))),
     };
   }),
 ];
+
+/* ---------- wallet top-ups & credit invoices ---------- */
+// Own stream again, so none of the data above moves.
+const wrng = createRng(20261021);
+const ADMINS = ["u-1", "u-3"];
+export const topups: WalletTopup[] = [];
+export const invoices: Invoice[] = [];
+
+// online card / TWINT payments made in the portal, and payments recorded by the finance team
+approved.slice(0, 14).forEach((p, i) => {
+  const online = i % 2 === 0;
+  const age = wrng.int(2, 70);
+  topups.push({
+    id: `TU-${pad(topups.length + 1, 4)}`,
+    partnerId: p.id,
+    amount: wrng.pick([100, 150, 200, 300, 500]),
+    method: online ? "online" : "admin",
+    payMethod: online ? wrng.pick(["card", "twint"] as const) : wrng.pick(["bank_transfer", "cash"] as const),
+    reference: online ? `PAY-${wrng.int(100000, 999999)}` : `BANK-${wrng.int(1000, 9999)}`,
+    note: online ? "" : "Payment received on the Kompass account.",
+    byUserId: online ? undefined : wrng.pick(ADMINS),
+    createdAt: daysAgo(age),
+  });
+});
+
+// credit: amount now, invoice to pay later. One paid, two still due (one of them overdue).
+(
+  [
+    [300, 50, 30, "paid"],
+    [250, 12, 30, "due"],
+    [400, 41, 30, "due"],
+  ] as const
+).forEach(([amount, age, term, status], i) => {
+  const p = approved[(i * 5 + 2) % approved.length];
+  const topupId = `TU-${pad(topups.length + 1, 4)}`;
+  const invoiceId = `INV-2026-${pad(i + 31, 4)}`;
+  topups.push({
+    id: topupId,
+    partnerId: p.id,
+    amount,
+    method: "credit",
+    reference: invoiceId,
+    note: "Agreed credit for the busy season.",
+    byUserId: ADMINS[i % 2],
+    invoiceId,
+    createdAt: daysAgo(age),
+  });
+  invoices.push({
+    id: invoiceId,
+    partnerId: p.id,
+    topupId,
+    amount,
+    status,
+    issuedAt: daysAgo(age),
+    dueAt: daysAgo(age - term),
+    ...(status === "paid" ? { paidAt: daysAgo(age - 21), paidMethod: "bank_transfer" as const, paidReference: `BANK-${wrng.int(1000, 9999)}` } : {}),
+  });
+});
+
+// Wallet balances must equal their ledger. Money in before the history above (first deposits)
+// becomes an opening balance recorded by admin, so every franc is accounted for.
+for (const p of partners) {
+  const moved =
+    dues.filter((d) => d.partnerId === p.id && d.status === "confirmed").reduce((a, d) => a + d.amount, 0) +
+    topups.filter((x) => x.partnerId === p.id).reduce((a, x) => a + x.amount, 0) +
+    refunds.filter((r) => r.partnerId === p.id && r.status === "refunded").reduce((a, r) => a + r.amount, 0) -
+    orders.filter((o) => o.partnerId === p.id).reduce((a, o) => a + o.price, 0);
+  const opening = p.wallet - moved;
+  if (opening > 0) {
+    topups.push({
+      id: `TU-${pad(topups.length + 1, 4)}`,
+      partnerId: p.id,
+      amount: opening,
+      method: "admin",
+      payMethod: "bank_transfer",
+      reference: "OPENING",
+      note: "Opening balance carried over from the previous system.",
+      byUserId: "u-1",
+      createdAt: new Date(Date.parse(p.createdAt) + DAY).toISOString(),
+    });
+  } else if (opening < 0) {
+    p.wallet = moved > 0 ? moved : 0;
+    if (moved < 0)
+      topups.push({
+        id: `TU-${pad(topups.length + 1, 4)}`,
+        partnerId: p.id,
+        amount: -moved,
+        method: "admin",
+        payMethod: "bank_transfer",
+        reference: "OPENING",
+        note: "Opening balance carried over from the previous system.",
+        byUserId: "u-1",
+        createdAt: new Date(Date.parse(p.createdAt) + DAY).toISOString(),
+      });
+  }
+}

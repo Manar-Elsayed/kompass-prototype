@@ -27,6 +27,7 @@ const tooltipStyle = {
 
 export default function Dashboard() {
   const t = useTranslations("admin.dashboard");
+  const tw = useTranslations("admin.wallets");
   const tn = useTranslations("admin.nav");
   const tf = useTranslations("common.fields");
   const ta = useTranslations("common.actions");
@@ -92,7 +93,7 @@ export default function Dashboard() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label={t("totalIncome")} value={formatCHF(fin.totalIncome, lang)} icon={<Banknote />} delta={pctDelta(income30, incomePrev30)} deltaLabel={t("vsLast")} href="/admin/leads/shop" />
-        <KpiCard label={t("kompassDues")} value={formatCHF(fin.kompassDues, lang)} icon={<Wallet />} tone="accent" href="/admin/finance/kompass-dues" />
+        <KpiCard label={t("creditDue")} value={formatCHF(fin.creditDue, lang)} icon={<Wallet />} tone="accent" href="/admin/finance/invoices" footer={fin.creditOverdue ? tw("overdue", { amount: formatCHF(fin.creditOverdue, lang) }) : undefined} />
         <KpiCard label={t("partnerDues")} value={formatCHF(fin.pendingDues, lang)} icon={<Clock />} tone="warning" href="/admin/finance/partner-dues" footer={t("todoDues", { count: db.dues.filter((d) => d.status === "pending").length })} />
         <KpiCard label={t("newLeads")} value={leads7} icon={<ClipboardList />} tone="info" delta={pctDelta(leads7, leadsPrev7)} deltaLabel={t("vsLast")} href="/admin/leads" />
       </div>

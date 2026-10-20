@@ -9,7 +9,8 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, usePartnerRatings } from "@/lib/mock/hooks";
-import { partnerLedger } from "@/lib/mock/selectors";
+import { walletLedger } from "@/lib/mock/selectors";
+import { TopUpDialog } from "@/components/admin/wallet-actions";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -46,7 +47,7 @@ export default function PartnerDetail() {
 
   if (!p) return <Card><EmptyState title={t("common.notFound.title")} /></Card>;
 
-  const ledger = partnerLedger(db, p.id);
+  const ledger = walletLedger(db, p.id);
   const orders = db.orders.filter((o) => o.partnerId === p.id);
   const reviews = db.reviews.filter((r) => r.target === p.id);
   const dues = db.dues.filter((d) => d.partnerId === p.id);
@@ -148,9 +149,9 @@ export default function PartnerDetail() {
       />
 
       <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label={tp("wallet")} value={formatCHF(p.wallet, lang)} icon={<Wallet />} footer={<button className="font-semibold text-primary hover:underline" onClick={() => setWalletDlg(true)}>{tp("adjustWallet")}</button>} />
+        <KpiCard label={tp("wallet")} value={formatCHF(p.wallet, lang)} icon={<Wallet />} footer={<button className="font-semibold text-primary hover:underline" onClick={() => setWalletDlg(true)}>{t("admin.wallets.topUp")}</button>} />
         <KpiCard label={tp("leadsBought")} value={ledger.leads} icon={<CheckCircle2 />} tone="info" />
-        <KpiCard label={tp("spent")} value={formatCHF(ledger.purchased, lang)} icon={<Wallet />} tone="accent" footer={`${t("admin.kompassDues.outstanding")}: ${formatCHF(ledger.outstanding, lang)}`} />
+        <KpiCard label={tp("spent")} value={formatCHF(ledger.spent, lang)} icon={<Wallet />} tone="accent" footer={ledger.creditDue ? `${t("admin.wallets.creditDue")}: ${formatCHF(ledger.creditDue, lang)}` : undefined} />
         <KpiCard label={tp("avgRating")} value={ratings[p.id]?.avg.toFixed(1) ?? "–"} icon={<Star />} tone="warning" footer={`${ratings[p.id]?.count ?? 0} ${tp("reviews")}`} />
       </div>
 
@@ -341,7 +342,7 @@ export default function PartnerDetail() {
 
       <EmailDialog open={email} onOpenChange={setEmail} to={p.email} name={p.name} />
       <ExpiryDialog open={expiry} onOpenChange={setExpiry} current={p.expiresAt} onSave={(d) => patch("partners", p.id, { expiresAt: d })} />
-      <WalletDialog open={walletDlg} onOpenChange={setWalletDlg} current={p.wallet} onSave={(v) => patch("partners", p.id, { wallet: v })} />
+      {walletDlg && <TopUpDialog partner={p} onClose={() => setWalletDlg(false)} />}
       {dialog}
     </>
   );
@@ -375,26 +376,6 @@ function EmailDialog({ open, onOpenChange, to, name }: { open: boolean; onOpenCh
           >
             <Mail /> {t("common.actions.send")}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function WalletDialog({ open, onOpenChange, current, onSave }: { open: boolean; onOpenChange: (v: boolean) => void; current: number; onSave: (v: number) => void }) {
-  const t = useTranslations();
-  const [delta, setDelta] = useState("0");
-  const next = current + (Number(delta) || 0);
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader><DialogTitle>{t("admin.partners.adjustWallet")}</DialogTitle></DialogHeader>
-        <Field label="± CHF" hint={`${current} → ${next} CHF`}>
-          <Input type="number" value={delta} onChange={(e) => setDelta(e.target.value)} dir="ltr" />
-        </Field>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>{t("common.actions.cancel")}</Button>
-          <Button onClick={() => { onSave(Math.max(0, next)); onOpenChange(false); setDelta("0"); toast.success(t("admin.partners.walletUpdated")); }}>{t("common.actions.save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
