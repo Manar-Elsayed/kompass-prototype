@@ -27,7 +27,7 @@ export const hub = {
   f3: "Partner application",
   f4: "Payment receipt",
   f5: "Fake-lead report",
-  f6: "Review · complaint",
+  f6: "Review",
   f7: "Website content (CMS)",
   customer: "Customer",
   partner: "Partner company",

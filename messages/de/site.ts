@@ -26,7 +26,6 @@ export const site: Built<typeof Def> = {
     terms: "AGB",
     rights: "© {year} Kompass Umzug GmbH. Alle Rechte vorbehalten.",
     madeIn: "Mit Sorgfalt in Zürich gemacht",
-    complaint: "Problem melden",
   },
   home: {
     trustLine: "Kostenlos · Unverbindlich · Geprüfte Partner",
@@ -99,7 +98,6 @@ export const site: Built<typeof Def> = {
     jobs: "Aufträge über Kompass",
     location: "Standort",
     writeReview: "Bewertung schreiben",
-    report: "Problem melden",
     ratingBreakdown: "Bewertungsübersicht",
     customerReviews: "Kundenbewertungen",
     togetherTitle: "Offerte von {name} erhalten",
@@ -181,15 +179,6 @@ export const site: Built<typeof Def> = {
     commentPh: "Was lief gut? Was könnte besser sein?",
     sent: "Vielen Dank! Ihre Bewertung erscheint nach der Prüfung.",
     moderated: "Alle Bewertungen werden vor der Veröffentlichung von unserem Team geprüft.",
-  },
-  complaint: {
-    title: "Problem melden",
-    body: "Gab es ein Problem mit einer Firma oder Ihrer Anfrage? Teilen Sie es uns mit, wir gehen der Sache nach.",
-    kind: "Betrifft",
-    kindPartner: "Eine Firma",
-    kindOffer: "Meine Anfrage",
-    offerId: "Anfragereferenz (z. B. KO-10400)",
-    sent: "Beschwerde eingereicht. Wir melden uns innert 2 Arbeitstagen bei Ihnen.",
   },
   popup: {
     dismiss: "Nein danke",

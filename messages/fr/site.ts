@@ -26,7 +26,6 @@ export const site: Built<typeof Def> = {
     terms: "CG",
     rights: "© {year} Kompass Umzug GmbH. Tous droits réservés.",
     madeIn: "Conçu avec soin à Zurich",
-    complaint: "Signaler un problème",
   },
   home: {
     trustLine: "Gratuit · Sans engagement · Partenaires vérifiés",
@@ -99,7 +98,6 @@ export const site: Built<typeof Def> = {
     jobs: "Mandats via Kompass",
     location: "Emplacement",
     writeReview: "Rédiger un avis",
-    report: "Signaler un problème",
     ratingBreakdown: "Détail des notes",
     customerReviews: "Avis clients",
     togetherTitle: "Recevoir une offre de {name}",
@@ -181,15 +179,6 @@ export const site: Built<typeof Def> = {
     commentPh: "Qu’est-ce qui s’est bien passé ? Qu’est-ce qui pourrait être amélioré ?",
     sent: "Merci ! Votre avis sera publié après modération.",
     moderated: "Tous les avis sont vérifiés par notre équipe avant publication.",
-  },
-  complaint: {
-    title: "Signaler un problème",
-    body: "Un problème avec une entreprise ou votre demande ? Dites-le-nous, nous allons examiner la situation.",
-    kind: "Concerne",
-    kindPartner: "Une entreprise",
-    kindOffer: "Ma demande",
-    offerId: "Référence de la demande (p. ex. KO-10400)",
-    sent: "Réclamation envoyée. Nous vous contacterons dans les 2 jours ouvrables.",
   },
   popup: {
     dismiss: "Non merci",

@@ -189,3 +189,111 @@ export function companyScore(db: Pick<DB, "orders" | "reviews">, p: Pick<Partner
   const score = Math.round(bought90 * 10 + rating * 8 + Math.max(0, 14 - idleDays));
   return { bought90, rating, reviews: rated.length, idleDays: Math.round(idleDays), score };
 }
+
+/* ---------- dashboard periods & statistics ---------- */
+
+/** A calendar month ("2026-10") or year ("2026") the dashboard is filtered to. */
+export interface Period {
+  kind: "month" | "year";
+  key: string;
+}
+
+export function periodRange(p: Period) {
+  const [y, m] = p.key.split("-").map(Number);
+  const from = p.kind === "year" ? Date.UTC(y, 0, 1) : Date.UTC(y, m - 1, 1);
+  const to = p.kind === "year" ? Date.UTC(y + 1, 0, 1) : Date.UTC(y, m, 1);
+  return { from, to };
+}
+
+/** The current month plus the 11 before it, and every year with data, newest first. */
+export function periodOptions() {
+  const now = new Date(refNow());
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  });
+  const years = [...new Set(months.map((m) => m.slice(0, 4)))];
+  return { months, years };
+}
+
+/** Contact Us requests nobody has replied to or called back within 24 hours. */
+export const FOLLOW_UP_HOURS = 24;
+export const needsFollowUp = (c: { handledAt?: string; createdAt: string }) => !c.handledAt && refNow() - Date.parse(c.createdAt) > FOLLOW_UP_HOURS * 3_600_000;
+
+type StatsDB = Pick<DB, "offers" | "orders" | "partners" | "dues" | "topups" | "refunds" | "reviews" | "formSessions">;
+
+/** Everything the admin dashboard shows for one period, grouped like the requirements. */
+export function dashboardStats(db: StatsDB, p: Period, visitorsOnDay: (day: string) => number) {
+  const { from, to } = periodRange(p);
+  const inP = (iso?: string) => {
+    if (!iso) return false;
+    const t = Date.parse(iso);
+    return t >= from && t < to;
+  };
+
+  // A. offers
+  const received = db.offers.filter((o) => inP(o.createdAt));
+  const ordersInP = db.orders.filter((o) => inP(o.createdAt));
+  const soldIds = new Set(ordersInP.map((o) => o.offerId));
+  const fake = db.offers.filter((o) => o.cancelReason === "fake" && inP(o.cancelledAt));
+
+  // B. companies
+  const approved = db.partners.filter((p) => p.status === "approved");
+  const buyers = new Map<string, number>();
+  for (const o of ordersInP) buyers.set(o.partnerId, (buyers.get(o.partnerId) ?? 0) + 1);
+  const toppedUpIds = new Set([
+    ...db.dues.filter((d) => d.status === "confirmed" && inP(d.createdAt)).map((d) => d.partnerId),
+    ...db.topups.filter((x) => x.method !== "credit" && inP(x.createdAt)).map((x) => x.partnerId),
+  ]);
+  const active = approved.filter((p) => inP(p.lastSeen) || buyers.has(p.id) || toppedUpIds.has(p.id));
+  const perCompany = approved
+    .map((p) => ({ id: p.id, name: p.name, bought: buyers.get(p.id) ?? 0, score: companyScore(db, p).score }))
+    .filter((x) => x.bought > 0)
+    .sort((a, b) => b.bought - a.bought || b.score - a.score);
+
+  // C. money
+  const toppedUp =
+    db.dues.filter((d) => d.status === "confirmed" && inP(d.createdAt)).reduce((a, d) => a + d.amount, 0) +
+    db.topups.filter((x) => x.method !== "credit" && inP(x.createdAt)).reduce((a, x) => a + x.amount, 0);
+  const credit = db.topups.filter((x) => x.method === "credit" && inP(x.createdAt)).reduce((a, x) => a + x.amount, 0);
+  const fakeRefunds = db.refunds.filter((r) => r.reason === "fake_lead" && r.status === "refunded" && inP(r.decidedAt ?? r.createdAt));
+
+  // D. visitors & offer form
+  const end = Math.min(to, refNow() + DAY);
+  let visitors = 0;
+  for (let t = from; t < end; t += DAY) visitors += visitorsOnDay(new Date(t).toISOString().slice(0, 10));
+  const sessions = db.formSessions.filter((s) => inP(s.startedAt));
+  const reached = (steps: string[]) => sessions.filter((s) => steps.includes(s.step)).length;
+  const submitted = sessions.filter((s) => s.step === "submitted");
+  const offerById = new Map(db.offers.map((o) => [o.id, o]));
+  const fakeSubmitted = submitted.filter((s) => {
+    const o = s.offerId ? offerById.get(s.offerId) : undefined;
+    return !!o && (o.cancelReason === "fake" || (o.status === "new" && o.flags.length > 0));
+  });
+
+  return {
+    offers: { received: received.length, sold: soldIds.size, fake: fake.length, total: db.offers.length },
+    companies: { registered: approved.length, active: active.length, buyers: buyers.size, perCompany },
+    money: {
+      toppedUpCompanies: toppedUpIds.size,
+      toppedUp,
+      credit,
+      refundedFake: fakeRefunds.reduce((a, r) => a + r.amount, 0),
+      refundedFakeCount: fakeRefunds.length,
+    },
+    visitors: {
+      visitors,
+      started: sessions.length,
+      notStarted: Math.max(0, visitors - sessions.length),
+      notCompleted: sessions.length - submitted.length,
+      completed: submitted.length,
+      fake: fakeSubmitted.length,
+      funnel: [
+        { step: "started" as const, count: sessions.length },
+        { step: "details" as const, count: reached(["details", "contact", "submitted"]) },
+        { step: "contact" as const, count: reached(["contact", "submitted"]) },
+        { step: "submitted" as const, count: submitted.length },
+      ],
+    },
+  };
+}

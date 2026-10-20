@@ -84,7 +84,6 @@ export const NAV: NavGroup[] = [
       { key: "kompassReviews", href: "/admin/moderation/kompass-reviews", perm: "moderation", badge: (s) => s.reviews.filter((r) => r.target === "kompass" && r.status === "pending").length },
       { key: "partnerReviews", href: "/admin/moderation/partner-reviews", perm: "moderation", badge: (s) => s.reviews.filter((r) => r.target !== "kompass" && r.status === "pending").length },
       { key: "removals", href: "/admin/moderation/removals", perm: "moderation", badge: (s) => s.removals.filter((r) => r.status === "pending").length },
-      { key: "complaints", href: "/admin/moderation/complaints", perm: "moderation", badge: (s) => s.complaints.filter((c) => c.status === "pending").length },
     ],
   },
   {
@@ -92,8 +91,9 @@ export const NAV: NavGroup[] = [
     icon: MessagesSquare,
     perm: "inbox",
     items: [
-      { key: "inbox", href: "/admin/inbox", perm: "inbox", badge: (s) => s.contacts.filter((c) => !c.read).length + s.faqQuestions.filter((q) => !q.answered).length },
+      { key: "inbox", href: "/admin/inbox", perm: "inbox", badge: (s) => s.contacts.filter((c) => !c.handledAt).length + s.faqQuestions.filter((q) => !q.answered).length },
       { key: "visitors", href: "/admin/insights/visitors", perm: "insights" },
+      { key: "offerForm", href: "/admin/insights/offer-form", perm: "insights" },
     ],
   },
   {

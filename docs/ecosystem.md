@@ -14,9 +14,9 @@ Sources analysed:
 
 | Actor | Surface | What they do |
 | --- | --- | --- |
-| **Customer** | Website | Browse services, companies and guides. Submit an offer request (lead). Leave reviews and complaints. Ask FAQ questions. Use the contact form. |
+| **Customer** | Website | Browse services, companies and guides. Submit an offer request (lead). Leave reviews. Ask FAQ questions. Use the contact form (followed up within 24 hours). |
 | **Partner company** | Website → Partner portal | Apply (company, contact, bank, services, account). Sign the contract. Buy leads (shop or dynamic). Upload payment receipts. Report fake leads. Request review removal. |
-| **Kompass team** | Admin | Qualify and distribute leads. Approve partners. Reconcile payments. Moderate reviews and complaints. Edit every website page in each language. Manage roles. |
+| **Kompass team** | Admin | Qualify and distribute leads. Approve partners. Reconcile payments. Moderate reviews and follow up on customer requests. Edit every website page in each language. Manage roles. |
 
 ## Core flows
 
@@ -28,7 +28,7 @@ flowchart LR
   P -- fake-lead report --> FR[(Report)] -- confirmed: refund --> W[(Wallet)]
   P -- payment receipt --> D[(Partner due)] -- confirmed --> W
   P -- application --> A[(Application)] -- contract + approve --> P
-  C -- review / complaint --> M[(Moderation)]
+  C -- review --> M[(Moderation)]
   P -- removal request --> M
   K[Kompass team] -- CMS --> Site[Website content]
   Site --> C
@@ -39,7 +39,7 @@ flowchart LR
 3. **Fake-lead reports** move through open → testing → pending → confirmed / canceled. Confirming refunds the lead price to the partner wallet.
 4. **Finance.** *Partner dues* are uploaded receipts (approve or cancel). *Kompass dues* are what each partner owes: leads purchased minus payments confirmed.
 5. **Partner onboarding** moves through pending → contract sent → approved (with a contract expiry date) or rejected. The required documents are the contract, the insurance and the commercial register extract.
-6. **Trust.** Reviews of Kompass appear on the homepage. Partner reviews appear on company profiles. Both are moderated. Partners can request removal of a review. Complaints are about either a partner or a lead.
+6. **Trust.** Reviews of Kompass appear on the homepage. Partner reviews appear on company profiles. Both are moderated. Partners can request removal of a review. (Complaints were removed in October 2026; customers use reviews and the contact form.)
 7. **Content.** Every public page is editable: navbar/footer, home, home form, services (body, features, tips), about, blog, FAQs, contact, imprint, companies, partners page, privacy, terms, example offers and the popup ad.
 
 ## UX / tech debt found → how the prototype addresses it
@@ -48,7 +48,7 @@ flowchart LR
 | --- | --- |
 | Two divergent stacks and design systems | One app, one token set (`app/globals.css`), one component set (`components/ui`) |
 | 15 flat admin menu entries | 8 task-based groups (`components/admin/nav.ts`) |
-| Route typos: `fack-offers`, `complains`, `Aplications`, `compnyDital` | Clean routes: `/admin/leads/fake-reports`, `/admin/moderation/complaints` |
+| Route typos: `fack-offers`, `complains`, `Aplications`, `compnyDital` | Clean routes: `/admin/leads/fake-reports`, `/admin/moderation/partner-reviews` |
 | Hardcoded per-column `headers = { en, de }` objects and German strings inside `en.json` | All copy lives in `messages/defs/*` (English) with typed DE/FR/IT translations |
 | Wallet column hardcoded to `0 CHF` | Real wallet and ledger (`lib/mock/selectors.ts`) |
 | Ban and status toggles fire immediately | Confirm dialogs that explain the consequences (`useConfirm`) |

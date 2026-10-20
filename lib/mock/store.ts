@@ -4,9 +4,9 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   CancelReason,
+  FormSession,
   CompanyMessage,
   DocKey,
-  Complaint,
   ContactMessage,
   DB,
   FaqQuestion,
@@ -68,7 +68,10 @@ interface Actions {
   requestProfileChange: (partnerId: string, message: string) => void;
   setNominations: (canton: string, partnerIds: string[]) => void;
   submitReview: (input: Pick<Review, "target" | "name" | "email" | "stars" | "comment">) => void;
-  submitComplaint: (input: Omit<Complaint, "id" | "status" | "createdAt">) => void;
+  /** Website offer form progress (created on first input, updated per step, closed on submit). */
+  trackFormSession: (id: string, patch: Partial<Omit<FormSession, "id" | "startedAt" | "updatedAt">>) => void;
+  /** Kompass replied to / called back a Contact Us request: it no longer counts toward the 24-hour follow-up. */
+  markContactHandled: (id: string, handled: boolean) => void;
   submitContact: (input: Omit<ContactMessage, "id" | "read" | "createdAt">) => void;
   submitFaqQuestion: (input: Pick<FaqQuestion, "name" | "email" | "question">) => void;
   markAllNotificationsRead: () => void;
@@ -386,15 +389,19 @@ export const useStore = create<Store>()(
           }),
         })),
 
-      submitComplaint: (input) =>
-        set((s) => ({
-          complaints: [{ ...input, id: uid("CMP"), status: "pending", createdAt: nowIso() }, ...s.complaints],
-          notifications: notify(s, {
-            kind: "complaint",
-            title: { en: `New complaint from ${input.name}`, de: `Neue Beschwerde von ${input.name}`, fr: `Nouvelle réclamation de ${input.name}`, it: `Nuovo reclamo da ${input.name}` },
-            href: "/admin/moderation/complaints",
-          }),
-        })),
+      trackFormSession: (id, patch) =>
+        set((s) => {
+          const at = nowIso();
+          const existing = s.formSessions.find((x) => x.id === id);
+          if (!existing) {
+            const created: FormSession = { device: "desktop", step: "started", ...patch, id, startedAt: at, updatedAt: at };
+            return { formSessions: [created, ...s.formSessions] };
+          }
+          return { formSessions: s.formSessions.map((x) => (x.id === id ? { ...x, ...patch, updatedAt: at } : x)) };
+        }),
+
+      markContactHandled: (id, handled) =>
+        set((s) => ({ contacts: s.contacts.map((c) => (c.id === id ? { ...c, read: true, handledAt: handled ? nowIso() : undefined } : c)) })),
 
       submitContact: (input) =>
         set((s) => ({
@@ -613,10 +620,11 @@ export const useStore = create<Store>()(
       name: "kompass-prototype-v1",
       // v2 added German, French and Italian; v3 dropped Arabic; v4 moved offers to the five-status
       // lifecycle; v5 added wallet top-ups, credit invoices and the fake-only refund policy; v6 dated
-      // company documents, files, messages and regional nominations. Older saves start again from the current seed, keeping the signed-in sessions.
-      version: 6,
+      // company documents, files, messages and regional nominations; v7 removed complaints and added
+      // offer-form sessions and contact follow-up. Older saves start again from the current seed, keeping the signed-in sessions.
+      version: 7,
       migrate: (persisted, version) => {
-        if (version >= 6) return persisted as Store;
+        if (version >= 7) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },
