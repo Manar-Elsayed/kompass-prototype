@@ -22,7 +22,11 @@ export interface Service {
   features: { id: ID; icon: string; title: L10n; description: L10n }[];
   tips: { id: ID; text: L10n }[];
   leadPrice: number; // CHF a partner pays per lead
+  /** Typical price range shown to customers. Indicative only — never a binding quote. */
+  estimate: { from: number; to: number; basis: L10n };
   active: boolean;
+  /** Shown on the website as "Coming soon" but not bookable yet. */
+  comingSoon?: boolean;
   order: number;
 }
 
@@ -48,6 +52,35 @@ export interface Address {
   elevator: boolean;
 }
 
+/**
+ * Who books: personal = for themselves; other = for someone else (e.g. a parent); organization = an
+ * association or institution books for one of its beneficiaries. The offer's own name / email / phone
+ * are always the beneficiary — the person the companies serve; the requester and organization are
+ * stored separately because they can differ.
+ */
+export type BookingType = "personal" | "other" | "organization";
+export interface Person {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
+/** A customer reports that the chosen company did not show up; Kompass follows it up. */
+export type NoShowStatus = "open" | "replacement" | "resolved";
+export type NoShowAction = "none" | "warning" | "suspended" | "removed";
+export interface NoShowCase {
+  partnerId: ID;
+  note: string;
+  reportedAt: string;
+  status: NoShowStatus;
+  /** Another company that bought the offer and confirmed it can do the job. */
+  replacementPartnerId?: ID;
+  companyReason?: string;
+  action?: NoShowAction;
+  resolvedAt?: string;
+}
+
 export interface Offer {
   id: ID; // e.g. "KO-10234"
   serviceId: ID;
@@ -68,6 +101,14 @@ export interface Offer {
   active: boolean;
   status: LeadStatus;
   flags: VerificationFlag[];
+  booking: BookingType;
+  /** Who submitted the request, when it was booked for someone else or by an organization. */
+  requester?: Person;
+  organization?: { name: string; email: string; phone: string; address?: string };
+  /** The company the customer chose to do the job (selling the details doesn't mean it was booked). */
+  chosenPartnerId?: ID;
+  chosenAt?: string;
+  noShow?: NoShowCase;
   cancelReason?: CancelReason;
   cancelledAt?: string;
   verifiedAt?: string;
@@ -249,6 +290,8 @@ export type ModerationStatus = "pending" | "approved" | "rejected";
 export interface Review {
   id: ID;
   target: "kompass" | ID; // "kompass" or partnerId
+  /** Company reviews come from the customer's request link, for the company they chose. */
+  offerId?: ID;
   name: string;
   email: string;
   stars: number;

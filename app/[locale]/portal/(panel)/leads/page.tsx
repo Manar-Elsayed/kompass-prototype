@@ -7,7 +7,7 @@ import { CheckCircle2, Flag, Mail, Phone, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import type { Order } from "@/lib/types";
-import { formatCHF, formatDate, formatDateTime } from "@/lib/utils";
+import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
@@ -62,6 +62,16 @@ function MyLeads() {
   const open = orders.find((o) => o.id === openId);
   const lead = open ? offerMap[open.offerId] : undefined;
 
+  // the customer tells Kompass which company they booked; every buyer sees the outcome
+  const choiceOf = (o: Order) => {
+    const chosen = offerMap[o.offerId]?.chosenPartnerId;
+    return !chosen ? "pending" : chosen === partner.id ? "you" : "other";
+  };
+  const choice = (o: Order) => {
+    const c = choiceOf(o);
+    return <Badge tone={c === "you" ? "success" : c === "other" ? "neutral" : "outline"}>{t(`choice.${c}`)}</Badge>;
+  };
+
   const status = (o: Order) => {
     const r = reportOf(o.id);
     if (r) return <StatusBadge status={r.status} />;
@@ -89,6 +99,7 @@ function MyLeads() {
     { id: "exec", header: tl("execution"), accessorFn: (o) => offerMap[o.offerId]?.executionDate ?? "", cell: (c) => <span className="whitespace-nowrap">{c.getValue() ? formatDate(c.getValue() as string, lang) : "–"}</span> },
     { id: "paid", header: t("paid"), accessorFn: (o) => o.price, cell: ({ row: { original: o } }) => <span className="font-semibold">{formatCHF(o.price, lang)}{o.couponCode && <span className="ms-1 text-xs font-normal text-success" dir="ltr">({o.couponCode})</span>}</span> },
     { id: "bought", header: t("bought"), accessorFn: (o) => o.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
+    { id: "choice", header: t("choiceCol"), accessorFn: (o) => choiceOf(o), cell: ({ row: { original: o } }) => choice(o) },
     { id: "status", header: tf("status"), accessorFn: (o) => (reportOf(o.id) ? "reported" : o.executed ? "executed" : "open"), cell: ({ row: { original: o } }) => status(o) },
   ];
 
@@ -102,7 +113,9 @@ function MyLeads() {
         onRowClick={(o) => setOpenId(o.id)}
         initialSort={[{ id: "bought", desc: true }]}
         emptyState={<EmptyState icon={<ShoppingBag />} title={t("empty")} action={<Button asChild variant="accent"><Link href="/portal/shop">{tn("shop")}</Link></Button>} />}
-        filters={[{ id: "st", label: tf("status"), options: [{ value: "open", label: tst("in_progress") }, { value: "executed", label: t("executed") }, { value: "reported", label: t("reported") }], get: (o) => (reportOf(o.id) ? "reported" : o.executed ? "executed" : "open") }]}
+        filters={[{ id: "st", label: tf("status"), options: [{ value: "open", label: tst("in_progress") }, { value: "executed", label: t("executed") }, { value: "reported", label: t("reported") }], get: (o) => (reportOf(o.id) ? "reported" : o.executed ? "executed" : "open") },
+          { id: "choice", label: t("choiceCol"), options: (["you", "other", "pending"] as const).map((c) => ({ value: c, label: t(`choice.${c}`) })), get: (o) => choiceOf(o) },
+        ]}
       />
 
       <Dialog open={!!open} onOpenChange={(v) => !v && setOpenId(null)}>
@@ -114,8 +127,20 @@ function MyLeads() {
                   <DialogTitle className="flex items-center gap-2"><Mono className="text-lg">{lead.id}</Mono> {status(open)}</DialogTitle>
                   <DialogDescription className="mt-1">{L(serviceMap[lead.serviceId]?.name)} · {formatDateTime(open.createdAt, lang)}</DialogDescription>
                 </div>
+                <div className={cn("rounded-xl border p-3 text-sm", choiceOf(open) === "you" ? "border-success/30 bg-success-soft/40" : "bg-surface-2/60")}>
+                  <p className="font-semibold text-ink">{choice(open)}</p>
+                  <p className="mt-1 text-muted-foreground">{t(`choiceHint.${choiceOf(open)}`)}</p>
+                  {lead.noShow?.partnerId === partner.id && <p className="mt-2 font-semibold text-danger">{t("noShowAgainst")}</p>}
+                </div>
                 <Card className="bg-primary-soft/40 p-4 shadow-none">
                   <p className="text-lg font-bold text-ink">{lead.firstName} {lead.lastName}</p>
+                  {lead.requester && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {t("bookedBy", { name: `${lead.requester.firstName} ${lead.requester.lastName}` })}
+                      {lead.organization && ` · ${lead.organization.name}`} ·{" "}
+                      <span dir="ltr">{lead.requester.phone}</span>
+                    </p>
+                  )}
                   <div className="mt-3 flex gap-2">
                     <Button asChild size="sm"><a href={`tel:${lead.phone}`}><Phone /> {t("call")}</a></Button>
                     <Button asChild size="sm" variant="outline"><a href={`mailto:${lead.email}`}><Mail /> {t("email")}</a></Button>

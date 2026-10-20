@@ -1,4 +1,5 @@
 import type {
+  BookingType,
   ContactMessage,
   Coupon,
   FakeReport,
@@ -102,6 +103,13 @@ const pad = (n: number, len = 2) => String(n).padStart(len, "0");
 const phone = () => `+41 7${rng.int(5, 9)} ${rng.int(100, 999)} ${pad(rng.int(0, 99))} ${pad(rng.int(0, 99))}`;
 const ip = () => `${rng.int(31, 213)}.${rng.int(0, 255)}.${rng.int(0, 255)}.${rng.int(1, 254)}`;
 
+/* ---------- services ---------- */
+// The catalog used to have seven bookable services. Draws still sample from that list so the RNG stream
+// (and every record after it) stays the same; retired services map onto the closest current one.
+const LEGACY_SERVICES = ["svc-private", "svc-office", "svc-cleaning", "svc-clearance", "svc-piano", "svc-storage", "svc-international"];
+const RETIRED: Record<string, string> = { "svc-office": "svc-private", "svc-international": "svc-move-clean" };
+const current = (id: string) => RETIRED[id] ?? id;
+
 /* ---------- partners ---------- */
 // Raw records keep the original shape (contract expiry + file names) so the RNG stream is unchanged;
 // they are turned into dated, checked documents below with a separate stream.
@@ -110,9 +118,11 @@ const rawPartners: RawPartner[] = PARTNER_NAMES.map((name, i) => {
   const loc = CITIES[i % CITIES.length];
   const status: Partner["status"] = i < 19 ? "approved" : i < 22 ? "pending" : i < 24 ? "contract_sent" : "rejected";
   const nSvc = rng.int(1, 4);
-  const serviceIds = rng.sample(services.filter((s) => s.active).map((s) => s.id), nSvc);
+  const serviceIds = [...new Set(rng.sample(LEGACY_SERVICES, nSvc).map(current))];
   if (name.includes("Clean") || name.includes("Reinigung")) serviceIds.splice(0, serviceIds.length, "svc-cleaning", "svc-private");
   if (name.includes("Piano")) serviceIds.splice(0, serviceIds.length, "svc-piano", "svc-private");
+  // a company that moves and cleans can take the combined request too
+  if (serviceIds.includes("svc-private") && serviceIds.includes("svc-cleaning") && !serviceIds.includes("svc-move-clean")) serviceIds.push("svc-move-clean");
   const owner = `${rng.pick([...FIRST_M, ...FIRST_F])} ${rng.pick(LAST)}`;
   const slug = slugify(name);
   return {
@@ -206,7 +216,8 @@ export const offers: Offer[] = Array.from({ length: 128 }, (_, i) => {
   const from = rng.pick(CITIES);
   const to = rng.chance(0.6) ? from : rng.pick(CITIES);
   const age = Math.floor((i / 128) * 180) + rng.int(0, 2); // spread over ~6 months, newest first
-  const svc = rng.chance(0.55) ? services[0] : rng.pick(services.filter((s) => s.active));
+  const svcId = current(rng.chance(0.55) ? "svc-private" : rng.pick(LEGACY_SERVICES));
+  const svc = services.find((x) => x.id === svcId)!;
   // recent offers: auto-checks flag ~1 in 3, which then wait in New for admin review
   const flags: VerificationFlag[] = age < 4 && lrng.chance(0.35) ? lrng.sample(FLAG_POOL, lrng.int(1, 2)) : [];
   const slot = age < 4 ? -1 : rng.int(0, STATUS_POOL.length - 1);
@@ -236,6 +247,7 @@ export const offers: Offer[] = Array.from({ length: 128 }, (_, i) => {
     active: status !== "cancelled",
     status,
     flags,
+    booking: "personal" as BookingType,
     // slot 13 never sold: either side may have cancelled; slot 14 had buyers, so it was found to be fake
     ...(status === "cancelled"
       ? { cancelReason: slot === 14 || lrng.chance(0.5) ? ("fake" as const) : ("customer" as const), cancelledAt: daysAgo(Math.max(0, age - 2)) }
@@ -287,6 +299,59 @@ for (const o of offers) {
   if (sold >= o.offersWanted) o.status = "completed";
   else if (Date.parse(o.deadline) < NOW) o.status = "expired";
   else if (o.status !== "in_progress") o.status = "in_progress";
+}
+
+/* ---------- who booked, which company the customer chose, no-shows ---------- */
+const brng = createRng(20261025);
+const ORGANIZATIONS = [
+  { name: "Pro Senectute Kanton Zürich", email: "umzug@zh.prosenectute.ch", phone: "+41 58 451 51 00" },
+  { name: "Caritas Bern", email: "sozialberatung@caritas-bern.ch", phone: "+41 31 378 60 00" },
+  { name: "Heilsarmee Basel", email: "basel@heilsarmee.ch", phone: "+41 61 690 70 70" },
+  { name: "Stiftung Wohnhilfe Luzern", email: "info@wohnhilfe-luzern.ch", phone: "+41 41 220 15 15" },
+];
+for (const o of offers) {
+  const r = brng.int(0, 99);
+  if (r < 10) {
+    o.booking = "other";
+    const first = brng.pick([...FIRST_F, ...FIRST_M]);
+    o.requester = { firstName: first, lastName: o.lastName, email: `${first.toLowerCase()}.${o.lastName.toLowerCase().replace(/ü/g, "ue")}@bluewin.ch`, phone: phone2(brng) };
+  } else if (r < 16) {
+    o.booking = "organization";
+    const org = brng.pick(ORGANIZATIONS);
+    const first = brng.pick([...FIRST_F, ...FIRST_M]);
+    const last = brng.pick(LAST);
+    o.organization = org;
+    o.requester = { firstName: first, lastName: last, email: org.email, phone: org.phone };
+  }
+  // the company that did the job is the one the customer chose
+  const done = orders.find((x) => x.offerId === o.id && x.executed);
+  if (done) {
+    o.chosenPartnerId = done.partnerId;
+    o.chosenAt = new Date(Date.parse(done.createdAt) + brng.int(24, 96) * 3_600_000).toISOString();
+  }
+}
+// two customers reported that the company they chose did not come: one open, one solved with a replacement
+{
+  const candidates = offers.filter((o) => o.status === "in_progress" && orders.filter((x) => x.offerId === o.id).length >= 2);
+  candidates.slice(0, 2).forEach((o, i) => {
+    const [chosen, other] = orders.filter((x) => x.offerId === o.id);
+    // once a replacement confirms, it becomes the company doing the job
+    o.chosenPartnerId = i === 0 ? chosen.partnerId : other.partnerId;
+    o.chosenAt = daysAgo(4 + i);
+    o.noShow =
+      i === 0
+        ? { partnerId: chosen.partnerId, note: "Nobody came at 8:00 and the phone goes to voicemail.", reportedAt: daysAgo(0, -3), status: "open" }
+        : {
+            partnerId: chosen.partnerId,
+            note: "The team did not arrive on the agreed morning.",
+            reportedAt: daysAgo(3),
+            status: "resolved",
+            replacementPartnerId: other.partnerId,
+            companyReason: "Our truck broke down and we failed to call the customer.",
+            action: "warning",
+            resolvedAt: daysAgo(2),
+          };
+  });
 }
 
 export const fakeReports: FakeReport[] = rng.sample(orders, 9).map((o, i) => ({
@@ -394,6 +459,18 @@ export const reviews: Review[] = [
   }),
 ];
 
+{
+  const used = new Set<string>();
+  for (const r of reviews) {
+    if (r.target === "kompass") continue;
+    const o = offers.find((x) => x.status === "completed" && !x.noShow && x.chosenPartnerId === r.target && !used.has(x.id));
+    if (o) {
+      used.add(o.id);
+      r.offerId = o.id;
+    }
+  }
+}
+
 /** Translations of the seeded Kompass reviews (stored in English as customers wrote them). */
 export const KOMPASS_REVIEW_L10N: Record<string, L10n> = Object.fromEntries(
   KOMPASS_COMMENTS.map((c, i) => [`RV-K${i + 1}`, c]),
@@ -427,7 +504,7 @@ for (let i = 0; i < 11; i++) {
 export const coupons: Coupon[] = [
   { id: "cp-1", code: "WELCOME20", serviceId: "all", type: "percent", discount: 20, used: 31, usageLimit: 100, multiUse: false, active: true, startDate: daysAgo(90), endDate: daysAhead(60) },
   { id: "cp-2", code: "CLEAN10", serviceId: "svc-cleaning", type: "fixed", discount: 10, used: 12, usageLimit: 50, multiUse: true, active: true, startDate: daysAgo(30), endDate: daysAhead(30) },
-  { id: "cp-3", code: "OFFICE25", serviceId: "svc-office", type: "percent", discount: 25, used: 4, usageLimit: 20, multiUse: false, active: true, startDate: daysAgo(10), endDate: daysAhead(80) },
+  { id: "cp-3", code: "MOVECLEAN25", serviceId: "svc-move-clean", type: "percent", discount: 25, used: 4, usageLimit: 20, multiUse: false, active: true, startDate: daysAgo(10), endDate: daysAhead(80) },
   { id: "cp-4", code: "SUMMER15", serviceId: "all", type: "percent", discount: 15, used: 80, usageLimit: 80, multiUse: true, active: false, startDate: daysAgo(150), endDate: daysAgo(40) },
 ];
 
@@ -789,7 +866,7 @@ export const formSessions: FormSession[] = [
     return {
       id: `FS-${pad(i + 501, 4)}`,
       step,
-      serviceId: srng.chance(0.85) ? srng.pick(services.filter((s) => s.active)).id : undefined,
+      serviceId: srng.chance(0.85) ? current(srng.pick(LEGACY_SERVICES)) : undefined,
       ...(withContact
         ? { name: `${first} ${last}`, email: `${first.toLowerCase()}.${last.toLowerCase().replace(/ü/g, "ue")}@${srng.pick(["gmail.com", "bluewin.ch", "gmx.ch"])}`, phone: phone2(srng) }
         : {}),

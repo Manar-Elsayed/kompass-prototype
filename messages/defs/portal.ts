@@ -106,6 +106,19 @@ export const portal = {
     call: "Call",
     email: "Email",
     empty: "No leads yet. Buy your first lead in the shop.",
+    choiceCol: "Customer’s choice",
+    choice: {
+      you: "Booked you",
+      other: "Chose another company",
+      pending: "Not decided yet",
+    },
+    choiceHint: {
+      you: "The customer told Kompass they booked you. Keep the date and confirm the details.",
+      other: "The customer booked another company for this job.",
+      pending: "The customer hasn’t told us yet which company they booked.",
+    },
+    noShowAgainst: "The customer reported that you did not show up. Kompass will contact you.",
+    bookedBy: "Booked by {name}",
   },
   payments: {
     topUpOnline: "Top up online",

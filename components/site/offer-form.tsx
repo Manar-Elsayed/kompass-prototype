@@ -5,9 +5,9 @@ import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, ExternalLink, Lock, MapPin, Flag } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, Check, CheckCircle2, ExternalLink, Lock, MapPin, Flag, User, Users } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import type { Offer } from "@/lib/types";
+import type { BookingType, Offer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang } from "@/lib/mock/hooks";
@@ -19,6 +19,7 @@ import { Field } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Checkbox, RadioCards, Switch } from "@/components/ui/controls";
 import { Icon } from "@/components/shared/icon";
+import { ConfirmationEmail, PriceEstimate, priceRange } from "@/components/site/request-bits";
 
 const ROOMS = ["1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.5", "6", "7+"];
 const FLOORS = ["0", "1", "2", "3", "4", "5", "6", "7+"];
@@ -32,20 +33,46 @@ const address = z.object({
   elevator: z.boolean(),
 });
 
-const schema = z.object({
-  serviceId: z.string().min(1, "required"),
-  from: address,
-  to: address,
-  executionDate: z.string().min(1, "required"),
-  offersWanted: z.string(),
-  details: z.string(),
-  gender: z.enum(["male", "female"], { message: "required" }),
-  firstName: z.string().min(1, "required"),
-  lastName: z.string().min(1, "required"),
-  email: z.string().email("email"),
-  phone: z.string().regex(/^[+\d][\d\s]{7,}$/, "phone"),
-  privacy: z.literal(true, { message: "required" }),
-});
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE = /^[+\d][\d\s]{7,}$/;
+
+const schema = z
+  .object({
+    serviceId: z.string().min(1, "required"),
+    from: address,
+    to: address,
+    executionDate: z.string().min(1, "required"),
+    offersWanted: z.string(),
+    details: z.string(),
+    booking: z.enum(["personal", "other", "organization"]),
+    // the person moving — the one companies serve and call
+    gender: z.enum(["male", "female"], { message: "required" }),
+    firstName: z.string().min(1, "required"),
+    lastName: z.string().min(1, "required"),
+    email: z.string(),
+    phone: z.string().regex(PHONE, "phone"),
+    // whoever books for them: a relative, or a contact person at an organization
+    reqFirstName: z.string(),
+    reqLastName: z.string(),
+    reqEmail: z.string(),
+    reqPhone: z.string(),
+    orgName: z.string(),
+    orgAddress: z.string(),
+    privacy: z.literal(true, { message: "required" }),
+  })
+  .superRefine((v, ctx) => {
+    const need = (path: string, ok: boolean, message = "required") => {
+      if (!ok) ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
+    };
+    // booking for someone else: the person moving may have no email; companies then call them
+    if (v.booking === "personal" || v.email.trim()) need("email", EMAIL.test(v.email), "email");
+    if (v.booking === "personal") return;
+    need("reqFirstName", !!v.reqFirstName.trim());
+    need("reqLastName", !!v.reqLastName.trim());
+    need("reqEmail", EMAIL.test(v.reqEmail), "email");
+    need("reqPhone", PHONE.test(v.reqPhone), "phone");
+    if (v.booking === "organization") need("orgName", !!v.orgName.trim());
+  });
 type FormValues = z.infer<typeof schema>;
 
 const STEP1: (keyof FormValues)[] = ["serviceId", "from", "to", "executionDate", "offersWanted", "details"];
@@ -91,10 +118,17 @@ export function OfferForm({
       executionDate: "",
       offersWanted: "3",
       details: "",
+      booking: "personal",
       firstName: defaultContact?.firstName ?? "",
       lastName: defaultContact?.lastName ?? "",
       email: defaultContact?.email ?? "",
       phone: defaultContact?.phone ?? "",
+      reqFirstName: "",
+      reqLastName: "",
+      reqEmail: "",
+      reqPhone: "",
+      orgName: "",
+      orgAddress: "",
     } as Partial<FormValues> as FormValues,
   });
   const { register, control, handleSubmit, formState, setValue, watch, trigger, reset } = form;
@@ -136,6 +170,8 @@ export function OfferForm({
 
   const onSubmit = handleSubmit(async (v) => {
     const toAddr = (a: FormValues["from"]) => ({ ...a, country: "CH" });
+    const booking = v.booking as BookingType;
+    const requester = booking === "personal" ? undefined : { firstName: v.reqFirstName.trim(), lastName: v.reqLastName.trim(), email: v.reqEmail.trim(), phone: v.reqPhone.trim() };
     const offer = await mock(
       () =>
         submitOffer({
@@ -143,8 +179,12 @@ export function OfferForm({
           gender: v.gender,
           firstName: v.firstName,
           lastName: v.lastName,
-          email: v.email,
+          // without an email for the person moving, companies write to whoever booked
+          email: v.email.trim() || requester?.email || "",
           phone: v.phone,
+          booking,
+          requester,
+          organization: booking === "organization" ? { name: v.orgName.trim(), email: v.reqEmail.trim(), phone: v.reqPhone.trim(), address: v.orgAddress.trim() || undefined } : undefined,
           lang,
           from: toAddr(v.from),
           to: toAddr(v.to),
@@ -239,9 +279,14 @@ export function OfferForm({
       <div className={cn("rounded-3xl border border-border bg-surface p-5 shadow-pop sm:p-8", className)}>{children}</div>
     );
 
+  const values = watch();
+  const svc = services.find((s) => s.id === values.serviceId);
+  const booking = values.booking as BookingType;
+  const forOther = booking !== "personal";
+
   if (done) {
     return shell(
-      <div className="mx-auto max-w-lg py-6 text-center" role="status">
+      <div className="mx-auto max-w-xl py-6 text-center" role="status">
         <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-success-soft">
           <CheckCircle2 className="size-9 text-success" />
         </div>
@@ -251,10 +296,14 @@ export function OfferForm({
           <span className="text-muted-foreground">{t("site.offerForm.reference")}</span>
           <span className="font-mono font-bold text-ink" dir="ltr">{done.id}</span>
         </div>
+        <div className="mt-8">
+          <p className="mb-3 text-start text-sm font-bold text-ink">{t("site.offerForm.emailSent", { email: done.requester?.email ?? done.email })}</p>
+          <ConfirmationEmail offer={done} />
+        </div>
         <div className="mt-8 text-start">
           <p className="mb-3 text-sm font-bold text-ink">{t("site.offerForm.whatNext")}</p>
           <ol className="space-y-3">
-            {[t("site.offerForm.next1"), t("site.offerForm.next2", { count: done.offersWanted }), t("site.offerForm.next3")].map((s, i) => (
+            {[t("site.offerForm.next1"), t("site.offerForm.next2", { count: done.offersWanted }), t("site.offerForm.next3"), t("site.offerForm.next4")].map((s, i) => (
               <li key={i} className="flex gap-3 text-sm">
                 <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-bold text-primary">{i + 1}</span>
                 <span className="pt-0.5 text-foreground/90">{s}</span>
@@ -273,6 +322,12 @@ export function OfferForm({
           >
             {t("site.offerForm.newRequest")}
           </Button>
+          <Button asChild>
+            <Link href={`/requests/${done.id}`}>
+              {t("site.offerForm.openRequest")}
+              <ArrowRight />
+            </Link>
+          </Button>
           <Button asChild variant="secondary">
             <Link href={`/admin/leads/${done.id}`}>
               <ExternalLink />
@@ -283,9 +338,6 @@ export function OfferForm({
       </div>,
     );
   }
-
-  const values = watch();
-  const svc = services.find((s) => s.id === values.serviceId);
 
   return shell(
     <form onSubmit={onSubmit} noValidate>
@@ -344,9 +396,10 @@ export function OfferForm({
               control={control}
               name="serviceId"
               render={({ field }) => (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup">
                   {services
                     .filter((s) => s.active)
+                    .sort((a, b) => a.order - b.order)
                     .map((s) => (
                       <button
                         type="button"
@@ -354,22 +407,35 @@ export function OfferForm({
                         role="radio"
                         aria-label={L(s.name)}
                         aria-checked={field.value === s.id}
+                        disabled={s.comingSoon}
                         onClick={() => field.onChange(s.id)}
                         className={cn(
                           "flex flex-col items-start gap-2 rounded-xl border p-3 text-start text-sm font-semibold transition",
-                          field.value === s.id
-                            ? "border-primary bg-primary-soft text-primary ring-1 ring-primary"
-                            : "border-input bg-surface text-foreground hover:border-primary/40",
+                          s.comingSoon
+                            ? "cursor-not-allowed border-dashed border-input bg-surface-2/50 text-muted-foreground"
+                            : field.value === s.id
+                              ? "border-primary bg-primary-soft text-primary ring-1 ring-primary"
+                              : "border-input bg-surface text-foreground hover:border-primary/40",
                         )}
                       >
-                        <Icon name={s.icon} className="size-5" />
+                        <span className="flex w-full items-center justify-between gap-2">
+                          <Icon name={s.icon} className="size-5" />
+                          {s.comingSoon && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold">{t("site.estimate.soon")}</span>}
+                        </span>
                         <span className="leading-tight">{L(s.name)}</span>
+                        {!s.comingSoon && s.estimate.to > 0 && (
+                          <span className={cn("text-xs font-medium tabular-nums", field.value === s.id ? "text-primary/80" : "text-muted-foreground")}>
+                            {t("site.estimate.from")} {priceRange(s, lang).split(" – ")[0]}
+                          </span>
+                        )}
                       </button>
                     ))}
                 </div>
               )}
             />
           </Field>
+
+          {svc && <PriceEstimate service={svc} />}
 
           <div className="grid gap-5 lg:grid-cols-2">
             {addressBlock("from", t("site.offerForm.movingFrom"), <MapPin className="size-4 text-accent" />)}
@@ -380,7 +446,7 @@ export function OfferForm({
             <Field label={t("site.offerForm.date")} error={err(errors.executionDate?.message)} required>
               <Input type="date" min="2026-10-19" {...register("executionDate")} aria-invalid={!!errors.executionDate} />
             </Field>
-            <Field label={t("site.offerForm.offersCount")}>
+            <Field label={t("site.offerForm.offersCount")} hint={t("site.offerForm.quotaHint", { count: Number(values.offersWanted) })}>
               <Controller
                 control={control}
                 name="offersWanted"
@@ -413,6 +479,57 @@ export function OfferForm({
       ) : (
         <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           <div className="grid gap-5">
+            <Field label={t("site.booking.who")} required>
+              <Controller
+                control={control}
+                name="booking"
+                render={({ field }) => (
+                  <RadioCards
+                    className="grid-cols-1 sm:grid-cols-3"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={[
+                      { value: "personal", label: t("site.booking.personal"), icon: <User className="size-4" /> },
+                      { value: "other", label: t("site.booking.other"), icon: <Users className="size-4" /> },
+                      { value: "organization", label: t("site.booking.organization"), icon: <Building2 className="size-4" /> },
+                    ]}
+                  />
+                )}
+              />
+            </Field>
+
+            {booking === "organization" && (
+              <fieldset className="grid gap-4 rounded-xl border border-border bg-surface-2/40 p-4 sm:grid-cols-2 sm:p-5">
+                <legend className="px-1 text-sm font-bold text-ink">{t("site.booking.orgTitle")}</legend>
+                <Field label={t("site.booking.orgName")} error={err(errors.orgName?.message)} required>
+                  <Input {...register("orgName")} autoComplete="organization" aria-invalid={!!errors.orgName} />
+                </Field>
+                <Field label={t("site.booking.orgAddress")} hint={t("common.form.optional")}>
+                  <Input {...register("orgAddress")} autoComplete="street-address" />
+                </Field>
+              </fieldset>
+            )}
+
+            {forOther && (
+              <fieldset className="grid gap-4 rounded-xl border border-border bg-surface-2/40 p-4 sm:grid-cols-2 sm:p-5">
+                <legend className="px-1 text-sm font-bold text-ink">{t(booking === "organization" ? "site.booking.contactTitle" : "site.booking.requesterTitle")}</legend>
+                <p className="-mt-1 text-xs text-muted-foreground sm:col-span-2">{t("site.booking.requesterHint")}</p>
+                <Field label={t("common.fields.firstName")} error={err(errors.reqFirstName?.message)} required>
+                  <Input {...register("reqFirstName")} autoComplete="given-name" aria-invalid={!!errors.reqFirstName} />
+                </Field>
+                <Field label={t("common.fields.lastName")} error={err(errors.reqLastName?.message)} required>
+                  <Input {...register("reqLastName")} autoComplete="family-name" aria-invalid={!!errors.reqLastName} />
+                </Field>
+                <Field label={t("common.fields.email")} error={err(errors.reqEmail?.message)} required>
+                  <Input type="email" dir="ltr" {...register("reqEmail")} autoComplete="email" aria-invalid={!!errors.reqEmail} />
+                </Field>
+                <Field label={t("common.fields.phone")} error={err(errors.reqPhone?.message)} required>
+                  <Input type="tel" dir="ltr" placeholder="+41 79 123 45 67" {...register("reqPhone")} autoComplete="tel" aria-invalid={!!errors.reqPhone} />
+                </Field>
+              </fieldset>
+            )}
+
+            {forOther && <p className="-mb-2 text-sm font-bold text-ink">{t("site.booking.movingPerson")}</p>}
             <Field label={t("common.fields.salutation")} error={err(errors.gender?.message)} required>
               <Controller
                 control={control}
@@ -437,12 +554,27 @@ export function OfferForm({
               <Field label={t("common.fields.lastName")} error={err(errors.lastName?.message)} required>
                 <Input {...register("lastName")} autoComplete="family-name" aria-invalid={!!errors.lastName} />
               </Field>
-              <Field label={t("common.fields.email")} error={err(errors.email?.message)} required>
-                <Input type="email" dir="ltr" {...register("email", { onBlur: trackContact })} autoComplete="email" aria-invalid={!!errors.email} />
+              <Field
+                label={t("common.fields.email")}
+                error={err(errors.email?.message)}
+                required={!forOther}
+                hint={forOther ? t("site.booking.emailOptional") : undefined}
+              >
+                <Input type="email" dir="ltr" {...register("email", { onBlur: trackContact })} autoComplete={forOther ? "off" : "email"} aria-invalid={!!errors.email} />
               </Field>
               <Field label={t("common.fields.phone")} error={err(errors.phone?.message)} required>
                 <Input type="tel" dir="ltr" placeholder="+41 79 123 45 67" {...register("phone", { onBlur: trackContact })} autoComplete="tel" aria-invalid={!!errors.phone} />
               </Field>
+            </div>
+            <div className="rounded-xl border border-primary/20 bg-primary-soft/50 p-4 text-sm">
+              <p className="flex items-center gap-2 font-bold text-ink">
+                <Lock className="size-4 text-primary" /> {t("site.booking.privacyTitle")}
+              </p>
+              <ul className="mt-2 list-disc space-y-1 ps-6 text-foreground/85">
+                <li>{t("site.booking.privacy1")}</li>
+                <li>{t("site.booking.privacy2", { count: Number(values.offersWanted) })}</li>
+                <li>{t("site.booking.privacy3")}</li>
+              </ul>
             </div>
             <Controller
               control={control}
@@ -482,10 +614,21 @@ export function OfferForm({
                 <dd className="text-end font-semibold" dir="ltr">{values.executionDate || "–"}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">{t("site.offerForm.offersCount")}</dt>
+                <dt className="text-muted-foreground">{t("site.offerForm.companiesShort")}</dt>
                 <dd className="font-semibold">{values.offersWanted}</dd>
               </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">{t("site.booking.who")}</dt>
+                <dd className="text-end font-semibold">{t(`site.booking.${booking}`)}</dd>
+              </div>
             </dl>
+            {svc && svc.estimate.to > 0 && (
+              <div className="mt-4 border-t pt-3">
+                <p className="text-muted-foreground">{t("site.estimate.title")}</p>
+                <p className="font-bold text-ink tabular-nums">{priceRange(svc, lang)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("site.estimate.short")}</p>
+              </div>
+            )}
           </aside>
 
           <div className="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:justify-between lg:col-span-2">

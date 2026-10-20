@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type {
+  NoShowCase,
   CancelReason,
   FormSession,
   CompanyMessage,
@@ -44,7 +45,7 @@ interface Actions {
   setConfig: (partial: Partial<DB["config"]>) => void;
 
   /* cross-surface flows */
-  submitOffer: (input: Omit<Offer, "id" | "createdAt" | "status" | "active" | "ip" | "device" | "source" | "flags" | "cancelReason" | "cancelledAt" | "verifiedAt" | "repostedAt" | "buyersNotifiedAt"> & { source?: Offer["source"] }) => Offer;
+  submitOffer: (input: Omit<Offer, "id" | "createdAt" | "status" | "active" | "ip" | "device" | "source" | "flags" | "cancelReason" | "cancelledAt" | "verifiedAt" | "repostedAt" | "buyersNotifiedAt" | "chosenPartnerId" | "chosenAt" | "noShow"> & { source?: Offer["source"] }) => Offer;
   registerPartner: (input: Omit<Partner, "id" | "slug" | "status" | "banned" | "featured" | "wallet" | "documents" | "lastSeen" | "createdAt">) => Partner;
   decideApplication: (id: string, decision: "contract_sent" | "approved" | "rejected", expiresAt?: string) => void;
   decideDue: (id: string, status: "confirmed" | "canceled") => void;
@@ -67,7 +68,13 @@ interface Actions {
   /** Company asks Kompass to change details it can't edit itself; lands in the admin inbox. */
   requestProfileChange: (partnerId: string, message: string) => void;
   setNominations: (canton: string, partnerIds: string[]) => void;
-  submitReview: (input: Pick<Review, "target" | "name" | "email" | "stars" | "comment">) => void;
+  submitReview: (input: Pick<Review, "target" | "name" | "email" | "stars" | "comment" | "offerId">) => void;
+  /** Customer, from the request link: the company they booked among those that bought the request. */
+  chooseCompany: (offerId: string, partnerId: string) => void;
+  /** Customer, from the request link: the chosen company did not come. */
+  reportNoShow: (offerId: string, note: string) => void;
+  /** Admin: follow-up of a no-show — replacement company, the company's reason, the action taken. */
+  updateNoShow: (offerId: string, patch: Partial<Omit<NoShowCase, "partnerId" | "note" | "reportedAt">>) => void;
   /** Website offer form progress (created on first input, updated per step, closed on submit). */
   trackFormSession: (id: string, patch: Partial<Omit<FormSession, "id" | "startedAt" | "updatedAt">>) => void;
   /** Kompass replied to / called back a Contact Us request: it no longer counts toward the 24-hour follow-up. */
@@ -389,6 +396,41 @@ export const useStore = create<Store>()(
           }),
         })),
 
+      chooseCompany: (offerId, partnerId) =>
+        set((s) => ({ offers: s.offers.map((o) => (o.id === offerId ? { ...o, chosenPartnerId: partnerId, chosenAt: nowIso() } : o)) })),
+
+      reportNoShow: (offerId, note) =>
+        set((s) => {
+          const offer = s.offers.find((o) => o.id === offerId);
+          if (!offer?.chosenPartnerId) return {};
+          const partner = s.partners.find((p) => p.id === offer.chosenPartnerId);
+          return {
+            offers: s.offers.map((o) => (o.id === offerId ? { ...o, noShow: { partnerId: offer.chosenPartnerId!, note, reportedAt: nowIso(), status: "open" } } : o)),
+            notifications: notify(s, {
+              kind: "report",
+              title: { en: `No-show: ${partner?.name} did not come (${offerId})`, de: `Nicht erschienen: ${partner?.name} (${offerId})`, fr: `Absence : ${partner?.name} n’est pas venu (${offerId})`, it: `Mancata presenza: ${partner?.name} (${offerId})` },
+              href: `/admin/leads/${offerId}`,
+            }),
+          };
+        }),
+
+      updateNoShow: (offerId, patch) =>
+        set((s) => {
+          const offer = s.offers.find((o) => o.id === offerId);
+          if (!offer?.noShow) return {};
+          const noShow: NoShowCase = { ...offer.noShow, ...patch };
+          if (noShow.status === "resolved" && !noShow.resolvedAt) noShow.resolvedAt = nowIso();
+          // the replacement company becomes the one doing the job
+          const chosenPartnerId = patch.replacementPartnerId ?? offer.chosenPartnerId;
+          const ban = patch.action === "suspended" || patch.action === "removed";
+          return {
+            offers: s.offers.map((o) => (o.id === offerId ? { ...o, noShow, chosenPartnerId } : o)),
+            partners: ban
+              ? s.partners.map((p) => (p.id === noShow.partnerId ? { ...p, banned: true, featured: false, ...(patch.action === "removed" ? { status: "rejected" as const } : {}) } : p))
+              : s.partners,
+          };
+        }),
+
       trackFormSession: (id, patch) =>
         set((s) => {
           const at = nowIso();
@@ -621,10 +663,11 @@ export const useStore = create<Store>()(
       // v2 added German, French and Italian; v3 dropped Arabic; v4 moved offers to the five-status
       // lifecycle; v5 added wallet top-ups, credit invoices and the fake-only refund policy; v6 dated
       // company documents, files, messages and regional nominations; v7 removed complaints and added
-      // offer-form sessions and contact follow-up. Older saves start again from the current seed, keeping the signed-in sessions.
-      version: 7,
+      // offer-form sessions and contact follow-up; v8 the six services, booking types, chosen
+      // companies and no-shows. Older saves start again from the current seed, keeping the signed-in sessions.
+      version: 8,
       migrate: (persisted, version) => {
-        if (version >= 7) return persisted as Store;
+        if (version >= 8) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { ArrowRight, BadgeCheck, MapPin, Quote } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import type { Blog, Partner, Review, Service } from "@/lib/types";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { useL, useLang } from "@/lib/mock/hooks";
 import { KOMPASS_REVIEW_L10N } from "@/lib/mock/seed";
 import { Button } from "@/components/ui/button";
@@ -83,6 +83,8 @@ export function PageHero({
 export function ServiceCard({ service, partnerCount }: { service: Service; partnerCount?: number }) {
   const L = useL();
   const t = useTranslations("site.services");
+  const te = useTranslations("site.estimate");
+  const lang = useLang();
   return (
     <Link
       href={`/services/${service.slug}`}
@@ -91,16 +93,24 @@ export function ServiceCard({ service, partnerCount }: { service: Service; partn
       <div className="mb-5 flex size-12 items-center justify-center rounded-xl bg-primary-soft text-primary transition-colors group-hover:bg-primary group-hover:text-white">
         <Icon name={service.icon} className="size-6" />
       </div>
+      {service.comingSoon && <span className="absolute end-5 top-5 rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">{te("soon")}</span>}
       <h3 className="text-lg font-bold text-ink">{L(service.name)}</h3>
       <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{L(service.short)}</p>
-      <div className="mt-5 flex items-center justify-between text-sm">
-        {partnerCount !== undefined ? (
+      {!service.comingSoon && service.estimate.to > 0 && (
+        <p className="mt-4 text-sm">
+          <span className="text-muted-foreground">{te("from")} </span>
+          <span className="font-bold text-ink tabular-nums">{formatCHF(service.estimate.from, lang)}</span>
+          <span className="text-muted-foreground"> · {te("indicative")}</span>
+        </p>
+      )}
+      <div className="mt-4 flex items-center justify-between border-t pt-4 text-sm">
+        {partnerCount !== undefined && !service.comingSoon ? (
           <span className="text-muted-foreground">{t("partnersFor", { count: partnerCount })}</span>
         ) : (
           <span />
         )}
         <span className="inline-flex items-center gap-1 font-semibold text-primary">
-          {t("request")}
+          {service.comingSoon ? t("learnMore") : t("request")}
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
