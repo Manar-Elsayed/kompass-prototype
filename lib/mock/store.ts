@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type {
+  CancelReason,
   Complaint,
   ContactMessage,
   DB,
@@ -17,6 +18,7 @@ import type {
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { createSeed } from "./seed";
+import { isPurchasable, verificationFlags } from "./selectors";
 
 type Collections = {
   [K in keyof DB as DB[K] extends { id: string }[] ? K : never]: DB[K];
@@ -37,7 +39,7 @@ interface Actions {
   setConfig: (partial: Partial<DB["config"]>) => void;
 
   /* cross-surface flows */
-  submitOffer: (input: Omit<Offer, "id" | "createdAt" | "status" | "active" | "ip" | "device" | "source"> & { source?: Offer["source"] }) => Offer;
+  submitOffer: (input: Omit<Offer, "id" | "createdAt" | "status" | "active" | "ip" | "device" | "source" | "flags" | "cancelReason" | "cancelledAt" | "verifiedAt" | "repostedAt" | "buyersNotifiedAt"> & { source?: Offer["source"] }) => Offer;
   registerPartner: (input: Omit<Partner, "id" | "slug" | "status" | "banned" | "featured" | "wallet" | "documents" | "lastSeen" | "createdAt">) => Partner;
   decideApplication: (id: string, decision: "contract_sent" | "approved" | "rejected", expiresAt?: string) => void;
   decideDue: (id: string, status: "confirmed" | "canceled") => void;
@@ -49,6 +51,20 @@ interface Actions {
   submitContact: (input: Omit<ContactMessage, "id" | "read" | "createdAt">) => void;
   submitFaqQuestion: (input: Pick<FaqQuestion, "name" | "email" | "question">) => void;
   markAllNotificationsRead: () => void;
+
+  /* offer lifecycle (admin) */
+  /** Verified by admin after the auto-checks flagged it: New → In progress (goes on sale). */
+  approveOffer: (id: string) => void;
+  /** Fake → refunds the listed purchases to the buyers' wallets; customer → nobody is refunded. */
+  cancelOffer: (id: string, reason: CancelReason, refundOrderIds?: string[]) => void;
+  /** Close to the deadline: back to the top of the shop and companies are notified again. */
+  repostOffer: (id: string) => void;
+  /** Manual / urgent assignment: charges the company the agreed price straight from its wallet. */
+  assignLead: (offerId: string, partnerId: string, price: number, note?: string) => BuyResult;
+  /** Records that the customer was emailed the names of the companies that bought the offer. */
+  notifyCustomerOfBuyers: (offerId: string) => void;
+  /** Offers on sale whose deadline has passed become Expired. Run on load. */
+  sweepExpired: () => void;
 
   /* partner portal flows */
   buyLead: (partnerId: string, offerId: string, couponCode?: string) => BuyResult;
@@ -68,7 +84,7 @@ interface Actions {
 
 export type BuyResult =
   | { ok: true; order: Order; price: number; discount: number }
-  | { ok: false; error: "unavailable" | "insufficient" | "coupon" | "blocked" };
+  | { ok: false; error: "unavailable" | "insufficient" | "coupon" | "blocked" | "owned" };
 
 export type Store = DB & { session: Session | null; partnerSession: PartnerSession | null } & Actions;
 
@@ -111,6 +127,21 @@ const walletDelta = (r: Pick<Refund, "amount" | "method" | "reason">) =>
 const applyRefund = (partners: Partner[], r: Pick<Refund, "partnerId" | "amount" | "method" | "reason">) =>
   partners.map((p) => (p.id === r.partnerId ? { ...p, wallet: Math.max(0, p.wallet + walletDelta(r)) } : p));
 
+/**
+ * Book a purchase: charge the wallet and, when this fills the customer's quota, close the offer
+ * as Completed so it leaves the shop and no further purchase is possible.
+ */
+function recordPurchase(s: DB, order: Order, offer: Offer, soldBefore: number): Partial<DB> {
+  const full = soldBefore + 1 >= offer.offersWanted;
+  return {
+    orders: [order, ...s.orders],
+    partners: s.partners.map((p) => (p.id === order.partnerId ? { ...p, wallet: p.wallet - order.price } : p)),
+    offers: s.offers.map((o) =>
+      o.id === offer.id ? { ...o, status: full ? "completed" : "in_progress", verifiedAt: o.verifiedAt ?? (o.status === "new" ? nowIso() : undefined) } : o,
+    ),
+  };
+}
+
 function notify(state: Store, n: Omit<Notification, "id" | "read" | "createdAt">): Notification[] {
   return [{ ...n, id: uid("n"), read: false, createdAt: nowIso() }, ...state.notifications];
 }
@@ -145,14 +176,23 @@ export const useStore = create<Store>()(
           device: typeof window !== "undefined" && window.innerWidth < 768 ? "mobile" : "desktop",
           source: input.source ?? "website",
           status: "new",
+          flags: [],
           active: true,
           createdAt: nowIso(),
         };
+        // auto-checks: a clean offer goes on sale at once, a flagged one waits in New for review.
+        // An offer entered by admin for a customer on the phone is verified by that person.
+        if (offer.source === "admin") offer.verifiedAt = offer.createdAt;
+        else offer.flags = verificationFlags(offer, s.offers);
+        if (!offer.flags.length) offer.status = "in_progress";
+        const review = offer.flags.length > 0;
         set({
           offers: [offer, ...s.offers],
           notifications: notify(s, {
             kind: "lead",
-            title: { en: `New lead ${offer.id} · ${offer.from.city}`, de: `Neuer Lead ${offer.id} · ${offer.from.city}`, fr: `Nouveau lead ${offer.id} · ${offer.from.city}`, it: `Nuovo lead ${offer.id} · ${offer.from.city}` },
+            title: review
+              ? { en: `Lead ${offer.id} needs review · ${offer.from.city}`, de: `Lead ${offer.id} muss geprüft werden · ${offer.from.city}`, fr: `Le lead ${offer.id} doit être vérifié · ${offer.from.city}`, it: `Il lead ${offer.id} va verificato · ${offer.from.city}` }
+              : { en: `New lead ${offer.id} · ${offer.from.city}`, de: `Neuer Lead ${offer.id} · ${offer.from.city}`, fr: `Nouveau lead ${offer.id} · ${offer.from.city}`, it: `Nuovo lead ${offer.id} · ${offer.from.city}` },
             href: `/admin/leads/${offer.id}`,
           }),
         });
@@ -284,37 +324,127 @@ export const useStore = create<Store>()(
       partnerLogout: () => set({ partnerSession: null }),
 
       buyLead: (partnerId, offerId, couponCode) => {
-        const s = get();
-        const partner = s.partners.find((p) => p.id === partnerId);
-        const offer = s.offers.find((o) => o.id === offerId);
-        if (!partner || !offer) return { ok: false, error: "unavailable" };
-        if (partner.banned || partner.status !== "approved" || (partner.expiresAt && Date.parse(partner.expiresAt) < Date.now()))
-          return { ok: false, error: "blocked" };
-        const sold = s.orders.filter((o) => o.offerId === offerId);
-        if (!offer.active || Date.parse(offer.executionDate) < Date.now() || sold.length >= offer.offersWanted || sold.some((o) => o.partnerId === partnerId))
-          return { ok: false, error: "unavailable" };
-        const q = quoteLead(s, partnerId, offerId, couponCode);
-        if (q.couponValid === false) return { ok: false, error: "coupon" };
-        if (partner.wallet < q.price) return { ok: false, error: "insufficient" };
-        const code = q.couponValid ? couponCode!.trim().toUpperCase() : undefined;
-        const order: Order = {
-          id: `ORD-${String(5001 + s.orders.length).padStart(5, "0")}`,
-          offerId,
-          partnerId,
-          channel: "shop",
-          price: q.price,
-          couponCode: code,
-          executed: false,
-          createdAt: nowIso(),
-        };
-        set({
-          orders: [order, ...s.orders],
-          partners: s.partners.map((p) => (p.id === partnerId ? { ...p, wallet: p.wallet - q.price } : p)),
-          coupons: code ? s.coupons.map((c) => (c.code === code ? { ...c, used: c.used + 1 } : c)) : s.coupons,
-          offers: s.offers.map((o) => (o.id === offerId && o.status === "new" ? { ...o, status: "in_progress" } : o)),
+        // The slot check and the purchase happen inside one synchronous state update, so two
+        // companies buying the last slot at the same moment can never oversell the offer.
+        let result: BuyResult = { ok: false, error: "unavailable" };
+        set((s) => {
+          const partner = s.partners.find((p) => p.id === partnerId);
+          const offer = s.offers.find((o) => o.id === offerId);
+          if (!partner || !offer) return {};
+          if (partner.banned || partner.status !== "approved" || (partner.expiresAt && Date.parse(partner.expiresAt) < Date.now())) {
+            result = { ok: false, error: "blocked" };
+            return {};
+          }
+          const sold = s.orders.filter((o) => o.offerId === offerId);
+          if (sold.some((o) => o.partnerId === partnerId)) {
+            result = { ok: false, error: "owned" };
+            return {};
+          }
+          if (!isPurchasable(offer, sold.length)) return {};
+          const q = quoteLead(s, partnerId, offerId, couponCode);
+          if (q.couponValid === false) {
+            result = { ok: false, error: "coupon" };
+            return {};
+          }
+          if (partner.wallet < q.price) {
+            result = { ok: false, error: "insufficient" };
+            return {};
+          }
+          const code = q.couponValid ? couponCode!.trim().toUpperCase() : undefined;
+          const order: Order = {
+            id: `ORD-${String(5001 + s.orders.length).padStart(5, "0")}`,
+            offerId,
+            partnerId,
+            channel: "shop",
+            price: q.price,
+            couponCode: code,
+            executed: false,
+            createdAt: nowIso(),
+          };
+          result = { ok: true, order, price: q.price, discount: q.discount };
+          return {
+            ...recordPurchase(s, order, offer, sold.length),
+            coupons: code ? s.coupons.map((c) => (c.code === code ? { ...c, used: c.used + 1 } : c)) : s.coupons,
+          };
         });
-        return { ok: true, order, price: q.price, discount: q.discount };
+        return result;
       },
+
+      assignLead: (offerId, partnerId, price, note) => {
+        let result: BuyResult = { ok: false, error: "unavailable" };
+        set((s) => {
+          const partner = s.partners.find((p) => p.id === partnerId);
+          const offer = s.offers.find((o) => o.id === offerId);
+          if (!partner || !offer) return {};
+          if (partner.banned || partner.status !== "approved") {
+            result = { ok: false, error: "blocked" };
+            return {};
+          }
+          const sold = s.orders.filter((o) => o.offerId === offerId);
+          if (sold.some((o) => o.partnerId === partnerId)) {
+            result = { ok: false, error: "owned" };
+            return {};
+          }
+          // admin may assign a New offer it has just checked by phone, but never past the quota
+          if (!["new", "in_progress"].includes(offer.status) || sold.length >= offer.offersWanted) return {};
+          if (partner.wallet < price) {
+            result = { ok: false, error: "insufficient" };
+            return {};
+          }
+          const order: Order = {
+            id: `ORD-${String(5001 + s.orders.length).padStart(5, "0")}`,
+            offerId,
+            partnerId,
+            channel: "manual",
+            price,
+            note: note?.trim() || undefined,
+            executed: false,
+            createdAt: nowIso(),
+          };
+          result = { ok: true, order, price, discount: 0 };
+          return recordPurchase(s, order, offer, sold.length);
+        });
+        return result;
+      },
+
+      approveOffer: (id) =>
+        set((s) => ({
+          offers: s.offers.map((o) => (o.id === id && o.status === "new" ? { ...o, status: "in_progress", verifiedAt: nowIso() } : o)),
+        })),
+
+      cancelOffer: (id, reason, refundOrderIds = []) => {
+        const offer = get().offers.find((o) => o.id === id);
+        if (!offer || offer.status === "cancelled") return;
+        const at = nowIso();
+        set((s) => ({
+          offers: s.offers.map((o) => (o.id === id ? { ...o, status: "cancelled", cancelReason: reason, cancelledAt: at, active: false } : o)),
+          // the company reports about this offer are settled by the decision
+          fakeReports:
+            reason === "fake"
+              ? s.fakeReports.map((r) => (s.orders.find((o) => o.id === r.orderId)?.offerId === id && !["confirmed", "canceled"].includes(r.status) ? { ...r, status: "confirmed" } : r))
+              : s.fakeReports,
+        }));
+        // money only moves for fake offers: a customer changing their mind is not refundable
+        if (reason !== "fake") return;
+        const { orders, fakeReports, issueRefund } = get();
+        for (const order of orders.filter((o) => o.offerId === id && refundOrderIds.includes(o.id))) {
+          const report = fakeReports.find((r) => r.orderId === order.id);
+          issueRefund({ partnerId: order.partnerId, amount: order.price, reason: "fake_lead", method: "wallet", orderId: order.id, note: report?.reason ?? "Offer cancelled as fake by Kompass." });
+        }
+      },
+
+      repostOffer: (id) =>
+        set((s) => ({ offers: s.offers.map((o) => (o.id === id && o.status === "in_progress" ? { ...o, repostedAt: nowIso(), active: true } : o)) })),
+
+      notifyCustomerOfBuyers: (offerId) =>
+        set((s) => ({ offers: s.offers.map((o) => (o.id === offerId ? { ...o, buyersNotifiedAt: nowIso() } : o)) })),
+
+      sweepExpired: () =>
+        set((s) => {
+          const now = Date.now();
+          if (!s.offers.some((o) => o.status === "in_progress" && Date.parse(o.deadline) < now)) return {};
+          return { offers: s.offers.map((o) => (o.status === "in_progress" && Date.parse(o.deadline) < now ? { ...o, status: "expired" } : o)) };
+        }),
 
       reportFakeLead: (orderId, reason) =>
         set((s) => {
@@ -362,11 +492,11 @@ export const useStore = create<Store>()(
     }),
     {
       name: "kompass-prototype-v1",
-      // v2 added German, French and Italian; v3 dropped Arabic. Older saves start again from the
-      // current seed (EN/DE/FR/IT), keeping the signed-in sessions.
-      version: 3,
+      // v2 added German, French and Italian; v3 dropped Arabic; v4 moved offers to the five-status
+      // lifecycle. Older saves start again from the current seed, keeping the signed-in sessions.
+      version: 4,
       migrate: (persisted, version) => {
-        if (version >= 3) return persisted as Store;
+        if (version >= 4) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

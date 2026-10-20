@@ -44,12 +44,8 @@ export const common = {
   status: {
     new: "New",
     in_progress: "In progress",
-    partially_completed: "Partially completed",
-    partially_critical: "Partially critical",
-    critical: "Critical",
     completed: "Completed",
     cancelled: "Cancelled",
-    failed: "Failed",
     pending: "Pending",
     approved: "Approved",
     rejected: "Rejected",

@@ -9,11 +9,12 @@ import { useStore } from "./store";
 // On the server there is no storage, so the persist API is not attached.
 const persistApi = () => (useStore as typeof useStore & { persist?: typeof useStore.persist }).persist;
 
-/** Rehydrate the persisted store once on the client. */
+/** Rehydrate the persisted store once on the client, then expire offers whose deadline has passed. */
 export function useStoreHydration() {
   useEffect(() => {
     const api = persistApi();
-    if (api && !api.hasHydrated()) void api.rehydrate();
+    if (api && !api.hasHydrated()) void Promise.resolve(api.rehydrate()).then(() => useStore.getState().sweepExpired());
+    else useStore.getState().sweepExpired();
   }, []);
 }
 

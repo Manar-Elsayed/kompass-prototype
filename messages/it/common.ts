@@ -47,12 +47,8 @@ export const common: Built<typeof Def> = {
   status: {
     new: "Nuovo",
     in_progress: "In corso",
-    partially_completed: "Parzialmente completato",
-    partially_critical: "Parzialmente critico",
-    critical: "Critico",
     completed: "Completato",
     cancelled: "Annullato",
-    failed: "Non riuscito",
     pending: "In attesa",
     approved: "Approvato",
     rejected: "Rifiutato",

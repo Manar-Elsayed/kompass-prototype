@@ -2,11 +2,12 @@
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { Eye, Plus } from "lucide-react";
+import { AlertTriangle, Eye, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { Offer } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
+import { daysLeft, isExpiringSoon } from "@/lib/mock/selectors";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import { StatusBadge, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { Mono, PageHeader } from "@/components/admin/ui";
 
-const STATUSES = ["new", "in_progress", "partially_completed", "partially_critical", "critical", "completed", "cancelled", "failed"];
+const STATUSES = ["new", "in_progress", "completed", "expired", "cancelled"] as const;
 
 export default function LeadsPage() {
   const t = useTranslations();
@@ -84,13 +85,39 @@ export default function LeadsPage() {
         );
       },
     },
-    { id: "status", header: t("common.fields.status"), accessorFn: (o) => o.status, cell: (c) => <StatusBadge status={c.getValue() as string} /> },
+    {
+      id: "expires",
+      header: t("admin.leads.expires"),
+      accessorFn: (o) => o.deadline,
+      cell: ({ row: { original: o } }) =>
+        o.status === "in_progress" || o.status === "new" ? (
+          <span className={cn("whitespace-nowrap", isExpiringSoon(o) ? "font-semibold text-warning" : "text-muted-foreground")}>
+            {t("admin.leads.expiresIn", { days: Math.max(0, daysLeft(o.deadline)) })}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">–</span>
+        ),
+    },
+    {
+      id: "status",
+      header: t("common.fields.status"),
+      accessorFn: (o) => o.status,
+      cell: ({ row: { original: o } }) => (
+        <span className="flex items-center gap-1.5">
+          <StatusBadge status={o.status} />
+          {o.status === "new" && o.flags.length > 0 && (
+            <span title={t("admin.leads.flagged")} className="text-warning"><AlertTriangle className="size-4" aria-label={t("admin.leads.flagged")} /></span>
+          )}
+        </span>
+      ),
+    },
     { id: "created", header: t("common.fields.created"), accessorFn: (o) => o.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
     {
       id: "visible",
       header: t("admin.leads.visible"),
       accessorFn: (o) => (o.active ? 1 : 0),
-      cell: ({ row: { original: o } }) => <Switch checked={o.active} onCheckedChange={() => toggleVisible(o)} aria-label={t("admin.leads.visible")} />,
+      cell: ({ row: { original: o } }) =>
+        o.status === "in_progress" ? <Switch checked={o.active} onCheckedChange={() => toggleVisible(o)} aria-label={t("admin.leads.visible")} /> : null,
     },
     {
       id: "actions",
@@ -127,10 +154,19 @@ export default function LeadsPage() {
         onRowClick={(o) => router.push(`/admin/leads/${o.id}`)}
         filters={[
           { id: "status", label: t("common.fields.status"), options: STATUSES.map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (o) => o.status },
+          {
+            id: "attention",
+            label: t("admin.leads.attention"),
+            options: [
+              { value: "review", label: t("admin.leads.needsReview") },
+              { value: "expiring", label: t("admin.leads.expiringSoon") },
+            ],
+            get: (o) => (o.status === "new" ? "review" : isExpiringSoon(o) ? "expiring" : ""),
+          },
           { id: "service", label: t("common.fields.service"), options: services.map((s) => ({ value: s.id, label: L(s.name) })), get: (o) => o.serviceId },
           { id: "lang", label: t("common.fields.language"), options: ["de", "en", "fr", "it"].map((l) => ({ value: l, label: t(`common.lang.${l}`) })), get: (o) => o.lang },
         ]}
-        rowClassName={(o) => (!o.active ? "opacity-60" : o.status === "new" ? "bg-info-soft/30" : undefined)}
+        rowClassName={(o) => (o.status === "cancelled" ? "opacity-60" : o.status === "new" ? "bg-warning-soft/25" : isExpiringSoon(o) ? "bg-warning-soft/15" : undefined)}
       />
       {dialog}
     </>
