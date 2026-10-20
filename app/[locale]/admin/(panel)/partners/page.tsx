@@ -8,7 +8,8 @@ import type { Partner } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, usePartnerRatings, useServiceMap } from "@/lib/mock/hooks";
-import { refNow } from "@/lib/mock/selectors";
+import { documentState } from "@/lib/mock/selectors";
+import { DocStateBadge } from "@/components/admin/doc-state";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, Tooltip } from "@/components/ui/controls";
@@ -28,7 +29,6 @@ export default function PartnersPage() {
   const ratings = usePartnerRatings();
   const serviceMap = useServiceMap();
   const { confirm, dialog } = useConfirm();
-  const now = refNow();
 
   const toggleBan = (p: Partner) =>
     confirm({
@@ -88,19 +88,10 @@ export default function PartnersPage() {
         ),
     },
     {
-      id: "expires",
-      header: t("admin.partners.expires"),
-      accessorFn: (p) => p.expiresAt ?? "",
-      cell: ({ row: { original: p } }) => {
-        if (!p.expiresAt) return "–";
-        const days = (Date.parse(p.expiresAt) - now) / 86_400_000;
-        return (
-          <span className={cn("whitespace-nowrap", days < 0 ? "font-semibold text-danger" : days < 30 ? "font-semibold text-warning" : "text-muted-foreground")}>
-            {formatDate(p.expiresAt, lang)}
-            {days < 0 ? ` · ${t("admin.partners.expired")}` : days < 30 ? ` · ${t("admin.partners.expiresSoon")}` : ""}
-          </span>
-        );
-      },
+      id: "documents",
+      header: t("admin.partners.docs.title"),
+      accessorFn: (p) => documentState(p).state,
+      cell: ({ row: { original: p } }) => <DocStateBadge partner={p} withDate />,
     },
     { id: "status", header: t("common.fields.status"), accessorFn: (p) => (p.banned ? "banned" : "active"), cell: (c) => <StatusBadge status={c.getValue() as string} /> },
     {
@@ -137,6 +128,12 @@ export default function PartnersPage() {
           { id: "svc", label: t("common.fields.service"), options: services.map((s) => ({ value: s.id, label: L(s.name) })), get: (p) => p.serviceIds },
           { id: "canton", label: "Canton", options: [...new Set(partners.map((p) => p.canton))].sort().map((c) => ({ value: c, label: c })), get: (p) => p.canton },
           { id: "status", label: t("common.fields.status"), options: [{ value: "active", label: t("common.status.active") }, { value: "banned", label: t("common.status.banned") }], get: (p) => (p.banned ? "banned" : "active") },
+          {
+            id: "docs",
+            label: t("admin.partners.docs.title"),
+            options: (["missing", "expired", "review", "expiring", "ok"] as const).map((k) => ({ value: k, label: t(`admin.partners.docs.state.${k}`) })),
+            get: (p) => documentState(p).state,
+          },
         ]}
       />
       {dialog}

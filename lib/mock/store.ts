@@ -4,6 +4,8 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   CancelReason,
+  CompanyMessage,
+  DocKey,
   Complaint,
   ContactMessage,
   DB,
@@ -21,7 +23,7 @@ import type {
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { createSeed } from "./seed";
-import { isPurchasable, verificationFlags } from "./selectors";
+import { documentState, isPurchasable, verificationFlags } from "./selectors";
 
 type Collections = {
   [K in keyof DB as DB[K] extends { id: string }[] ? K : never]: DB[K];
@@ -54,6 +56,17 @@ interface Actions {
   /** Pay later: credit the wallet now and issue an invoice due in `termDays`. */
   addCredit: (input: { partnerId: string; amount: number; termDays: number; note: string; byUserId?: string }) => Invoice;
   markInvoicePaid: (id: string, payMethod: PayMethod, reference: string) => void;
+
+  /* company documents, contact, regions */
+  /** Company uploads → waits for Kompass to check it; admin uploads → valid straight away. */
+  uploadDocument: (partnerId: string, key: DocKey, file: string, expiresAt: string | undefined, by: "company" | "admin") => void;
+  reviewDocument: (partnerId: string, key: DocKey, approve: boolean, expiresAt?: string) => void;
+  setDocumentExpiry: (partnerId: string, key: DocKey, expiresAt: string) => void;
+  sendCompanyMessage: (input: Pick<CompanyMessage, "partnerId" | "subject" | "body" | "channel" | "byUserId">) => void;
+  markMessagesRead: (partnerId: string) => void;
+  /** Company asks Kompass to change details it can't edit itself; lands in the admin inbox. */
+  requestProfileChange: (partnerId: string, message: string) => void;
+  setNominations: (canton: string, partnerIds: string[]) => void;
   submitReview: (input: Pick<Review, "target" | "name" | "email" | "stars" | "comment">) => void;
   submitComplaint: (input: Omit<Complaint, "id" | "status" | "createdAt">) => void;
   submitContact: (input: Omit<ContactMessage, "id" | "read" | "createdAt">) => void;
@@ -92,7 +105,7 @@ interface Actions {
 
 export type BuyResult =
   | { ok: true; order: Order; price: number; discount: number }
-  | { ok: false; error: "unavailable" | "insufficient" | "coupon" | "blocked" | "owned" };
+  | { ok: false; error: "unavailable" | "insufficient" | "coupon" | "blocked" | "owned" | "documents" };
 
 export type Store = DB & { session: Session | null; partnerSession: PartnerSession | null } & Actions;
 
@@ -128,6 +141,7 @@ export function quoteLead(
 
 const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
 const nowIso = () => new Date().toISOString();
+const inDays = (d: number) => new Date(Date.now() + d * 86_400_000).toISOString();
 
 /** Money into (or, negative, out of) one company's wallet. */
 const credit = (partners: Partner[], partnerId: string, amount: number) =>
@@ -237,10 +251,13 @@ export const useStore = create<Store>()(
               ? {
                   ...p,
                   status: decision,
-                  expiresAt: decision === "approved" ? expiresAt : p.expiresAt,
                   documents:
                     decision === "approved"
-                      ? { contract: "contract-signed.pdf", insurance: p.documents.insurance ?? "insurance.pdf", register: p.documents.register ?? "hr-extract.pdf" }
+                      ? {
+                          contract: { file: "contract-signed.pdf", uploadedAt: nowIso(), status: "valid", expiresAt },
+                          insurance: { file: "insurance.pdf", uploadedAt: nowIso(), ...p.documents.insurance, status: "valid", expiresAt: p.documents.insurance?.expiresAt ?? inDays(365) },
+                          register: { file: "hr-extract.pdf", uploadedAt: nowIso(), ...p.documents.register, status: "valid", expiresAt: p.documents.register?.expiresAt ?? inDays(365) },
+                        }
                       : p.documents,
                 }
               : p,
@@ -288,6 +305,62 @@ export const useStore = create<Store>()(
       markInvoicePaid: (id, payMethod, reference) =>
         set((s) => ({
           invoices: s.invoices.map((i) => (i.id === id && i.status === "due" ? { ...i, status: "paid", paidAt: nowIso(), paidMethod: payMethod, paidReference: reference } : i)),
+        })),
+
+      uploadDocument: (partnerId, key, file, expiresAt, by) =>
+        set((s) => ({
+          partners: s.partners.map((p) =>
+            p.id === partnerId
+              ? { ...p, documents: { ...p.documents, [key]: { file, uploadedAt: nowIso(), expiresAt, status: by === "admin" ? "valid" : "pending_review" } } }
+              : p,
+          ),
+          notifications:
+            by === "company"
+              ? notify(s, {
+                  kind: "application",
+                  title: {
+                    en: `Document to check: ${s.partners.find((p) => p.id === partnerId)?.name}`,
+                    de: `Dokument prüfen: ${s.partners.find((p) => p.id === partnerId)?.name}`,
+                    fr: `Document à vérifier : ${s.partners.find((p) => p.id === partnerId)?.name}`,
+                    it: `Documento da verificare: ${s.partners.find((p) => p.id === partnerId)?.name}`,
+                  },
+                  href: `/admin/partners/${partnerId}`,
+                })
+              : s.notifications,
+        })),
+
+      reviewDocument: (partnerId, key, approve, expiresAt) =>
+        set((s) => ({
+          partners: s.partners.map((p) => {
+            const d = p.documents[key];
+            if (p.id !== partnerId || !d) return p;
+            return { ...p, documents: { ...p.documents, [key]: { ...d, status: approve ? "valid" : "rejected", expiresAt: expiresAt ?? d.expiresAt } } };
+          }),
+        })),
+
+      setDocumentExpiry: (partnerId, key, expiresAt) =>
+        set((s) => ({
+          partners: s.partners.map((p) => {
+            const d = p.documents[key];
+            return p.id === partnerId && d ? { ...p, documents: { ...p.documents, [key]: { ...d, expiresAt } } } : p;
+          }),
+        })),
+
+      sendCompanyMessage: (input) =>
+        set((s) => ({ messages: [{ ...input, id: uid("MSG"), createdAt: nowIso() }, ...s.messages] })),
+
+      markMessagesRead: (partnerId) =>
+        set((s) => ({ messages: s.messages.map((m) => (m.partnerId === partnerId && !m.readAt ? { ...m, readAt: nowIso() } : m)) })),
+
+      requestProfileChange: (partnerId, message) => {
+        const p = get().partners.find((x) => x.id === partnerId);
+        if (!p) return;
+        get().submitContact({ name: `${p.ownerName} · ${p.name}`, email: p.email, phone: p.phone, subject: `Profile change request: ${p.name}`, message });
+      },
+
+      setNominations: (canton, partnerIds) =>
+        set((s) => ({
+          nominations: [...s.nominations.filter((n) => n.canton !== canton), ...(partnerIds.length ? [{ canton, partnerIds }] : [])],
         })),
 
       decideDue: (id, status) =>
@@ -362,8 +435,12 @@ export const useStore = create<Store>()(
           const partner = s.partners.find((p) => p.id === partnerId);
           const offer = s.offers.find((o) => o.id === offerId);
           if (!partner || !offer) return {};
-          if (partner.banned || partner.status !== "approved" || (partner.expiresAt && Date.parse(partner.expiresAt) < Date.now())) {
+          if (partner.banned || partner.status !== "approved") {
             result = { ok: false, error: "blocked" };
+            return {};
+          }
+          if (!documentState(partner).ok) {
+            result = { ok: false, error: "documents" };
             return {};
           }
           const sold = s.orders.filter((o) => o.offerId === offerId);
@@ -409,6 +486,10 @@ export const useStore = create<Store>()(
           if (!partner || !offer) return {};
           if (partner.banned || partner.status !== "approved") {
             result = { ok: false, error: "blocked" };
+            return {};
+          }
+          if (!documentState(partner).ok) {
+            result = { ok: false, error: "documents" };
             return {};
           }
           const sold = s.orders.filter((o) => o.offerId === offerId);
@@ -531,10 +612,11 @@ export const useStore = create<Store>()(
     {
       name: "kompass-prototype-v1",
       // v2 added German, French and Italian; v3 dropped Arabic; v4 moved offers to the five-status
-      // lifecycle; v5 added wallet top-ups, credit invoices and the fake-only refund policy. Older saves start again from the current seed, keeping the signed-in sessions.
-      version: 5,
+      // lifecycle; v5 added wallet top-ups, credit invoices and the fake-only refund policy; v6 dated
+      // company documents, files, messages and regional nominations. Older saves start again from the current seed, keeping the signed-in sessions.
+      version: 6,
       migrate: (persisted, version) => {
-        if (version >= 5) return persisted as Store;
+        if (version >= 6) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

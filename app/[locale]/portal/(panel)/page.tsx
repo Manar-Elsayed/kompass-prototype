@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowRight, ClipboardCheck, Clock, ShoppingBag, Star, Wallet } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -76,6 +77,8 @@ export default function PortalDashboard() {
           )}
         </section>
 
+        <div className="space-y-4">
+        <KompassMessages />
         <Card className="h-fit">
           <CardHeader title={t("recent")} action={<Button asChild variant="ghost" size="sm"><Link href="/portal/leads">{tn("leads")}</Link></Button>} />
           <CardBody className="pt-3">
@@ -101,7 +104,42 @@ export default function PortalDashboard() {
             )}
           </CardBody>
         </Card>
+        </div>
       </div>
     </>
+  );
+}
+
+/** Messages Kompass sent this company from the admin. Viewing them here marks them read. */
+function KompassMessages() {
+  const t = useTranslations("portal.dashboard");
+  const lang = useLang();
+  const partner = useCurrentPartner()!;
+  const all = useStore((s) => s.messages);
+  const markRead = useStore((s) => s.markMessagesRead);
+  const mine = all.filter((m) => m.partnerId === partner.id).sort((x, y) => y.createdAt.localeCompare(x.createdAt));
+  const unread = mine.some((m) => !m.readAt);
+  useEffect(() => {
+    if (unread) markRead(partner.id);
+  }, [unread, markRead, partner.id]);
+  if (!mine.length) return null;
+  return (
+    <Card className="h-fit">
+      <CardHeader title={t("messages")} />
+      <CardBody className="pt-3">
+        <ul className="divide-y">
+          {mine.slice(0, 3).map((m) => (
+            <li key={m.id} className="py-2.5 text-sm">
+              <p className="flex items-center gap-2 font-semibold text-ink">
+                {!m.readAt && <span className="size-2 rounded-full bg-accent" aria-label={t("unread")} />}
+                {m.subject}
+              </p>
+              <p className="mt-0.5 line-clamp-3 text-muted-foreground">{m.body}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{timeAgo(m.createdAt, lang)}</p>
+            </li>
+          ))}
+        </ul>
+      </CardBody>
+    </Card>
   );
 }

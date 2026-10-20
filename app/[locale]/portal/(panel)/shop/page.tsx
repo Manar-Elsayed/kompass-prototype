@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { SearchX } from "lucide-react";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL } from "@/lib/mock/hooks";
@@ -23,6 +24,7 @@ export default function LeadShop() {
   const orders = useStore((s) => s.orders);
   const services = useStore((s) => s.services);
   const canBuy = useCanBuy();
+  const tsh = useTranslations("portal.shell");
   const [svc, setSvc] = useState("all");
   const [canton, setCanton] = useState("all");
   const [sort, setSort] = useState("newest");
@@ -48,6 +50,11 @@ export default function LeadShop() {
         <Select value={canton} onValueChange={setCanton} options={[{ value: "all", label: t("allCantons") }, ...cantons.map((c) => ({ value: c, label: c }))]} />
         <Select value={sort} onValueChange={setSort} options={[{ value: "newest", label: t("sortNewest") }, { value: "date", label: t("sortDate") }, { value: "slots", label: t("sortSlots") }]} />
       </Card>
+      {!canBuy && !partner.banned && (
+        <p className="mb-4 rounded-lg bg-danger-soft/50 px-3 py-2 text-sm font-medium text-danger">
+          {t("documents")} <Link href="/portal/profile" className="underline underline-offset-2">{tsh("updateDocs")}</Link>
+        </p>
+      )}
       {list.length ? (
         <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {list.map((x) => (
