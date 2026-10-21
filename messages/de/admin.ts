@@ -30,7 +30,6 @@ export const admin: Built<typeof Def> = {
     dashboard: "Dashboard",
     offers: "Alle Leads",
     shop: "Shop-Bestellungen",
-    executions: "Ausführungen",
     fakeReports: "Meldungen Fake-Leads",
     offerTypes: "Dienstleistungen & Preise",
     partners: "Partner",
@@ -351,12 +350,6 @@ export const admin: Built<typeof Def> = {
     executed: "Ausgeführt",
     notExecuted: "Nicht ausgeführt",
     revenue: "Umsatz",
-  },
-  executions: {
-    title: "Ausführungen",
-    subtitle: "Welcher Partner jeden verkauften Lead tatsächlich ausgeführt hat.",
-    markExecuted: "Als ausgeführt markieren",
-    rate: "Ausführungsquote",
   },
   fake: {
     title: "Meldungen Fake-Leads",

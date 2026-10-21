@@ -96,7 +96,7 @@ export default function ShopPage() {
                     { label: t("admin.shop.channel"), value: t(`admin.shop.${open.channel}`) },
                     { label: t("common.fields.date"), value: formatDateTime(open.createdAt, lang) },
                     { label: t("admin.shop.coupon"), value: open.couponCode ?? "–" },
-                    { label: t("admin.executions.title"), value: open.executed ? t("admin.shop.executed") : t("admin.shop.notExecuted") },
+                    { label: t("common.fields.status"), value: open.executed ? t("admin.shop.executed") : t("admin.shop.notExecuted") },
                   ]}
                 />
               </section>

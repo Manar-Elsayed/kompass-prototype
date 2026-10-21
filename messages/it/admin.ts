@@ -30,7 +30,6 @@ export const admin: Built<typeof Def> = {
     dashboard: "Dashboard",
     offers: "Tutti i lead",
     shop: "Ordini shop",
-    executions: "Esecuzioni",
     fakeReports: "Segnalazioni lead falsi",
     offerTypes: "Servizi e prezzi",
     partners: "Partner",
@@ -351,12 +350,6 @@ export const admin: Built<typeof Def> = {
     executed: "Eseguito",
     notExecuted: "Non eseguito",
     revenue: "Ricavi",
-  },
-  executions: {
-    title: "Esecuzioni",
-    subtitle: "Quale partner ha effettivamente eseguito ogni lead venduto.",
-    markExecuted: "Segna come eseguito",
-    rate: "Tasso di esecuzione",
   },
   fake: {
     title: "Segnalazioni lead falsi",

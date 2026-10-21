@@ -27,7 +27,6 @@ export const admin = {
     dashboard: "Dashboard",
     offers: "All leads",
     shop: "Shop orders",
-    executions: "Executions",
     fakeReports: "Fake-lead reports",
     offerTypes: "Services & pricing",
     partners: "Partners",
@@ -348,12 +347,6 @@ export const admin = {
     executed: "Executed",
     notExecuted: "Not executed",
     revenue: "Revenue",
-  },
-  executions: {
-    title: "Executions",
-    subtitle: "Which partner actually performed each sold lead.",
-    markExecuted: "Mark as executed",
-    rate: "Execution rate",
   },
   fake: {
     title: "Fake-lead reports",
