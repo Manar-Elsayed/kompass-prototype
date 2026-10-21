@@ -1,20 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Youtube, MessageSquareWarning } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Youtube } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
 import { useL } from "@/lib/mock/hooks";
 import { Logo } from "@/components/shared/bits";
-import { ComplaintDialog } from "./complaint-dialog";
 
 export function SiteFooter() {
   const t = useTranslations("site");
   const L = useL();
   const general = useStore((s) => s.site.general);
   const services = useStore((s) => s.services);
-  const [complaint, setComplaint] = useState(false);
   const year = 2026;
 
   const col = "space-y-2.5 text-sm";
@@ -53,6 +50,7 @@ export function SiteFooter() {
           <ul className={col}>
             {services
               .filter((s) => s.active)
+              .sort((a, b) => a.order - b.order)
               .slice(0, 6)
               .map((s) => (
                 <li key={s.id}>
@@ -91,12 +89,6 @@ export function SiteFooter() {
               <MapPin className="mt-0.5 size-4 shrink-0 text-accent" />
               <span>{L(general.address)}</span>
             </li>
-            <li>
-              <button onClick={() => setComplaint(true)} className="mt-1 inline-flex items-center gap-2 text-white/70 hover:text-white">
-                <MessageSquareWarning className="size-4 text-accent" />
-                {t("footer.complaint")}
-              </button>
-            </li>
           </ul>
         </div>
       </div>
@@ -111,7 +103,6 @@ export function SiteFooter() {
           </div>
         </div>
       </div>
-      <ComplaintDialog open={complaint} onOpenChange={setComplaint} />
     </footer>
   );
 }

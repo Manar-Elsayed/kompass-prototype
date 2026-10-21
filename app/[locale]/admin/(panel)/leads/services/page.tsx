@@ -13,13 +13,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { Switch } from "@/components/ui/controls";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Icon, ICON_NAMES } from "@/components/shared/icon";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { PageHeader } from "@/components/admin/ui";
 
-type Draft = { id?: string; name: L10n; icon: string; leadPrice: string; active: boolean };
+type Visibility = "live" | "soon" | "hidden";
+type Draft = { id?: string; name: L10n; icon: string; leadPrice: string; estFrom: string; estTo: string; visibility: Visibility };
+
+const visibilityOf = (s: Pick<Service, "active" | "comingSoon">): Visibility => (!s.active ? "hidden" : s.comingSoon ? "soon" : "live");
+const fromVisibility = (v: Visibility) => ({ active: v !== "hidden", comingSoon: v === "soon" });
 
 export default function ServicesAdmin() {
   const t = useTranslations();
@@ -35,9 +38,11 @@ export default function ServicesAdmin() {
   const save = () => {
     if (!draft || !draft.name.en.trim()) return;
     const price = Number(draft.leadPrice) || 0;
+    const from = Number(draft.estFrom) || 0;
+    const to = Math.max(from, Number(draft.estTo) || 0);
     if (draft.id) {
       const s = services.find((x) => x.id === draft.id)!;
-      patch("services", draft.id, { name: withFallback(draft.name), icon: draft.icon, leadPrice: price, active: draft.active, short: s.short });
+      patch("services", draft.id, { name: withFallback(draft.name), icon: draft.icon, leadPrice: price, estimate: { ...s.estimate, from, to }, ...fromVisibility(draft.visibility), short: s.short });
     } else {
       const svc: Service = {
         id: `svc-${slugify(draft.name.en)}`,
@@ -50,7 +55,8 @@ export default function ServicesAdmin() {
         features: [],
         tips: [],
         leadPrice: price,
-        active: draft.active,
+        estimate: { from, to, basis: l10n() },
+        ...fromVisibility(draft.visibility),
         order: services.length + 1,
       };
       add("services", svc);
@@ -75,19 +81,28 @@ export default function ServicesAdmin() {
       ),
     },
     { id: "price", header: t("admin.services.leadPrice"), accessorFn: (s) => s.leadPrice, cell: (c) => <span className="font-semibold">{formatCHF(c.getValue() as number, lang)}</span> },
+    {
+      id: "estimate",
+      header: t("admin.services.estimate"),
+      accessorFn: (s) => s.estimate.from,
+      cell: ({ row: { original: s } }) => <span className="whitespace-nowrap tabular-nums">{formatCHF(s.estimate.from, lang)} – {formatCHF(s.estimate.to, lang)}</span>,
+    },
     { id: "leads", header: t("admin.services.leads"), accessorFn: (s) => offers.filter((o) => o.serviceId === s.id).length },
     { id: "partners", header: t("admin.services.partners"), accessorFn: (s) => partners.filter((p) => p.status === "approved" && p.serviceIds.includes(s.id)).length },
     {
       id: "active",
       header: t("admin.services.visible"),
-      accessorFn: (s) => (s.active ? 1 : 0),
+      accessorFn: (s) => visibilityOf(s),
       cell: ({ row: { original: s } }) => (
-        <Switch
-          checked={s.active}
-          onCheckedChange={(v) => {
-            patch("services", s.id, { active: v });
+        <Select
+          size="sm"
+          className="w-40"
+          value={visibilityOf(s)}
+          onValueChange={(v) => {
+            patch("services", s.id, fromVisibility(v as Visibility));
             toast.success(t("common.toast.updated"));
           }}
+          options={(["live", "soon", "hidden"] as const).map((v) => ({ value: v, label: t(`admin.services.visibility.${v}`) }))}
         />
       ),
     },
@@ -97,7 +112,7 @@ export default function ServicesAdmin() {
       enableSorting: false,
       cell: ({ row: { original: s } }) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="icon-sm" aria-label={t("common.actions.edit")} onClick={() => setDraft({ id: s.id, name: { ...s.name }, icon: s.icon, leadPrice: String(s.leadPrice), active: s.active })}>
+          <Button variant="ghost" size="icon-sm" aria-label={t("common.actions.edit")} onClick={() => setDraft({ id: s.id, name: { ...s.name }, icon: s.icon, leadPrice: String(s.leadPrice), estFrom: String(s.estimate.from), estTo: String(s.estimate.to), visibility: visibilityOf(s) })}>
             <Pencil />
           </Button>
           <Button asChild variant="ghost" size="sm">
@@ -116,7 +131,7 @@ export default function ServicesAdmin() {
         title={t("admin.services.title")}
         subtitle={t("admin.services.subtitle")}
         actions={
-          <Button onClick={() => setDraft({ name: l10n(), icon: "Truck", leadPrice: "30", active: true })}>
+          <Button onClick={() => setDraft({ name: l10n(), icon: "Truck", leadPrice: "30", estFrom: "", estTo: "", visibility: "soon" })}>
             <Plus /> {t("admin.services.add")}
           </Button>
         }
@@ -149,10 +164,22 @@ export default function ServicesAdmin() {
                   <Input type="number" value={draft.leadPrice} onChange={(e) => setDraft({ ...draft, leadPrice: e.target.value })} dir="ltr" />
                 </Field>
               </div>
-              <label className="flex items-center gap-3 text-sm font-medium">
-                <Switch checked={draft.active} onCheckedChange={(v) => setDraft({ ...draft, active: v })} />
-                {t("admin.services.visible")}
-              </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label={`${t("admin.services.estimateFrom")} (CHF)`}>
+                  <Input type="number" value={draft.estFrom} onChange={(e) => setDraft({ ...draft, estFrom: e.target.value })} dir="ltr" />
+                </Field>
+                <Field label={`${t("admin.services.estimateTo")} (CHF)`}>
+                  <Input type="number" value={draft.estTo} onChange={(e) => setDraft({ ...draft, estTo: e.target.value })} dir="ltr" />
+                </Field>
+              </div>
+              <p className="-mt-2 text-xs text-muted-foreground">{t("admin.services.estimateHint")}</p>
+              <Field label={t("admin.services.visible")} hint={t(`admin.services.visibilityHint.${draft.visibility}`)}>
+                <Select
+                  value={draft.visibility}
+                  onValueChange={(v) => setDraft({ ...draft, visibility: v as Visibility })}
+                  options={(["live", "soon", "hidden"] as const).map((v) => ({ value: v, label: t(`admin.services.visibility.${v}`) }))}
+                />
+              </Field>
             </div>
           )}
           <DialogFooter>

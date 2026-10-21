@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowDownLeft, ArrowUpRight, Banknote, Clock, Copy, ImageUp, RotateCcw, Upload, Wallet } from "lucide-react";
+import { Banknote, Clock, Copy, CreditCard, ImageUp, Upload, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import type { PartnerDue } from "@/lib/types";
-import { cn, formatCHF, formatDate } from "@/lib/utils";
+import { formatCHF, formatDate } from "@/lib/utils";
+import { isOverdue, walletLedger } from "@/lib/mock/selectors";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useLang } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
@@ -17,87 +18,151 @@ import { RadioCards } from "@/components/ui/controls";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge } from "@/components/shared/bits";
 import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
-
-const KOMPASS_IBAN = "CH44 0070 0110 0012 3456 7";
+import { WalletLedger } from "@/components/shared/wallet-ledger";
+import { KOMPASS_IBAN, MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
 
 export default function PaymentsPage() {
   const t = useTranslations("portal.payments");
   const td = useTranslations("admin.dues");
-  const tr = useTranslations("admin.refunds");
+  const ti = useTranslations("admin.invoices");
   const tt = useTranslations("common.table");
   const lang = useLang();
   const partner = useCurrentPartner()!;
-  const dues = useStore((s) => s.dues).filter((d) => d.partnerId === partner.id);
-  const orders = useStore((s) => s.orders).filter((o) => o.partnerId === partner.id);
-  const refunds = useStore((s) => s.refunds).filter((r) => r.partnerId === partner.id && r.status === "refunded");
+  const orders = useStore((s) => s.orders);
+  const dues = useStore((s) => s.dues);
+  const topups = useStore((s) => s.topups);
+  const refunds = useStore((s) => s.refunds);
+  const invoices = useStore((s) => s.invoices);
+  const partners = useStore((s) => s.partners);
   const [upload, setUpload] = useState(false);
+  const [online, setOnline] = useState(false);
+  const [doc, setDoc] = useState<MoneyDoc | null>(null);
 
-  const pending = dues.filter((d) => d.status === "pending").reduce((a, d) => a + d.amount, 0);
-  const spent = orders.reduce((a, o) => a + o.price, 0);
-
-  const statement = [
-    ...dues.filter((d) => d.status === "confirmed").map((d) => ({ at: d.createdAt, label: t("topup", { ref: d.reference }), amount: d.amount, kind: "in" as const })),
-    // the statement tracks the wallet: credits come in, a payout of the balance goes out to the bank
-    ...refunds
-      .filter((r) => r.method === "wallet" || r.reason === "wallet_payout")
-      .map((r) => ({
-        at: r.decidedAt ?? r.createdAt,
-        label: r.reason === "fake_lead" ? t("refund") : tr(`reasons.${r.reason}`),
-        amount: r.method === "wallet" ? r.amount : -r.amount,
-        kind: r.method === "wallet" ? ("refund" as const) : ("out" as const),
-      })),
-    ...orders.map((o) => ({ at: o.createdAt, label: t("purchase", { id: o.offerId }), amount: -o.price, kind: "out" as const })),
-  ].sort((a, b) => b.at.localeCompare(a.at));
+  const ledger = useMemo(() => walletLedger({ orders, dues, topups, refunds, invoices, partners }, partner.id), [orders, dues, topups, refunds, invoices, partners, partner.id]);
+  const myDues = dues.filter((d) => d.partnerId === partner.id);
+  const myInvoices = invoices.filter((i) => i.partnerId === partner.id);
+  const pending = myDues.filter((d) => d.status === "pending").reduce((a, d) => a + d.amount, 0);
+  const invStatus = (i: (typeof myInvoices)[number]) => (i.status === "paid" ? "paid" : isOverdue(i) ? "overdue" : "due");
 
   return (
     <>
-      <PageHeader title={t("title")} subtitle={t("subtitle")} actions={<Button variant="accent" onClick={() => setUpload(true)}><Upload /> {t("upload")}</Button>} />
+      <PageHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setUpload(true)}><Upload /> {t("upload")}</Button>
+            <Button variant="accent" onClick={() => setOnline(true)}><CreditCard /> {t("topUpOnline")}</Button>
+          </>
+        }
+      />
       <div className="mb-4 grid gap-4 sm:grid-cols-3">
         <KpiCard label={t("balance")} value={formatCHF(partner.wallet, lang)} icon={<Wallet />} />
         <KpiCard label={t("pending")} value={formatCHF(pending, lang)} icon={<Clock />} tone="warning" />
-        <KpiCard label={t("spent")} value={formatCHF(spent, lang)} icon={<Banknote />} tone="accent" />
+        <KpiCard label={t("spent")} value={formatCHF(ledger.spent, lang)} icon={<Banknote />} tone="accent" />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
-        <Card className="overflow-hidden">
-          <CardHeader title={t("history")} />
-          <div className="mt-4 divide-y border-t">
-            {dues.length ? (
-              dues.map((d) => (
-                <div key={d.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-sm">
-                  <Mono>{d.reference}</Mono>
-                  <span className="flex-1 text-muted-foreground">{td(d.method)}</span>
-                  <span className="font-bold">{formatCHF(d.amount, lang)}</span>
-                  <StatusBadge status={d.status} />
-                  <span className="w-24 text-end text-xs text-muted-foreground">{formatDate(d.createdAt, lang)}</span>
-                </div>
-              ))
-            ) : (
-              <EmptyState title={tt("noResults")} />
-            )}
-          </div>
-        </Card>
+        <div className="space-y-4">
+          {myInvoices.length > 0 && (
+            <Card className="overflow-hidden">
+              <CardHeader title={t("invoices")} />
+              <div className="mt-4 divide-y border-t">
+                {myInvoices.map((i) => (
+                  <button
+                    key={i.id}
+                    onClick={() => setDoc({ kind: "invoice", id: i.id, date: i.issuedAt, partner, line: ti("creditLine"), amount: i.amount, status: invStatus(i), dueAt: i.dueAt, paidAt: i.paidAt })}
+                    className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-start text-sm transition hover:bg-surface-2/60"
+                  >
+                    <Mono>{i.id}</Mono>
+                    <span className="flex-1 text-muted-foreground">{ti("creditLine")}</span>
+                    <span className="font-bold">{formatCHF(i.amount, lang)}</span>
+                    <StatusBadge status={invStatus(i)} />
+                    <span className="w-32 text-end text-xs text-muted-foreground">{t("dueOn", { date: formatDate(i.dueAt, lang) })}</span>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          )}
+          <Card className="overflow-hidden">
+            <CardHeader title={t("history")} />
+            <div className="mt-4 divide-y border-t">
+              {myDues.length ? (
+                myDues.map((d) => (
+                  <div key={d.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-sm">
+                    <Mono>{d.reference}</Mono>
+                    <span className="flex-1 text-muted-foreground">{td(d.method)}</span>
+                    <span className="font-bold">{formatCHF(d.amount, lang)}</span>
+                    <StatusBadge status={d.status} />
+                    <span className="w-24 text-end text-xs text-muted-foreground">{formatDate(d.createdAt, lang)}</span>
+                  </div>
+                ))
+              ) : (
+                <EmptyState title={tt("noResults")} />
+              )}
+            </div>
+          </Card>
+        </div>
 
         <Card className="h-fit overflow-hidden">
           <CardHeader title={t("statement")} />
-          <ul className="mt-4 max-h-[480px] divide-y overflow-y-auto border-t">
-            {statement.slice(0, 40).map((s, i) => (
-              <li key={i} className="flex items-center gap-3 px-5 py-2.5 text-sm">
-                <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-full", s.kind === "out" ? "bg-muted text-muted-foreground" : "bg-success-soft text-success")}>
-                  {s.kind === "out" ? <ArrowUpRight className="size-3.5" /> : s.kind === "refund" ? <RotateCcw className="size-3.5" /> : <ArrowDownLeft className="size-3.5" />}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{s.label}</span>
-                  <span className="text-xs text-muted-foreground">{formatDate(s.at, lang)}</span>
-                </span>
-                <span className={cn("font-semibold", s.amount > 0 ? "text-success" : "text-ink")} dir="ltr">{s.amount > 0 ? "+" : "−"}{formatCHF(Math.abs(s.amount), lang)}</span>
-              </li>
-            ))}
-          </ul>
+          <WalletLedger entries={ledger.entries} className="mt-4 max-h-[520px] overflow-y-auto border-t" />
         </Card>
       </div>
       {upload && <UploadDialog onClose={() => setUpload(false)} />}
+      {online && <OnlineTopUpDialog onClose={() => setOnline(false)} onTransfer={() => { setOnline(false); setUpload(true); }} />}
+      {doc && <MoneyDocDialog doc={doc} onClose={() => setDoc(null)} />}
     </>
+  );
+}
+
+/** Simulated card / TWINT checkout: the wallet is credited as soon as the payment succeeds. */
+function OnlineTopUpDialog({ onClose, onTransfer }: { onClose: () => void; onTransfer: () => void }) {
+  const t = useTranslations("portal.payments");
+  const tw = useTranslations("admin.wallets");
+  const tc = useTranslations("common");
+  const lang = useLang();
+  const partner = useCurrentPartner()!;
+  const topUp = useStore((s) => s.topUpWallet);
+  const [amount, setAmount] = useState("200");
+  const [method, setMethod] = useState<"card" | "twint">("card");
+  const [busy, setBusy] = useState(false);
+  const value = Number(amount) || 0;
+
+  const pay = async () => {
+    setBusy(true);
+    const reference = `PAY-${Math.floor(100000 + Math.random() * 900000)}`;
+    await mock(() => topUp({ partnerId: partner.id, amount: value, method: "online", payMethod: method, reference, note: "" }), 1200);
+    setBusy(false);
+    toast.success(t("paidOnline", { amount: value }));
+    onClose();
+  };
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("onlineTitle")}</DialogTitle>
+          <DialogDescription>{t("onlineBody")}</DialogDescription>
+        </DialogHeader>
+        <Field label={`${tc("fields.amount")} (CHF)`} hint={`${t("balance")}: ${formatCHF(partner.wallet, lang)} → ${formatCHF(partner.wallet + value, lang)}`}>
+          <Input type="number" min={10} value={amount} onChange={(e) => setAmount(e.target.value)} />
+        </Field>
+        <div className="-mt-2 flex flex-wrap gap-2">
+          {[100, 200, 500, 1000].map((v) => (
+            <Button key={v} type="button" variant={value === v ? "secondary" : "outline"} size="sm" onClick={() => setAmount(String(v))}>CHF {v}</Button>
+          ))}
+        </div>
+        <Field label={tw("payMethod")}>
+          <RadioCards className="grid-cols-2" value={method} onValueChange={(v) => setMethod(v as "card" | "twint")} options={(["card", "twint"] as const).map((m) => ({ value: m, label: tw(`payMethods.${m}`) }))} />
+        </Field>
+        <button type="button" onClick={onTransfer} className="text-start text-xs font-medium text-primary hover:underline">{t("orTransfer")}</button>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{tc("actions.cancel")}</Button>
+          <Button variant="accent" disabled={value < 10} loading={busy} onClick={pay}><CreditCard /> {t("payNow", { amount: value })}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

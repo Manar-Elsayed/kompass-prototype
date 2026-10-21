@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { notFound, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { BadgeCheck, Briefcase, Calendar, Globe, MapPin, MessageSquareWarning, PenLine, User } from "lucide-react";
+import { BadgeCheck, Briefcase, Calendar, Globe, MapPin, ShieldCheck, User } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
 import { useL, usePartnerRatings } from "@/lib/mock/hooks";
@@ -13,8 +12,6 @@ import { Icon } from "@/components/shared/icon";
 import { Stars, EmptyState } from "@/components/shared/bits";
 import { OfferForm } from "@/components/site/offer-form";
 import { ReviewCard } from "@/components/site/sections";
-import { ComplaintDialog } from "@/components/site/complaint-dialog";
-import { ReviewDialog } from "@/components/site/review-form";
 
 export default function CompanyPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,8 +24,6 @@ export default function CompanyPage() {
   const allReviews = useStore((s) => s.reviews);
   const orders = useStore((s) => s.orders);
   const ratings = usePartnerRatings();
-  const [complaint, setComplaint] = useState(false);
-  const [review, setReview] = useState(false);
 
   if (!partner || partner.status !== "approved" || partner.banned) notFound();
 
@@ -68,12 +63,6 @@ export default function CompanyPage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setReview(true)}>
-                <PenLine /> {t("writeReview")}
-              </Button>
-              <Button variant="ghost" onClick={() => setComplaint(true)}>
-                <MessageSquareWarning /> {t("report")}
-              </Button>
               <Button asChild variant="accent">
                 <a href="#request">{t("requestOffer")}</a>
               </Button>
@@ -101,7 +90,10 @@ export default function CompanyPage() {
           </div>
 
           <div className="rounded-2xl border border-border bg-surface p-6">
-            <h2 className="mb-5 text-lg font-bold text-ink">{t("customerReviews")}</h2>
+            <h2 className="text-lg font-bold text-ink">{t("customerReviews")}</h2>
+            <p className="mb-5 mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <ShieldCheck className="size-4 text-success" /> {t("verifiedReviews")}
+            </p>
             {reviews.length ? (
               <>
                 <div className="mb-6 grid items-center gap-6 rounded-xl bg-surface-2 p-5 sm:grid-cols-[auto_1fr]">
@@ -127,7 +119,7 @@ export default function CompanyPage() {
                 </div>
               </>
             ) : (
-              <EmptyState title={t("noReviews")} action={<Button variant="outline" onClick={() => setReview(true)}>{t("writeReview")}</Button>} />
+              <EmptyState title={t("noReviews")} body={t("verifiedReviews")} />
             )}
           </div>
         </div>
@@ -166,8 +158,6 @@ export default function CompanyPage() {
         <OfferForm defaultServiceId={partner.serviceIds[0]} />
       </section>
 
-      <ComplaintDialog open={complaint} onOpenChange={setComplaint} partnerId={partner.id} />
-      <ReviewDialog open={review} onOpenChange={setReview} target={partner.id} />
     </>
   );
 }

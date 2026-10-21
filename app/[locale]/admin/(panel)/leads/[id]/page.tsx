@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Clock,
   Flag,
+  Hand,
   Mail,
   MapPin,
   Phone,
@@ -27,7 +28,7 @@ import type { CancelReason, Offer, Order } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { CITIES } from "@/lib/mock/seed";
-import { daysLeft, isExpiringSoon } from "@/lib/mock/selectors";
+import { canBuyLeads, companyScore, daysLeft, isExpiringSoon } from "@/lib/mock/selectors";
 import { useL, useLang, usePartnerMap, useServiceMap } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { Icon } from "@/components/shared/icon";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
+import { NoShowPanel } from "@/components/admin/no-show-panel";
 
 const cantonOf = (city: string) => CITIES.find((c) => c.city === city)?.canton;
 
@@ -122,6 +124,9 @@ export default function LeadDetail() {
     })),
     offer.status === "completed" && orders.length && { at: orders[orders.length - 1].createdAt, text: tl("evCompleted"), icon: <CheckCircle2 className="size-3.5" /> },
     offer.repostedAt && { at: offer.repostedAt, text: tl("evReposted"), icon: <RotateCcw className="size-3.5" /> },
+    offer.chosenAt && { at: offer.chosenAt, text: tl("evChosen", { name: partnerMap[offer.noShow?.partnerId ?? offer.chosenPartnerId ?? ""]?.name ?? "?" }), icon: <Hand className="size-3.5" /> },
+    offer.noShow && { at: offer.noShow.reportedAt, text: tl("evNoShow", { name: partnerMap[offer.noShow.partnerId]?.name ?? "?" }), icon: <AlertTriangle className="size-3.5" /> },
+    offer.noShow?.resolvedAt && { at: offer.noShow.resolvedAt, text: tl("evNoShowResolved"), icon: <CheckCircle2 className="size-3.5" /> },
     offer.buyersNotifiedAt && { at: offer.buyersNotifiedAt, text: tl("evNotified"), icon: <Mail className="size-3.5" /> },
     offer.status === "expired" && { at: offer.deadline, text: tl("evExpired"), icon: <Clock className="size-3.5" /> },
     offer.cancelledAt && {
@@ -182,6 +187,7 @@ export default function LeadDetail() {
 
       <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
         <div className="space-y-4">
+          {offer.noShow && <NoShowPanel offer={offer} orders={orders} />}
           {/* state panel: what needs attention right now */}
           {offer.status === "cancelled" ? (
             <Card className="flex items-start gap-3 border-danger/20 bg-danger-soft/40 p-4">
@@ -303,6 +309,8 @@ export default function LeadDetail() {
                           </p>
                           {o.note && <p className="mt-0.5 text-xs text-ink">{o.note}</p>}
                         </div>
+                        {o.partnerId === offer.chosenPartnerId && <Badge tone="primary"><Hand /> {tl("chosen")}</Badge>}
+                        {o.partnerId === offer.noShow?.partnerId && <Badge tone="danger"><AlertTriangle /> {tl("noShowBadge")}</Badge>}
                         {o.executed && <Badge tone="success">{t("admin.shop.executed")}</Badge>}
                         <span className="font-semibold">{formatCHF(o.price, lang)}</span>
                       </li>
@@ -333,10 +341,28 @@ export default function LeadDetail() {
                   <p className="text-xs text-muted-foreground">{t(`common.lang.${offer.lang}`)}</p>
                 </div>
               </div>
+              <Badge tone={offer.booking === "personal" ? "neutral" : "info"}>{t(`site.booking.${offer.booking}`)}</Badge>
               <div className="space-y-2 text-sm">
                 <a href={`mailto:${offer.email}`} className="flex items-center gap-2 hover:text-primary"><Mail className="size-4 text-muted-foreground" />{offer.email}</a>
                 <a href={`tel:${offer.phone}`} className="flex items-center gap-2 hover:text-primary"><Phone className="size-4 text-muted-foreground" />{offer.phone}</a>
               </div>
+              {offer.requester && (
+                <div className="rounded-xl bg-surface-2/70 p-3 text-sm">
+                  <p className="mb-1 text-xs font-semibold text-muted-foreground">{tl(offer.organization ? "bookedByOrg" : "bookedBy")}</p>
+                  {offer.organization && (
+                    <p className="flex items-center gap-1.5 font-semibold text-ink"><Building2 className="size-3.5" /> {offer.organization.name}</p>
+                  )}
+                  <p className="font-semibold text-ink">{offer.requester.firstName} {offer.requester.lastName}</p>
+                  <a href={`mailto:${offer.requester.email}`} className="block text-muted-foreground hover:text-primary" dir="ltr">{offer.requester.email}</a>
+                  <a href={`tel:${offer.requester.phone}`} className="block text-muted-foreground hover:text-primary" dir="ltr">{offer.requester.phone}</a>
+                  {offer.organization?.address && <p className="text-muted-foreground">{offer.organization.address}</p>}
+                </div>
+              )}
+              <Button asChild size="sm" variant="ghost" className="w-full justify-start">
+                <Link href={`/requests/${offer.id}`} target="_blank">
+                  <ArrowRight /> {tl("customerPage")}
+                </Link>
+              </Button>
             </CardBody>
           </Card>
 
@@ -391,6 +417,9 @@ function AssignPanel({ offer, orders }: { offer: Offer; orders: Order[] }) {
   const t = useTranslations("admin.leads.detail");
   const lang = useLang();
   const partners = useStore((s) => s.partners);
+  const allOrders = useStore((s) => s.orders);
+  const reviews = useStore((s) => s.reviews);
+  const nominations = useStore((s) => s.nominations);
   const assignLead = useStore((s) => s.assignLead);
   const svc = useServiceMap()[offer.serviceId];
   const [partnerId, setPartnerId] = useState("");
@@ -399,9 +428,14 @@ function AssignPanel({ offer, orders }: { offer: Offer; orders: Order[] }) {
   const [busy, setBusy] = useState(false);
 
   const canton = cantonOf(offer.from.city);
+  const picks = nominations.find((n) => n.canton === canton)?.partnerIds ?? [];
+  const rank = (id: string) => (picks.includes(id) ? picks.indexOf(id) : 99);
+  // nominated for this region first (in admin's order), then same canton by performance, then the rest
   const eligible = partners
     .filter((p) => p.status === "approved" && !p.banned && p.serviceIds.includes(offer.serviceId) && !orders.some((o) => o.partnerId === p.id))
-    .sort((a, b) => Number(b.canton === canton) - Number(a.canton === canton) || a.name.localeCompare(b.name));
+    .map((p) => ({ p, score: companyScore({ orders: allOrders, reviews }, p).score }))
+    .sort((a, b) => rank(a.p.id) - rank(b.p.id) || Number(b.p.canton === canton) - Number(a.p.canton === canton) || b.score - a.score)
+    .map((x) => x.p);
   const picked = partners.find((p) => p.id === partnerId);
   const amount = Number(price) || 0;
 
@@ -417,6 +451,7 @@ function AssignPanel({ offer, orders }: { offer: Offer; orders: Order[] }) {
       setPrice(String(svc?.leadPrice ?? 35));
     } else if (res.error === "insufficient") toast.error(t("errInsufficient", { name: picked.name, balance: picked.wallet }));
     else if (res.error === "owned") toast.error(t("errOwned", { name: picked.name }));
+    else if (res.error === "documents") toast.error(t("errDocuments", { name: picked.name }));
     else toast.error(t("errUnavailable"));
   };
 
@@ -431,7 +466,7 @@ function AssignPanel({ offer, orders }: { offer: Offer; orders: Order[] }) {
             onValueChange={setPartnerId}
             options={eligible.map((p) => ({
               value: p.id,
-              label: `${p.name} · ${p.city} (${p.canton})${p.canton === canton ? ` · ${t("sameCanton")}` : ""} · ${t("balance", { amount: p.wallet })}`,
+              label: `${picks.includes(p.id) ? `${t("nominated")} · ` : ""}${p.name} · ${p.city} (${p.canton})${p.canton === canton ? ` · ${t("sameCanton")}` : ""} · ${t("balance", { amount: p.wallet })}${canBuyLeads(p) ? "" : ` · ${t("docsIssue")}`}`,
             }))}
           />
         </Field>

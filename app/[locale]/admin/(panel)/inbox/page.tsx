@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Mail, MailOpen, Phone, Reply, Send, Sparkles } from "lucide-react";
+import { AlarmClock, ArrowLeft, CheckCheck, Mail, MailOpen, Phone, Reply, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { LANGS, type ContactMessage, type FaqQuestion } from "@/lib/types";
 import { cn, formatDateTime, l10n, timeAgo, withFallback } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
+import { needsFollowUp } from "@/lib/mock/selectors";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
@@ -28,6 +29,8 @@ export default function InboxPage() {
   const questions = useStore((s) => s.faqQuestions);
   const faqs = useStore((s) => s.faqs);
   const patch = useStore((s) => s.patch);
+  const markHandled = useStore((s) => s.markContactHandled);
+  const [onlyFollowUp, setOnlyFollowUp] = useState(false);
   const add = useStore((s) => s.add);
   const [tab, setTab] = useState<"messages" | "questions">("messages");
   const [sel, setSel] = useState<string | null>(null);
@@ -37,6 +40,9 @@ export default function InboxPage() {
   const [answer, setAnswer] = useState({ q: l10n(), a: l10n() });
 
   const msg = contacts.find((c) => c.id === sel);
+  // requests nobody has answered or called back within 24 hours come first and are flagged
+  const overdue = contacts.filter(needsFollowUp);
+  const list = (onlyFollowUp ? overdue : contacts).slice().sort((a, b) => Number(needsFollowUp(b)) - Number(needsFollowUp(a)) || b.createdAt.localeCompare(a.createdAt));
   const open = (c: ContactMessage) => {
     setSel(c.id);
     setReply("");
@@ -49,6 +55,7 @@ export default function InboxPage() {
     await mock(() => null);
     setBusy(false);
     setReply("");
+    markHandled(msg.id, true);
     toast.success(ti("replySent", { email: msg.email }));
   };
 
@@ -57,7 +64,7 @@ export default function InboxPage() {
       <PageHeader title={ti("title")} subtitle={ti("subtitle")}>
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="mt-5">
           <TabsList>
-            <TabsTrigger value="messages">{ti("messages")} <Badge tone="accent">{contacts.filter((c) => !c.read).length}</Badge></TabsTrigger>
+            <TabsTrigger value="messages">{ti("messages")} <Badge tone={overdue.length ? "danger" : "accent"}>{overdue.length || contacts.filter((c) => !c.read).length}</Badge></TabsTrigger>
             <TabsTrigger value="questions">{ti("questions")} <Badge tone="accent">{questions.filter((q) => !q.answered).length}</Badge></TabsTrigger>
           </TabsList>
         </Tabs>
@@ -66,7 +73,15 @@ export default function InboxPage() {
       {tab === "messages" ? (
         <Card className="grid min-h-[560px] overflow-hidden lg:grid-cols-[380px_1fr]">
           <ul className={cn("divide-y overflow-y-auto border-e lg:max-h-[680px]", msg && "hidden lg:block")}>
-            {contacts.map((c) => (
+            <li className="flex items-center justify-between gap-2 bg-surface-2/60 px-4 py-2 text-xs">
+              <span className={cn("flex items-center gap-1.5 font-semibold", overdue.length ? "text-danger" : "text-muted-foreground")}>
+                <AlarmClock className="size-3.5" /> {ti("followUpCount", { count: overdue.length })}
+              </span>
+              <button onClick={() => setOnlyFollowUp((v) => !v)} className="font-semibold text-primary hover:underline">
+                {ti(onlyFollowUp ? "showAll" : "showFollowUp")}
+              </button>
+            </li>
+            {list.map((c) => (
               <li key={c.id}>
                 <button onClick={() => open(c)} className={cn("flex w-full gap-3 p-4 text-start transition hover:bg-surface-2", sel === c.id && "bg-primary-soft/60")}>
                   <Avatar name={c.name} className="size-9" />
@@ -77,6 +92,11 @@ export default function InboxPage() {
                     </span>
                     <span className={cn("block truncate text-sm", c.read ? "text-muted-foreground" : "font-semibold text-foreground")}>{c.subject}</span>
                     <span className="block truncate text-xs text-muted-foreground">{c.message}</span>
+                    {needsFollowUp(c) ? (
+                      <Badge tone="danger" className="mt-1"><AlarmClock /> {ti("overdue")}</Badge>
+                    ) : c.handledAt ? (
+                      <span className="mt-1 flex items-center gap-1 text-xs text-success"><CheckCheck className="size-3.5" /> {ti("handled")}</span>
+                    ) : null}
                   </span>
                   {!c.read && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-accent" />}
                 </button>
@@ -98,13 +118,27 @@ export default function InboxPage() {
                       </div>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => patch("contacts", msg.id, { read: !msg.read })}>
-                    {msg.read ? <Mail /> : <MailOpen />} <span className="hidden sm:inline">{ti(msg.read ? "markUnread" : "markRead")}</span>
-                  </Button>
+                  <div className="flex flex-wrap justify-end gap-1">
+                    <Button
+                      variant={msg.handledAt ? "ghost" : "success"}
+                      size="sm"
+                      onClick={() => {
+                        markHandled(msg.id, !msg.handledAt);
+                        if (!msg.handledAt) toast.success(ti("handledToast"));
+                      }}
+                    >
+                      <CheckCheck /> {ti(msg.handledAt ? "reopen" : "markHandled")}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => patch("contacts", msg.id, { read: !msg.read })}>
+                      {msg.read ? <Mail /> : <MailOpen />} <span className="hidden sm:inline">{ti(msg.read ? "markUnread" : "markRead")}</span>
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex-1 space-y-2 p-5">
                   <h2 className="text-lg font-bold text-ink">{msg.subject}</h2>
                   <p className="text-xs text-muted-foreground">{formatDateTime(msg.createdAt, lang)}</p>
+                  {needsFollowUp(msg) && <p className="flex items-center gap-1.5 text-sm font-semibold text-danger"><AlarmClock className="size-4" /> {ti("overdueHint")}</p>}
+                  {msg.handledAt && <p className="flex items-center gap-1.5 text-sm text-success"><CheckCheck className="size-4" /> {ti("handledOn", { date: formatDateTime(msg.handledAt, lang) })}</p>}
                   <p className="whitespace-pre-wrap pt-3 leading-relaxed">{msg.message}</p>
                 </div>
                 <div className="border-t bg-surface-2/50 p-4">

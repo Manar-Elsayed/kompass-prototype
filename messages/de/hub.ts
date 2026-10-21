@@ -30,7 +30,7 @@ export const hub: Built<typeof Def> = {
   f3: "Partnerbewerbung",
   f4: "Zahlungsbeleg",
   f5: "Meldung Fake-Lead",
-  f6: "Bewertung · Beschwerde",
+  f6: "Bewertung",
   f7: "Website-Inhalte (CMS)",
   customer: "Kunde",
   partner: "Partnerfirma",

@@ -10,6 +10,7 @@ import { cn, formatDate } from "@/lib/utils";
 import { daysLeft, isExpiringSoon } from "@/lib/mock/selectors";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, useServiceMap } from "@/lib/mock/hooks";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/controls";
 import { StatusBadge, useConfirm } from "@/components/shared/bits";
@@ -105,6 +106,7 @@ export default function LeadsPage() {
       cell: ({ row: { original: o } }) => (
         <span className="flex items-center gap-1.5">
           <StatusBadge status={o.status} />
+          {o.noShow && o.noShow.status !== "resolved" && <Badge tone="danger">{t("admin.leads.noShowOpen")}</Badge>}
           {o.status === "new" && o.flags.length > 0 && (
             <span title={t("admin.leads.flagged")} className="text-warning"><AlertTriangle className="size-4" aria-label={t("admin.leads.flagged")} /></span>
           )}
@@ -158,10 +160,17 @@ export default function LeadsPage() {
             id: "attention",
             label: t("admin.leads.attention"),
             options: [
+              { value: "noshow", label: t("admin.leads.noShowOpen") },
               { value: "review", label: t("admin.leads.needsReview") },
               { value: "expiring", label: t("admin.leads.expiringSoon") },
             ],
-            get: (o) => (o.status === "new" ? "review" : isExpiringSoon(o) ? "expiring" : ""),
+            get: (o) => (o.noShow && o.noShow.status !== "resolved" ? "noshow" : o.status === "new" ? "review" : isExpiringSoon(o) ? "expiring" : ""),
+          },
+          {
+            id: "booking",
+            label: t("site.booking.who"),
+            options: (["personal", "other", "organization"] as const).map((b) => ({ value: b, label: t(`site.booking.${b}`) })),
+            get: (o) => o.booking,
           },
           { id: "service", label: t("common.fields.service"), options: services.map((s) => ({ value: s.id, label: L(s.name) })), get: (o) => o.serviceId },
           { id: "lang", label: t("common.fields.language"), options: ["de", "en", "fr", "it"].map((l) => ({ value: l, label: t(`common.lang.${l}`) })), get: (o) => o.lang },

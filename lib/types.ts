@@ -1,7 +1,7 @@
 /**
  * Domain model for the Kompass ecosystem.
  * Shapes are derived from the legacy front `types/*.ts` and the admin
- * RTK Query endpoints (offers, companies, orders, reviews, complaints …),
+ * RTK Query endpoints (offers, companies, orders, reviews …),
  * normalised and made multilingual (EN / DE / FR / IT).
  */
 
@@ -22,7 +22,11 @@ export interface Service {
   features: { id: ID; icon: string; title: L10n; description: L10n }[];
   tips: { id: ID; text: L10n }[];
   leadPrice: number; // CHF a partner pays per lead
+  /** Typical price range shown to customers. Indicative only — never a binding quote. */
+  estimate: { from: number; to: number; basis: L10n };
   active: boolean;
+  /** Shown on the website as "Coming soon" but not bookable yet. */
+  comingSoon?: boolean;
   order: number;
 }
 
@@ -48,6 +52,35 @@ export interface Address {
   elevator: boolean;
 }
 
+/**
+ * Who books: personal = for themselves; other = for someone else (e.g. a parent); organization = an
+ * association or institution books for one of its beneficiaries. The offer's own name / email / phone
+ * are always the beneficiary — the person the companies serve; the requester and organization are
+ * stored separately because they can differ.
+ */
+export type BookingType = "personal" | "other" | "organization";
+export interface Person {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+}
+
+/** A customer reports that the chosen company did not show up; Kompass follows it up. */
+export type NoShowStatus = "open" | "replacement" | "resolved";
+export type NoShowAction = "none" | "warning" | "suspended" | "removed";
+export interface NoShowCase {
+  partnerId: ID;
+  note: string;
+  reportedAt: string;
+  status: NoShowStatus;
+  /** Another company that bought the offer and confirmed it can do the job. */
+  replacementPartnerId?: ID;
+  companyReason?: string;
+  action?: NoShowAction;
+  resolvedAt?: string;
+}
+
 export interface Offer {
   id: ID; // e.g. "KO-10234"
   serviceId: ID;
@@ -68,6 +101,14 @@ export interface Offer {
   active: boolean;
   status: LeadStatus;
   flags: VerificationFlag[];
+  booking: BookingType;
+  /** Who submitted the request, when it was booked for someone else or by an organization. */
+  requester?: Person;
+  organization?: { name: string; email: string; phone: string; address?: string };
+  /** The company the customer chose to do the job (selling the details doesn't mean it was booked). */
+  chosenPartnerId?: ID;
+  chosenAt?: string;
+  noShow?: NoShowCase;
   cancelReason?: CancelReason;
   cancelledAt?: string;
   verifiedAt?: string;
@@ -101,16 +142,18 @@ export interface FakeReport {
   createdAt: string;
 }
 
-/** Money Kompass gives back to a partner company: credited to its wallet or paid out to its bank. */
-export type RefundReason = "fake_lead" | "duplicate_lead" | "cancelled_job" | "wallet_payout" | "goodwill";
-export type RefundMethod = "wallet" | "bank";
+/**
+ * Money Kompass gives back to a company, always into its wallet. Policy: a purchase is refunded
+ * only when the offer is confirmed fake; a customer cancelling a real request is never refunded.
+ * "manual" is the admin exception — a refund to any company, with the reason written down.
+ */
+export type RefundReason = "fake_lead" | "manual";
 export type RefundStatus = "pending" | "refunded" | "rejected";
 export interface Refund {
   id: ID;
   partnerId: ID;
   amount: number;
   reason: RefundReason;
-  method: RefundMethod;
   orderId?: ID; // the lead purchase being refunded, when there is one
   note: string;
   status: RefundStatus;
@@ -118,8 +161,89 @@ export interface Refund {
   decidedAt?: string;
 }
 
+/* ---------- Company files & messages ---------- */
+export type FileCategory = "logo" | "photo" | "document" | "other";
+/** File manager entry: images and documents kept for a company (the three required documents live on the partner). */
+export interface CompanyFile {
+  id: ID;
+  partnerId: ID;
+  name: string;
+  category: FileCategory;
+  url: string;
+  size: number; // bytes
+  uploadedBy: "admin" | "company";
+  uploadedAt: string;
+}
+
+/** A message Kompass sent a company from the dashboard (shown in its portal; emailed too when channel is email). */
+export interface CompanyMessage {
+  id: ID;
+  partnerId: ID;
+  subject: string;
+  body: string;
+  channel: "email" | "portal";
+  byUserId?: ID;
+  createdAt: string;
+  readAt?: string;
+}
+
+/** Companies admin nominated for a region (canton), in priority order: they are offered new leads there first. */
+export interface Nomination {
+  canton: string;
+  partnerIds: ID[];
+}
+
+/* ---------- Wallet money-in & invoices ---------- */
+/**
+ * How money reached a wallet besides an uploaded receipt (PartnerDue):
+ * online = the company paid by card / TWINT in the portal; admin = Kompass recorded a payment;
+ * credit = Kompass advanced the amount now and invoiced it for later ("pay later").
+ */
+export type TopupMethod = "online" | "admin" | "credit";
+export type PayMethod = "card" | "twint" | "bank_transfer" | "cash";
+export interface WalletTopup {
+  id: ID; // TU-0001
+  partnerId: ID;
+  amount: number;
+  method: TopupMethod;
+  payMethod?: PayMethod;
+  reference: string;
+  note: string;
+  byUserId?: ID; // admin who recorded it
+  invoiceId?: ID; // credit: the invoice for the amount owed
+  createdAt: string;
+}
+
+/** Invoice for credit given now and paid later. "Overdue" is derived: due and past dueAt. */
+export type InvoiceStatus = "due" | "paid";
+export interface Invoice {
+  id: ID; // INV-2026-0001
+  partnerId: ID;
+  topupId: ID;
+  amount: number;
+  status: InvoiceStatus;
+  issuedAt: string;
+  dueAt: string;
+  paidAt?: string;
+  paidMethod?: PayMethod;
+  paidReference?: string;
+}
+
 /* ---------- Partners ---------- */
+/** Application submitted → documents under review (pending / contract sent) → approved, or rejected. */
 export type PartnerStatus = "pending" | "contract_sent" | "approved" | "rejected";
+
+/** The three documents every company needs. A company can buy leads only while all three are valid and unexpired. */
+export type DocKey = "contract" | "insurance" | "register";
+export const DOC_KEYS: readonly DocKey[] = ["contract", "insurance", "register"];
+/** valid = checked by Kompass; pending_review = (re)uploaded by the company, not yet checked; rejected = not accepted. */
+export type DocStatus = "valid" | "pending_review" | "rejected";
+export interface CompanyDoc {
+  file: string;
+  uploadedAt: string;
+  expiresAt?: string;
+  status: DocStatus;
+}
 
 export interface Partner {
   id: ID;
@@ -141,10 +265,9 @@ export interface Partner {
   status: PartnerStatus;
   banned: boolean;
   featured: boolean;
-  expiresAt?: string;
   wallet: number;
   bank: { name: string; owner: string; iban: string };
-  documents: { contract?: string; insurance?: string; register?: string };
+  documents: Partial<Record<DocKey, CompanyDoc>>;
   lastSeen: string;
   createdAt: string;
 }
@@ -167,6 +290,8 @@ export type ModerationStatus = "pending" | "approved" | "rejected";
 export interface Review {
   id: ID;
   target: "kompass" | ID; // "kompass" or partnerId
+  /** Company reviews come from the customer's request link, for the company they chose. */
+  offerId?: ID;
   name: string;
   email: string;
   stars: number;
@@ -180,19 +305,6 @@ export interface RemovalRequest {
   reviewId: ID;
   partnerId: ID;
   reason: string;
-  status: ModerationStatus;
-  createdAt: string;
-}
-
-export interface Complaint {
-  id: ID;
-  kind: "partner" | "offer";
-  partnerId?: ID;
-  offerId?: ID;
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
   status: ModerationStatus;
   createdAt: string;
 }
@@ -221,7 +333,28 @@ export interface ContactMessage {
   subject: string;
   message: string;
   read: boolean;
+  /** When Kompass replied or called back. Without it for 24 hours the request is flagged for follow-up. */
+  handledAt?: string;
   createdAt: string;
+}
+
+/**
+ * One visitor's pass through the website offer form, so admin can see who started, how far they got
+ * and who left before submitting. started = touched the form; details = finished step 1 (service,
+ * addresses, date); contact = typed contact details on step 2; submitted = became an offer.
+ */
+export type FormStep = "started" | "details" | "contact" | "submitted";
+export interface FormSession {
+  id: ID;
+  step: FormStep;
+  serviceId?: ID;
+  name?: string;
+  email?: string;
+  phone?: string;
+  offerId?: ID;
+  device: "desktop" | "mobile" | "tablet";
+  startedAt: string;
+  updatedAt: string;
 }
 
 export interface FaqQuestion {
@@ -248,7 +381,7 @@ export interface Visitor {
 
 export interface Notification {
   id: ID;
-  kind: "lead" | "application" | "due" | "review" | "complaint" | "contact" | "report";
+  kind: "lead" | "application" | "due" | "review" | "contact" | "report";
   title: L10n;
   href: string;
   read: boolean;
@@ -410,9 +543,14 @@ export interface DB {
   partners: Partner[];
   dues: PartnerDue[];
   refunds: Refund[];
+  topups: WalletTopup[];
+  invoices: Invoice[];
+  files: CompanyFile[];
+  messages: CompanyMessage[];
+  formSessions: FormSession[];
+  nominations: Nomination[];
   reviews: Review[];
   removals: RemovalRequest[];
-  complaints: Complaint[];
   coupons: Coupon[];
   contacts: ContactMessage[];
   faqQuestions: FaqQuestion[];

@@ -3,8 +3,11 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type {
+  NoShowCase,
   CancelReason,
-  Complaint,
+  FormSession,
+  CompanyMessage,
+  DocKey,
   ContactMessage,
   DB,
   FaqQuestion,
@@ -13,12 +16,15 @@ import type {
   Order,
   Partner,
   PartnerDue,
+  Invoice,
+  PayMethod,
   Refund,
   Review,
+  WalletTopup,
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { createSeed } from "./seed";
-import { isPurchasable, verificationFlags } from "./selectors";
+import { documentState, isPurchasable, verificationFlags } from "./selectors";
 
 type Collections = {
   [K in keyof DB as DB[K] extends { id: string }[] ? K : never]: DB[K];
@@ -39,15 +45,40 @@ interface Actions {
   setConfig: (partial: Partial<DB["config"]>) => void;
 
   /* cross-surface flows */
-  submitOffer: (input: Omit<Offer, "id" | "createdAt" | "status" | "active" | "ip" | "device" | "source" | "flags" | "cancelReason" | "cancelledAt" | "verifiedAt" | "repostedAt" | "buyersNotifiedAt"> & { source?: Offer["source"] }) => Offer;
+  submitOffer: (input: Omit<Offer, "id" | "createdAt" | "status" | "active" | "ip" | "device" | "source" | "flags" | "cancelReason" | "cancelledAt" | "verifiedAt" | "repostedAt" | "buyersNotifiedAt" | "chosenPartnerId" | "chosenAt" | "noShow"> & { source?: Offer["source"] }) => Offer;
   registerPartner: (input: Omit<Partner, "id" | "slug" | "status" | "banned" | "featured" | "wallet" | "documents" | "lastSeen" | "createdAt">) => Partner;
   decideApplication: (id: string, decision: "contract_sent" | "approved" | "rejected", expiresAt?: string) => void;
   decideDue: (id: string, status: "confirmed" | "canceled") => void;
   /** Admin-issued refund: recorded as refunded straight away and applied to the wallet. */
-  issueRefund: (input: Pick<Refund, "partnerId" | "amount" | "reason" | "method" | "orderId" | "note">) => Refund;
+  issueRefund: (input: Pick<Refund, "partnerId" | "amount" | "reason" | "orderId" | "note">) => Refund;
   decideRefund: (id: string, status: "refunded" | "rejected") => void;
-  submitReview: (input: Pick<Review, "target" | "name" | "email" | "stars" | "comment">) => void;
-  submitComplaint: (input: Omit<Complaint, "id" | "status" | "createdAt">) => void;
+  /** Money in: an online card/TWINT payment from the portal, or a payment admin recorded. */
+  topUpWallet: (input: Pick<WalletTopup, "partnerId" | "amount" | "payMethod" | "reference" | "note" | "byUserId"> & { method: "online" | "admin" }) => WalletTopup;
+  /** Pay later: credit the wallet now and issue an invoice due in `termDays`. */
+  addCredit: (input: { partnerId: string; amount: number; termDays: number; note: string; byUserId?: string }) => Invoice;
+  markInvoicePaid: (id: string, payMethod: PayMethod, reference: string) => void;
+
+  /* company documents, contact, regions */
+  /** Company uploads → waits for Kompass to check it; admin uploads → valid straight away. */
+  uploadDocument: (partnerId: string, key: DocKey, file: string, expiresAt: string | undefined, by: "company" | "admin") => void;
+  reviewDocument: (partnerId: string, key: DocKey, approve: boolean, expiresAt?: string) => void;
+  setDocumentExpiry: (partnerId: string, key: DocKey, expiresAt: string) => void;
+  sendCompanyMessage: (input: Pick<CompanyMessage, "partnerId" | "subject" | "body" | "channel" | "byUserId">) => void;
+  markMessagesRead: (partnerId: string) => void;
+  /** Company asks Kompass to change details it can't edit itself; lands in the admin inbox. */
+  requestProfileChange: (partnerId: string, message: string) => void;
+  setNominations: (canton: string, partnerIds: string[]) => void;
+  submitReview: (input: Pick<Review, "target" | "name" | "email" | "stars" | "comment" | "offerId">) => void;
+  /** Customer, from the request link: the company they booked among those that bought the request. */
+  chooseCompany: (offerId: string, partnerId: string) => void;
+  /** Customer, from the request link: the chosen company did not come. */
+  reportNoShow: (offerId: string, note: string) => void;
+  /** Admin: follow-up of a no-show — replacement company, the company's reason, the action taken. */
+  updateNoShow: (offerId: string, patch: Partial<Omit<NoShowCase, "partnerId" | "note" | "reportedAt">>) => void;
+  /** Website offer form progress (created on first input, updated per step, closed on submit). */
+  trackFormSession: (id: string, patch: Partial<Omit<FormSession, "id" | "startedAt" | "updatedAt">>) => void;
+  /** Kompass replied to / called back a Contact Us request: it no longer counts toward the 24-hour follow-up. */
+  markContactHandled: (id: string, handled: boolean) => void;
   submitContact: (input: Omit<ContactMessage, "id" | "read" | "createdAt">) => void;
   submitFaqQuestion: (input: Pick<FaqQuestion, "name" | "email" | "question">) => void;
   markAllNotificationsRead: () => void;
@@ -84,7 +115,7 @@ interface Actions {
 
 export type BuyResult =
   | { ok: true; order: Order; price: number; discount: number }
-  | { ok: false; error: "unavailable" | "insufficient" | "coupon" | "blocked" | "owned" };
+  | { ok: false; error: "unavailable" | "insufficient" | "coupon" | "blocked" | "owned" | "documents" };
 
 export type Store = DB & { session: Session | null; partnerSession: PartnerSession | null } & Actions;
 
@@ -120,12 +151,11 @@ export function quoteLead(
 
 const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
 const nowIso = () => new Date().toISOString();
+const inDays = (d: number) => new Date(Date.now() + d * 86_400_000).toISOString();
 
-/** How a refund moves the partner wallet: wallet credits add to it, a bank payout of the wallet balance takes from it. */
-const walletDelta = (r: Pick<Refund, "amount" | "method" | "reason">) =>
-  r.method === "wallet" ? r.amount : r.reason === "wallet_payout" ? -r.amount : 0;
-const applyRefund = (partners: Partner[], r: Pick<Refund, "partnerId" | "amount" | "method" | "reason">) =>
-  partners.map((p) => (p.id === r.partnerId ? { ...p, wallet: Math.max(0, p.wallet + walletDelta(r)) } : p));
+/** Money into (or, negative, out of) one company's wallet. */
+const credit = (partners: Partner[], partnerId: string, amount: number) =>
+  partners.map((p) => (p.id === partnerId ? { ...p, wallet: Math.max(0, p.wallet + amount) } : p));
 
 /**
  * Book a purchase: charge the wallet and, when this fills the customer's quota, close the offer
@@ -231,10 +261,13 @@ export const useStore = create<Store>()(
               ? {
                   ...p,
                   status: decision,
-                  expiresAt: decision === "approved" ? expiresAt : p.expiresAt,
                   documents:
                     decision === "approved"
-                      ? { contract: "contract-signed.pdf", insurance: p.documents.insurance ?? "insurance.pdf", register: p.documents.register ?? "hr-extract.pdf" }
+                      ? {
+                          contract: { file: "contract-signed.pdf", uploadedAt: nowIso(), status: "valid", expiresAt },
+                          insurance: { file: "insurance.pdf", uploadedAt: nowIso(), ...p.documents.insurance, status: "valid", expiresAt: p.documents.insurance?.expiresAt ?? inDays(365) },
+                          register: { file: "hr-extract.pdf", uploadedAt: nowIso(), ...p.documents.register, status: "valid", expiresAt: p.documents.register?.expiresAt ?? inDays(365) },
+                        }
                       : p.documents,
                 }
               : p,
@@ -245,7 +278,7 @@ export const useStore = create<Store>()(
         const at = nowIso();
         const next = Math.max(0, ...get().refunds.map((r) => Number(r.id.slice(3)) || 0)) + 1;
         const refund: Refund = { ...input, id: `RF-${String(next).padStart(3, "0")}`, status: "refunded", createdAt: at, decidedAt: at };
-        set((s) => ({ refunds: [refund, ...s.refunds], partners: applyRefund(s.partners, refund) }));
+        set((s) => ({ refunds: [refund, ...s.refunds], partners: credit(s.partners, refund.partnerId, refund.amount) }));
         return refund;
       },
 
@@ -255,9 +288,90 @@ export const useStore = create<Store>()(
           if (!refund || refund.status !== "pending") return {};
           return {
             refunds: s.refunds.map((r) => (r.id === id ? { ...r, status, decidedAt: nowIso() } : r)),
-            partners: status === "refunded" ? applyRefund(s.partners, refund) : s.partners,
+            partners: status === "refunded" ? credit(s.partners, refund.partnerId, refund.amount) : s.partners,
           };
         }),
+
+      topUpWallet: ({ method, ...input }) => {
+        const s = get();
+        const topup: WalletTopup = { ...input, method, id: `TU-${String(s.topups.length + 1).padStart(4, "0")}`, createdAt: nowIso() };
+        set({ topups: [topup, ...s.topups], partners: credit(s.partners, topup.partnerId, topup.amount) });
+        return topup;
+      },
+
+      addCredit: ({ partnerId, amount, termDays, note, byUserId }) => {
+        const s = get();
+        const at = nowIso();
+        const year = new Date(at).getFullYear();
+        const next = Math.max(0, ...s.invoices.map((i) => Number(i.id.split("-").pop()) || 0)) + 1;
+        const invoiceId = `INV-${year}-${String(next).padStart(4, "0")}`;
+        const topupId = `TU-${String(s.topups.length + 1).padStart(4, "0")}`;
+        const invoice: Invoice = { id: invoiceId, partnerId, topupId, amount, status: "due", issuedAt: at, dueAt: new Date(Date.now() + termDays * 86_400_000).toISOString() };
+        const topup: WalletTopup = { id: topupId, partnerId, amount, method: "credit", reference: invoiceId, note, byUserId, invoiceId, createdAt: at };
+        set({ topups: [topup, ...s.topups], invoices: [invoice, ...s.invoices], partners: credit(s.partners, partnerId, amount) });
+        return invoice;
+      },
+
+      markInvoicePaid: (id, payMethod, reference) =>
+        set((s) => ({
+          invoices: s.invoices.map((i) => (i.id === id && i.status === "due" ? { ...i, status: "paid", paidAt: nowIso(), paidMethod: payMethod, paidReference: reference } : i)),
+        })),
+
+      uploadDocument: (partnerId, key, file, expiresAt, by) =>
+        set((s) => ({
+          partners: s.partners.map((p) =>
+            p.id === partnerId
+              ? { ...p, documents: { ...p.documents, [key]: { file, uploadedAt: nowIso(), expiresAt, status: by === "admin" ? "valid" : "pending_review" } } }
+              : p,
+          ),
+          notifications:
+            by === "company"
+              ? notify(s, {
+                  kind: "application",
+                  title: {
+                    en: `Document to check: ${s.partners.find((p) => p.id === partnerId)?.name}`,
+                    de: `Dokument prüfen: ${s.partners.find((p) => p.id === partnerId)?.name}`,
+                    fr: `Document à vérifier : ${s.partners.find((p) => p.id === partnerId)?.name}`,
+                    it: `Documento da verificare: ${s.partners.find((p) => p.id === partnerId)?.name}`,
+                  },
+                  href: `/admin/partners/${partnerId}`,
+                })
+              : s.notifications,
+        })),
+
+      reviewDocument: (partnerId, key, approve, expiresAt) =>
+        set((s) => ({
+          partners: s.partners.map((p) => {
+            const d = p.documents[key];
+            if (p.id !== partnerId || !d) return p;
+            return { ...p, documents: { ...p.documents, [key]: { ...d, status: approve ? "valid" : "rejected", expiresAt: expiresAt ?? d.expiresAt } } };
+          }),
+        })),
+
+      setDocumentExpiry: (partnerId, key, expiresAt) =>
+        set((s) => ({
+          partners: s.partners.map((p) => {
+            const d = p.documents[key];
+            return p.id === partnerId && d ? { ...p, documents: { ...p.documents, [key]: { ...d, expiresAt } } } : p;
+          }),
+        })),
+
+      sendCompanyMessage: (input) =>
+        set((s) => ({ messages: [{ ...input, id: uid("MSG"), createdAt: nowIso() }, ...s.messages] })),
+
+      markMessagesRead: (partnerId) =>
+        set((s) => ({ messages: s.messages.map((m) => (m.partnerId === partnerId && !m.readAt ? { ...m, readAt: nowIso() } : m)) })),
+
+      requestProfileChange: (partnerId, message) => {
+        const p = get().partners.find((x) => x.id === partnerId);
+        if (!p) return;
+        get().submitContact({ name: `${p.ownerName} · ${p.name}`, email: p.email, phone: p.phone, subject: `Profile change request: ${p.name}`, message });
+      },
+
+      setNominations: (canton, partnerIds) =>
+        set((s) => ({
+          nominations: [...s.nominations.filter((n) => n.canton !== canton), ...(partnerIds.length ? [{ canton, partnerIds }] : [])],
+        })),
 
       decideDue: (id, status) =>
         set((s) => {
@@ -282,15 +396,54 @@ export const useStore = create<Store>()(
           }),
         })),
 
-      submitComplaint: (input) =>
-        set((s) => ({
-          complaints: [{ ...input, id: uid("CMP"), status: "pending", createdAt: nowIso() }, ...s.complaints],
-          notifications: notify(s, {
-            kind: "complaint",
-            title: { en: `New complaint from ${input.name}`, de: `Neue Beschwerde von ${input.name}`, fr: `Nouvelle réclamation de ${input.name}`, it: `Nuovo reclamo da ${input.name}` },
-            href: "/admin/moderation/complaints",
-          }),
-        })),
+      chooseCompany: (offerId, partnerId) =>
+        set((s) => ({ offers: s.offers.map((o) => (o.id === offerId ? { ...o, chosenPartnerId: partnerId, chosenAt: nowIso() } : o)) })),
+
+      reportNoShow: (offerId, note) =>
+        set((s) => {
+          const offer = s.offers.find((o) => o.id === offerId);
+          if (!offer?.chosenPartnerId) return {};
+          const partner = s.partners.find((p) => p.id === offer.chosenPartnerId);
+          return {
+            offers: s.offers.map((o) => (o.id === offerId ? { ...o, noShow: { partnerId: offer.chosenPartnerId!, note, reportedAt: nowIso(), status: "open" } } : o)),
+            notifications: notify(s, {
+              kind: "report",
+              title: { en: `No-show: ${partner?.name} did not come (${offerId})`, de: `Nicht erschienen: ${partner?.name} (${offerId})`, fr: `Absence : ${partner?.name} n’est pas venu (${offerId})`, it: `Mancata presenza: ${partner?.name} (${offerId})` },
+              href: `/admin/leads/${offerId}`,
+            }),
+          };
+        }),
+
+      updateNoShow: (offerId, patch) =>
+        set((s) => {
+          const offer = s.offers.find((o) => o.id === offerId);
+          if (!offer?.noShow) return {};
+          const noShow: NoShowCase = { ...offer.noShow, ...patch };
+          if (noShow.status === "resolved" && !noShow.resolvedAt) noShow.resolvedAt = nowIso();
+          // the replacement company becomes the one doing the job
+          const chosenPartnerId = patch.replacementPartnerId ?? offer.chosenPartnerId;
+          const ban = patch.action === "suspended" || patch.action === "removed";
+          return {
+            offers: s.offers.map((o) => (o.id === offerId ? { ...o, noShow, chosenPartnerId } : o)),
+            partners: ban
+              ? s.partners.map((p) => (p.id === noShow.partnerId ? { ...p, banned: true, featured: false, ...(patch.action === "removed" ? { status: "rejected" as const } : {}) } : p))
+              : s.partners,
+          };
+        }),
+
+      trackFormSession: (id, patch) =>
+        set((s) => {
+          const at = nowIso();
+          const existing = s.formSessions.find((x) => x.id === id);
+          if (!existing) {
+            const created: FormSession = { device: "desktop", step: "started", ...patch, id, startedAt: at, updatedAt: at };
+            return { formSessions: [created, ...s.formSessions] };
+          }
+          return { formSessions: s.formSessions.map((x) => (x.id === id ? { ...x, ...patch, updatedAt: at } : x)) };
+        }),
+
+      markContactHandled: (id, handled) =>
+        set((s) => ({ contacts: s.contacts.map((c) => (c.id === id ? { ...c, read: true, handledAt: handled ? nowIso() : undefined } : c)) })),
 
       submitContact: (input) =>
         set((s) => ({
@@ -331,8 +484,12 @@ export const useStore = create<Store>()(
           const partner = s.partners.find((p) => p.id === partnerId);
           const offer = s.offers.find((o) => o.id === offerId);
           if (!partner || !offer) return {};
-          if (partner.banned || partner.status !== "approved" || (partner.expiresAt && Date.parse(partner.expiresAt) < Date.now())) {
+          if (partner.banned || partner.status !== "approved") {
             result = { ok: false, error: "blocked" };
+            return {};
+          }
+          if (!documentState(partner).ok) {
+            result = { ok: false, error: "documents" };
             return {};
           }
           const sold = s.orders.filter((o) => o.offerId === offerId);
@@ -378,6 +535,10 @@ export const useStore = create<Store>()(
           if (!partner || !offer) return {};
           if (partner.banned || partner.status !== "approved") {
             result = { ok: false, error: "blocked" };
+            return {};
+          }
+          if (!documentState(partner).ok) {
+            result = { ok: false, error: "documents" };
             return {};
           }
           const sold = s.orders.filter((o) => o.offerId === offerId);
@@ -426,10 +587,17 @@ export const useStore = create<Store>()(
         }));
         // money only moves for fake offers: a customer changing their mind is not refundable
         if (reason !== "fake") return;
-        const { orders, fakeReports, issueRefund } = get();
+        const { orders, fakeReports, refunds, issueRefund, decideRefund } = get();
         for (const order of orders.filter((o) => o.offerId === id && refundOrderIds.includes(o.id))) {
+          // a company that had already claimed this purchase gets its waiting claim paid, not a second refund
+          const claim = refunds.find((r) => r.orderId === order.id && r.status === "pending");
+          if (claim) {
+            decideRefund(claim.id, "refunded");
+            continue;
+          }
+          if (refunds.some((r) => r.orderId === order.id && r.status === "refunded")) continue;
           const report = fakeReports.find((r) => r.orderId === order.id);
-          issueRefund({ partnerId: order.partnerId, amount: order.price, reason: "fake_lead", method: "wallet", orderId: order.id, note: report?.reason ?? "Offer cancelled as fake by Kompass." });
+          issueRefund({ partnerId: order.partnerId, amount: order.price, reason: "fake_lead", orderId: order.id, note: report?.reason ?? "Offer cancelled as fake by Kompass." });
         }
       },
 
@@ -493,10 +661,13 @@ export const useStore = create<Store>()(
     {
       name: "kompass-prototype-v1",
       // v2 added German, French and Italian; v3 dropped Arabic; v4 moved offers to the five-status
-      // lifecycle. Older saves start again from the current seed, keeping the signed-in sessions.
-      version: 4,
+      // lifecycle; v5 added wallet top-ups, credit invoices and the fake-only refund policy; v6 dated
+      // company documents, files, messages and regional nominations; v7 removed complaints and added
+      // offer-form sessions and contact follow-up; v8 the six services, booking types, chosen
+      // companies and no-shows. Older saves start again from the current seed, keeping the signed-in sessions.
+      version: 8,
       migrate: (persisted, version) => {
-        if (version >= 4) return persisted as Store;
+        if (version >= 8) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

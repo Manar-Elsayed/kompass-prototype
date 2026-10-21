@@ -1,4 +1,4 @@
-import type { DB, Offer, VerificationFlag } from "@/lib/types";
+import { DOC_KEYS, type DB, type DocKey, type Offer, type Partner, type VerificationFlag } from "@/lib/types";
 import { NOW, DAY } from "./seed";
 
 /** Reference "now": the frozen seed date, or real time if later (for new entries). */
@@ -10,21 +10,73 @@ export function inLastDays(iso: string, days: number, offsetDays = 0) {
   return t <= end && t > end - days * DAY;
 }
 
-export function partnerLedger(db: Pick<DB, "orders" | "dues">, partnerId: string) {
-  const purchased = db.orders.filter((o) => o.partnerId === partnerId).reduce((a, o) => a + o.price, 0);
-  const paid = db.dues.filter((d) => d.partnerId === partnerId && d.status === "confirmed").reduce((a, d) => a + d.amount, 0);
-  const pending = db.dues.filter((d) => d.partnerId === partnerId && d.status === "pending").reduce((a, d) => a + d.amount, 0);
-  const leads = db.orders.filter((o) => o.partnerId === partnerId).length;
-  return { purchased, paid, pending, leads, outstanding: Math.max(0, purchased - paid) };
+/* ---------- wallet ledger ---------- */
+
+export type LedgerKind = "receipt" | "online" | "admin" | "credit" | "purchase" | "refund";
+export interface LedgerEntry {
+  id: string; // the source record (due, top-up, order or refund)
+  at: string;
+  kind: LedgerKind;
+  amount: number; // signed: money in > 0, purchases < 0
+  reference: string; // receipt / payment reference, or the lead id for purchases
+  payMethod?: string;
 }
 
-export function finance(db: Pick<DB, "orders" | "dues" | "partners">) {
+type LedgerDB = Pick<DB, "orders" | "dues" | "topups" | "refunds" | "invoices" | "partners">;
+
+/** Overdue = an unpaid credit invoice past its due date. */
+export const isOverdue = (inv: { status: string; dueAt: string }) => inv.status === "due" && Date.parse(inv.dueAt) < refNow();
+
+/**
+ * Every movement of one company's wallet, newest first. The wallet is the single balance:
+ * receipts confirmed by admin, online payments, admin top-ups and credit add money; lead
+ * purchases take it out; refunds (fake offers or admin exceptions) put it back.
+ */
+export function walletLedger(db: LedgerDB, partnerId: string) {
+  const entries: LedgerEntry[] = [
+    ...db.dues
+      .filter((d) => d.partnerId === partnerId && d.status === "confirmed")
+      .map((d) => ({ id: d.id, at: d.createdAt, kind: "receipt" as const, amount: d.amount, reference: d.reference, payMethod: d.method })),
+    ...db.topups
+      .filter((x) => x.partnerId === partnerId)
+      .map((x) => ({ id: x.id, at: x.createdAt, kind: x.method, amount: x.amount, reference: x.reference, payMethod: x.payMethod })),
+    ...db.orders
+      .filter((o) => o.partnerId === partnerId)
+      .map((o) => ({ id: o.id, at: o.createdAt, kind: "purchase" as const, amount: -o.price, reference: o.offerId })),
+    ...db.refunds
+      .filter((r) => r.partnerId === partnerId && r.status === "refunded")
+      .map((r) => ({ id: r.id, at: r.decidedAt ?? r.createdAt, kind: "refund" as const, amount: r.amount, reference: r.orderId ?? r.id })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
+
+  const sum = (kinds: LedgerKind[]) => entries.filter((e) => kinds.includes(e.kind)).reduce((a, e) => a + e.amount, 0);
+  const invoices = db.invoices.filter((i) => i.partnerId === partnerId);
+  const due = invoices.filter((i) => i.status === "due");
+  return {
+    entries,
+    balance: db.partners.find((p) => p.id === partnerId)?.wallet ?? 0,
+    toppedUp: sum(["receipt", "online", "admin"]),
+    credit: sum(["credit"]),
+    spent: -sum(["purchase"]),
+    refunded: sum(["refund"]),
+    leads: entries.filter((e) => e.kind === "purchase").length,
+    creditDue: due.reduce((a, i) => a + i.amount, 0),
+    creditOverdue: due.filter(isOverdue).reduce((a, i) => a + i.amount, 0),
+    lastAt: entries[0]?.at,
+  };
+}
+
+/** Platform money totals for the dashboard. */
+export function finance(db: LedgerDB) {
   const totalIncome = db.orders.reduce((a, o) => a + o.price, 0);
   const pendingDues = db.dues.filter((d) => d.status === "pending").reduce((a, d) => a + d.amount, 0);
-  const kompassDues = db.partners
-    .filter((p) => p.status === "approved")
-    .reduce((a, p) => a + partnerLedger(db, p.id).outstanding, 0);
-  return { totalIncome, pendingDues, kompassDues };
+  const due = db.invoices.filter((i) => i.status === "due");
+  return {
+    totalIncome,
+    pendingDues,
+    creditDue: due.reduce((a, i) => a + i.amount, 0),
+    creditOverdue: due.filter(isOverdue).reduce((a, i) => a + i.amount, 0),
+    walletTotal: db.partners.filter((p) => p.status === "approved").reduce((a, p) => a + p.wallet, 0),
+  };
 }
 
 /** Whole days until the customer's deadline (negative once it has passed). */
@@ -83,4 +135,165 @@ export function soldCount(db: Pick<DB, "orders">, offerId: string) {
 export function pctDelta(cur: number, prev: number) {
   if (!prev) return cur ? 100 : 0;
   return Math.round(((cur - prev) / prev) * 100);
+}
+
+/* ---------- company documents & performance ---------- */
+
+/** Days before a document's expiry when admin and the company are warned. */
+export const DOC_WARN_DAYS = 30;
+
+export type DocState = "ok" | "expiring" | "review" | "expired" | "missing";
+
+/**
+ * Where a company's required documents stand. `ok` means every document is uploaded, checked by
+ * Kompass and not expired — the condition for buying leads. `state` is the most urgent problem.
+ */
+export function documentState(p: Pick<Partner, "documents">) {
+  const now = refNow();
+  const missing: DocKey[] = [];
+  const expired: DocKey[] = [];
+  const expiring: DocKey[] = [];
+  const review: DocKey[] = [];
+  let next: { key: DocKey; date: string } | undefined;
+  for (const key of DOC_KEYS) {
+    const d = p.documents[key];
+    if (!d || d.status === "rejected") {
+      missing.push(key);
+      continue;
+    }
+    if (d.status === "pending_review") review.push(key);
+    if (d.expiresAt) {
+      const t = Date.parse(d.expiresAt);
+      if (t < now) expired.push(key);
+      else if (t - now <= DOC_WARN_DAYS * DAY) expiring.push(key);
+      if (!next || t < Date.parse(next.date)) next = { key, date: d.expiresAt };
+    }
+  }
+  const ok = !missing.length && !expired.length && !review.length;
+  const state: DocState = missing.length ? "missing" : expired.length ? "expired" : review.length ? "review" : expiring.length ? "expiring" : "ok";
+  return { ok, state, missing, expired, expiring, review, next };
+}
+
+/** A company may buy (or be assigned) leads only when approved, not banned and its documents are in order. */
+export const canBuyLeads = (p: Pick<Partner, "status" | "banned" | "documents">) => p.status === "approved" && !p.banned && documentState(p).ok;
+
+/**
+ * Performance used to rank companies for recommendations: leads bought in the last 90 days,
+ * average approved rating and how recently the company was active.
+ */
+export function companyScore(db: Pick<DB, "orders" | "reviews">, p: Pick<Partner, "id" | "lastSeen">) {
+  const bought90 = db.orders.filter((o) => o.partnerId === p.id && inLastDays(o.createdAt, 90)).length;
+  const rated = db.reviews.filter((r) => r.target === p.id && r.status === "approved");
+  const rating = rated.length ? rated.reduce((a, r) => a + r.stars, 0) / rated.length : 0;
+  const idleDays = Math.max(0, (refNow() - Date.parse(p.lastSeen)) / DAY);
+  const score = Math.round(bought90 * 10 + rating * 8 + Math.max(0, 14 - idleDays));
+  return { bought90, rating, reviews: rated.length, idleDays: Math.round(idleDays), score };
+}
+
+/* ---------- dashboard periods & statistics ---------- */
+
+/** A calendar month ("2026-10") or year ("2026") the dashboard is filtered to. */
+export interface Period {
+  kind: "month" | "year";
+  key: string;
+}
+
+export function periodRange(p: Period) {
+  const [y, m] = p.key.split("-").map(Number);
+  const from = p.kind === "year" ? Date.UTC(y, 0, 1) : Date.UTC(y, m - 1, 1);
+  const to = p.kind === "year" ? Date.UTC(y + 1, 0, 1) : Date.UTC(y, m, 1);
+  return { from, to };
+}
+
+/** The current month plus the 11 before it, and every year with data, newest first. */
+export function periodOptions() {
+  const now = new Date(refNow());
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  });
+  const years = [...new Set(months.map((m) => m.slice(0, 4)))];
+  return { months, years };
+}
+
+/** Contact Us requests nobody has replied to or called back within 24 hours. */
+export const FOLLOW_UP_HOURS = 24;
+export const needsFollowUp = (c: { handledAt?: string; createdAt: string }) => !c.handledAt && refNow() - Date.parse(c.createdAt) > FOLLOW_UP_HOURS * 3_600_000;
+
+type StatsDB = Pick<DB, "offers" | "orders" | "partners" | "dues" | "topups" | "refunds" | "reviews" | "formSessions">;
+
+/** Everything the admin dashboard shows for one period, grouped like the requirements. */
+export function dashboardStats(db: StatsDB, p: Period, visitorsOnDay: (day: string) => number) {
+  const { from, to } = periodRange(p);
+  const inP = (iso?: string) => {
+    if (!iso) return false;
+    const t = Date.parse(iso);
+    return t >= from && t < to;
+  };
+
+  // A. offers
+  const received = db.offers.filter((o) => inP(o.createdAt));
+  const ordersInP = db.orders.filter((o) => inP(o.createdAt));
+  const soldIds = new Set(ordersInP.map((o) => o.offerId));
+  const fake = db.offers.filter((o) => o.cancelReason === "fake" && inP(o.cancelledAt));
+
+  // B. companies
+  const approved = db.partners.filter((p) => p.status === "approved");
+  const buyers = new Map<string, number>();
+  for (const o of ordersInP) buyers.set(o.partnerId, (buyers.get(o.partnerId) ?? 0) + 1);
+  const toppedUpIds = new Set([
+    ...db.dues.filter((d) => d.status === "confirmed" && inP(d.createdAt)).map((d) => d.partnerId),
+    ...db.topups.filter((x) => x.method !== "credit" && inP(x.createdAt)).map((x) => x.partnerId),
+  ]);
+  const active = approved.filter((p) => inP(p.lastSeen) || buyers.has(p.id) || toppedUpIds.has(p.id));
+  const perCompany = approved
+    .map((p) => ({ id: p.id, name: p.name, bought: buyers.get(p.id) ?? 0, score: companyScore(db, p).score }))
+    .filter((x) => x.bought > 0)
+    .sort((a, b) => b.bought - a.bought || b.score - a.score);
+
+  // C. money
+  const toppedUp =
+    db.dues.filter((d) => d.status === "confirmed" && inP(d.createdAt)).reduce((a, d) => a + d.amount, 0) +
+    db.topups.filter((x) => x.method !== "credit" && inP(x.createdAt)).reduce((a, x) => a + x.amount, 0);
+  const credit = db.topups.filter((x) => x.method === "credit" && inP(x.createdAt)).reduce((a, x) => a + x.amount, 0);
+  const fakeRefunds = db.refunds.filter((r) => r.reason === "fake_lead" && r.status === "refunded" && inP(r.decidedAt ?? r.createdAt));
+
+  // D. visitors & offer form
+  const end = Math.min(to, refNow() + DAY);
+  let visitors = 0;
+  for (let t = from; t < end; t += DAY) visitors += visitorsOnDay(new Date(t).toISOString().slice(0, 10));
+  const sessions = db.formSessions.filter((s) => inP(s.startedAt));
+  const reached = (steps: string[]) => sessions.filter((s) => steps.includes(s.step)).length;
+  const submitted = sessions.filter((s) => s.step === "submitted");
+  const offerById = new Map(db.offers.map((o) => [o.id, o]));
+  const fakeSubmitted = submitted.filter((s) => {
+    const o = s.offerId ? offerById.get(s.offerId) : undefined;
+    return !!o && (o.cancelReason === "fake" || (o.status === "new" && o.flags.length > 0));
+  });
+
+  return {
+    offers: { received: received.length, sold: soldIds.size, fake: fake.length, total: db.offers.length },
+    companies: { registered: approved.length, active: active.length, buyers: buyers.size, perCompany },
+    money: {
+      toppedUpCompanies: toppedUpIds.size,
+      toppedUp,
+      credit,
+      refundedFake: fakeRefunds.reduce((a, r) => a + r.amount, 0),
+      refundedFakeCount: fakeRefunds.length,
+    },
+    visitors: {
+      visitors,
+      started: sessions.length,
+      notStarted: Math.max(0, visitors - sessions.length),
+      notCompleted: sessions.length - submitted.length,
+      completed: submitted.length,
+      fake: fakeSubmitted.length,
+      funnel: [
+        { step: "started" as const, count: sessions.length },
+        { step: "details" as const, count: reached(["details", "contact", "submitted"]) },
+        { step: "contact" as const, count: reached(["contact", "submitted"]) },
+        { step: "submitted" as const, count: submitted.length },
+      ],
+    },
+  };
 }

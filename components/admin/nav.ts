@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { Permission } from "@/lib/types";
 import type { Store } from "@/lib/mock/store";
+import { documentState } from "@/lib/mock/selectors";
 
 export interface NavItem {
   key: string; // admin.nav.<key>
@@ -46,7 +47,6 @@ export const NAV: NavGroup[] = [
     items: [
       { key: "offers", href: "/admin/leads", perm: "leads", badge: (s) => s.offers.filter((o) => o.status === "new").length },
       { key: "shop", href: "/admin/leads/shop", perm: "leads" },
-      { key: "executions", href: "/admin/leads/executions", perm: "leads" },
       { key: "fakeReports", href: "/admin/leads/fake-reports", perm: "leads", badge: (s) => s.fakeReports.filter((r) => r.status === "open").length },
       { key: "offerTypes", href: "/admin/leads/services", perm: "leads" },
     ],
@@ -56,9 +56,11 @@ export const NAV: NavGroup[] = [
     icon: Users,
     perm: "partners",
     items: [
-      { key: "partners", href: "/admin/partners", perm: "partners" },
+      { key: "partners", href: "/admin/partners", perm: "partners", badge: (s) => s.partners.filter((p) => p.status === "approved" && !p.banned && !documentState(p).ok).length },
       { key: "applications", href: "/admin/partners/applications", perm: "partners", badge: (s) => s.partners.filter((p) => p.status === "pending" || p.status === "contract_sent").length },
       { key: "activity", href: "/admin/partners/activity", perm: "partners" },
+      { key: "recommendations", href: "/admin/partners/recommendations", perm: "partners" },
+      { key: "files", href: "/admin/partners/files", perm: "partners" },
     ],
   },
   {
@@ -67,7 +69,8 @@ export const NAV: NavGroup[] = [
     perm: "finance",
     items: [
       { key: "partnerDues", href: "/admin/finance/partner-dues", perm: "finance", badge: (s) => s.dues.filter((d) => d.status === "pending").length },
-      { key: "kompassDues", href: "/admin/finance/kompass-dues", perm: "finance" },
+      { key: "wallets", href: "/admin/finance/wallets", perm: "finance" },
+      { key: "invoices", href: "/admin/finance/invoices", perm: "finance", badge: (s) => s.invoices.filter((i) => i.status === "due" && Date.parse(i.dueAt) < Date.now()).length },
       { key: "refunds", href: "/admin/finance/refunds", perm: "finance", badge: (s) => s.refunds.filter((r) => r.status === "pending").length },
       { key: "coupons", href: "/admin/finance/coupons", perm: "finance" },
     ],
@@ -80,7 +83,6 @@ export const NAV: NavGroup[] = [
       { key: "kompassReviews", href: "/admin/moderation/kompass-reviews", perm: "moderation", badge: (s) => s.reviews.filter((r) => r.target === "kompass" && r.status === "pending").length },
       { key: "partnerReviews", href: "/admin/moderation/partner-reviews", perm: "moderation", badge: (s) => s.reviews.filter((r) => r.target !== "kompass" && r.status === "pending").length },
       { key: "removals", href: "/admin/moderation/removals", perm: "moderation", badge: (s) => s.removals.filter((r) => r.status === "pending").length },
-      { key: "complaints", href: "/admin/moderation/complaints", perm: "moderation", badge: (s) => s.complaints.filter((c) => c.status === "pending").length },
     ],
   },
   {
@@ -88,8 +90,9 @@ export const NAV: NavGroup[] = [
     icon: MessagesSquare,
     perm: "inbox",
     items: [
-      { key: "inbox", href: "/admin/inbox", perm: "inbox", badge: (s) => s.contacts.filter((c) => !c.read).length + s.faqQuestions.filter((q) => !q.answered).length },
+      { key: "inbox", href: "/admin/inbox", perm: "inbox", badge: (s) => s.contacts.filter((c) => !c.handledAt).length + s.faqQuestions.filter((q) => !q.answered).length },
       { key: "visitors", href: "/admin/insights/visitors", perm: "insights" },
+      { key: "offerForm", href: "/admin/insights/offer-form", perm: "insights" },
     ],
   },
   {

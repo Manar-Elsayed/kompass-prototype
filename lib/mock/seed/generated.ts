@@ -1,9 +1,10 @@
 import type {
-  Complaint,
+  BookingType,
   ContactMessage,
   Coupon,
   FakeReport,
   FaqQuestion,
+  FormSession,
   L10n,
   LeadStatus,
   VerificationFlag,
@@ -12,14 +13,21 @@ import type {
   Order,
   Partner,
   PartnerDue,
+  CompanyDoc,
+  DocStatus,
+  CompanyFile,
+  CompanyMessage,
+  Nomination,
   Refund,
+  WalletTopup,
+  Invoice,
   RemovalRequest,
   Review,
   Visitor,
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { services } from "./catalog";
-import { NOW, createRng, daysAgo, daysAhead } from "./rng";
+import { DAY, NOW, createRng, daysAgo, daysAhead } from "./rng";
 
 const rng = createRng();
 /** Build a four-language string: en, de, fr, it. */
@@ -95,14 +103,26 @@ const pad = (n: number, len = 2) => String(n).padStart(len, "0");
 const phone = () => `+41 7${rng.int(5, 9)} ${rng.int(100, 999)} ${pad(rng.int(0, 99))} ${pad(rng.int(0, 99))}`;
 const ip = () => `${rng.int(31, 213)}.${rng.int(0, 255)}.${rng.int(0, 255)}.${rng.int(1, 254)}`;
 
+/* ---------- services ---------- */
+// The catalog used to have seven bookable services. Draws still sample from that list so the RNG stream
+// (and every record after it) stays the same; retired services map onto the closest current one.
+const LEGACY_SERVICES = ["svc-private", "svc-office", "svc-cleaning", "svc-clearance", "svc-piano", "svc-storage", "svc-international"];
+const RETIRED: Record<string, string> = { "svc-office": "svc-private", "svc-international": "svc-move-clean" };
+const current = (id: string) => RETIRED[id] ?? id;
+
 /* ---------- partners ---------- */
-export const partners: Partner[] = PARTNER_NAMES.map((name, i) => {
+// Raw records keep the original shape (contract expiry + file names) so the RNG stream is unchanged;
+// they are turned into dated, checked documents below with a separate stream.
+type RawPartner = Omit<Partner, "documents"> & { expiresAt?: string; documents: { contract?: string; insurance?: string; register?: string } };
+const rawPartners: RawPartner[] = PARTNER_NAMES.map((name, i) => {
   const loc = CITIES[i % CITIES.length];
   const status: Partner["status"] = i < 19 ? "approved" : i < 22 ? "pending" : i < 24 ? "contract_sent" : "rejected";
   const nSvc = rng.int(1, 4);
-  const serviceIds = rng.sample(services.filter((s) => s.active).map((s) => s.id), nSvc);
+  const serviceIds = [...new Set(rng.sample(LEGACY_SERVICES, nSvc).map(current))];
   if (name.includes("Clean") || name.includes("Reinigung")) serviceIds.splice(0, serviceIds.length, "svc-cleaning", "svc-private");
   if (name.includes("Piano")) serviceIds.splice(0, serviceIds.length, "svc-piano", "svc-private");
+  // a company that moves and cleans can take the combined request too
+  if (serviceIds.includes("svc-private") && serviceIds.includes("svc-cleaning") && !serviceIds.includes("svc-move-clean")) serviceIds.push("svc-move-clean");
   const owner = `${rng.pick([...FIRST_M, ...FIRST_F])} ${rng.pick(LAST)}`;
   const slug = slugify(name);
   return {
@@ -136,6 +156,29 @@ export const partners: Partner[] = PARTNER_NAMES.map((name, i) => {
           : { register: rng.chance(0.5) ? "hr-extract.pdf" : undefined },
     lastSeen: daysAgo(rng.int(0, 20), -rng.int(0, 10)),
     createdAt: status === "approved" ? daysAgo(rng.int(60, 700)) : daysAgo(rng.int(0, 12)),
+  };
+});
+
+const drng = createRng(20261022);
+export const partners: Partner[] = rawPartners.map(({ expiresAt, documents: uploaded, ...p }, i) => {
+  const doc = (file: string | undefined, status: DocStatus, expires?: string): CompanyDoc | undefined =>
+    file ? { file, uploadedAt: p.createdAt, status, ...(expires ? { expiresAt: expires } : {}) } : undefined;
+  if (p.status !== "approved") {
+    // still applying: what they uploaded waits for Kompass to check it
+    return { ...p, documents: { insurance: doc(uploaded.insurance, "pending_review"), register: doc(uploaded.register, "pending_review") } };
+  }
+  const demo = i === 0; // the demo portal account must be able to buy
+  return {
+    ...p,
+    documents: {
+      contract: doc(uploaded.contract, "valid", demo ? daysAhead(220) : expiresAt),
+      // one company has uploaded its renewed insurance, which Kompass still has to check
+      insurance:
+        i === 4
+          ? { file: "insurance-2027.pdf", uploadedAt: daysAgo(1), status: "pending_review", expiresAt: daysAhead(365) }
+          : doc(uploaded.insurance, "valid", daysAhead(demo ? 140 : drng.int(-20, 380))),
+      register: doc(uploaded.register, "valid", daysAhead(demo ? 300 : drng.int(15, 420))),
+    },
   };
 });
 
@@ -173,7 +216,8 @@ export const offers: Offer[] = Array.from({ length: 128 }, (_, i) => {
   const from = rng.pick(CITIES);
   const to = rng.chance(0.6) ? from : rng.pick(CITIES);
   const age = Math.floor((i / 128) * 180) + rng.int(0, 2); // spread over ~6 months, newest first
-  const svc = rng.chance(0.55) ? services[0] : rng.pick(services.filter((s) => s.active));
+  const svcId = current(rng.chance(0.55) ? "svc-private" : rng.pick(LEGACY_SERVICES));
+  const svc = services.find((x) => x.id === svcId)!;
   // recent offers: auto-checks flag ~1 in 3, which then wait in New for admin review
   const flags: VerificationFlag[] = age < 4 && lrng.chance(0.35) ? lrng.sample(FLAG_POOL, lrng.int(1, 2)) : [];
   const slot = age < 4 ? -1 : rng.int(0, STATUS_POOL.length - 1);
@@ -203,6 +247,7 @@ export const offers: Offer[] = Array.from({ length: 128 }, (_, i) => {
     active: status !== "cancelled",
     status,
     flags,
+    booking: "personal" as BookingType,
     // slot 13 never sold: either side may have cancelled; slot 14 had buyers, so it was found to be fake
     ...(status === "cancelled"
       ? { cancelReason: slot === 14 || lrng.chance(0.5) ? ("fake" as const) : ("customer" as const), cancelledAt: daysAgo(Math.max(0, age - 2)) }
@@ -254,6 +299,59 @@ for (const o of offers) {
   if (sold >= o.offersWanted) o.status = "completed";
   else if (Date.parse(o.deadline) < NOW) o.status = "expired";
   else if (o.status !== "in_progress") o.status = "in_progress";
+}
+
+/* ---------- who booked, which company the customer chose, no-shows ---------- */
+const brng = createRng(20261025);
+const ORGANIZATIONS = [
+  { name: "Pro Senectute Kanton Zürich", email: "umzug@zh.prosenectute.ch", phone: "+41 58 451 51 00" },
+  { name: "Caritas Bern", email: "sozialberatung@caritas-bern.ch", phone: "+41 31 378 60 00" },
+  { name: "Heilsarmee Basel", email: "basel@heilsarmee.ch", phone: "+41 61 690 70 70" },
+  { name: "Stiftung Wohnhilfe Luzern", email: "info@wohnhilfe-luzern.ch", phone: "+41 41 220 15 15" },
+];
+for (const o of offers) {
+  const r = brng.int(0, 99);
+  if (r < 10) {
+    o.booking = "other";
+    const first = brng.pick([...FIRST_F, ...FIRST_M]);
+    o.requester = { firstName: first, lastName: o.lastName, email: `${first.toLowerCase()}.${o.lastName.toLowerCase().replace(/ü/g, "ue")}@bluewin.ch`, phone: phone2(brng) };
+  } else if (r < 16) {
+    o.booking = "organization";
+    const org = brng.pick(ORGANIZATIONS);
+    const first = brng.pick([...FIRST_F, ...FIRST_M]);
+    const last = brng.pick(LAST);
+    o.organization = org;
+    o.requester = { firstName: first, lastName: last, email: org.email, phone: org.phone };
+  }
+  // the company that did the job is the one the customer chose
+  const done = orders.find((x) => x.offerId === o.id && x.executed);
+  if (done) {
+    o.chosenPartnerId = done.partnerId;
+    o.chosenAt = new Date(Date.parse(done.createdAt) + brng.int(24, 96) * 3_600_000).toISOString();
+  }
+}
+// two customers reported that the company they chose did not come: one open, one solved with a replacement
+{
+  const candidates = offers.filter((o) => o.status === "in_progress" && orders.filter((x) => x.offerId === o.id).length >= 2);
+  candidates.slice(0, 2).forEach((o, i) => {
+    const [chosen, other] = orders.filter((x) => x.offerId === o.id);
+    // once a replacement confirms, it becomes the company doing the job
+    o.chosenPartnerId = i === 0 ? chosen.partnerId : other.partnerId;
+    o.chosenAt = daysAgo(4 + i);
+    o.noShow =
+      i === 0
+        ? { partnerId: chosen.partnerId, note: "Nobody came at 8:00 and the phone goes to voicemail.", reportedAt: daysAgo(0, -3), status: "open" }
+        : {
+            partnerId: chosen.partnerId,
+            note: "The team did not arrive on the agreed morning.",
+            reportedAt: daysAgo(3),
+            status: "resolved",
+            replacementPartnerId: other.partnerId,
+            companyReason: "Our truck broke down and we failed to call the customer.",
+            action: "warning",
+            resolvedAt: daysAgo(2),
+          };
+  });
 }
 
 export const fakeReports: FakeReport[] = rng.sample(orders, 9).map((o, i) => ({
@@ -361,6 +459,18 @@ export const reviews: Review[] = [
   }),
 ];
 
+{
+  const used = new Set<string>();
+  for (const r of reviews) {
+    if (r.target === "kompass") continue;
+    const o = offers.find((x) => x.status === "completed" && !x.noShow && x.chosenPartnerId === r.target && !used.has(x.id));
+    if (o) {
+      used.add(o.id);
+      r.offerId = o.id;
+    }
+  }
+}
+
 /** Translations of the seeded Kompass reviews (stored in English as customers wrote them). */
 export const KOMPASS_REVIEW_L10N: Record<string, L10n> = Object.fromEntries(
   KOMPASS_COMMENTS.map((c, i) => [`RV-K${i + 1}`, c]),
@@ -376,36 +486,25 @@ export const removals: RemovalRequest[] = lowReviews.slice(0, 4).map((r, i) => (
   createdAt: daysAgo(rng.int(0, 15)),
 }));
 
-/* ---------- complaints ---------- */
-export const complaints: Complaint[] = Array.from({ length: 11 }, (_, i) => {
-  const kind = i % 3 === 0 ? "offer" : "partner";
-  const p = rng.pick(approved);
-  const o = rng.pick(offers.slice(0, 60));
-  return {
-    id: `CMP-${pad(i + 1, 3)}`,
-    kind,
-    partnerId: kind === "partner" ? p.id : undefined,
-    offerId: kind === "offer" ? o.id : undefined,
-    name: `${rng.pick([...FIRST_F, ...FIRST_M])} ${rng.pick(LAST)}`,
-    email: `complaint${i + 1}@mail.ch`,
-    phone: phone(),
-    message: rng.pick([
-      "The movers arrived 3 hours late and charged extra.",
-      "A wardrobe was damaged and the company does not respond.",
-      "I received calls from more companies than I selected.",
-      "The final invoice was much higher than the quote.",
-      "Nobody contacted me after submitting my request.",
-    ]),
-    status: i < 4 ? "pending" : rng.chance(0.6) ? "approved" : "rejected",
-    createdAt: daysAgo(i * 4 + rng.int(0, 3)),
-  };
-});
+/* ---------- (retired) complaints ---------- */
+// Complaints were removed from the product. Their generator made these RNG draws; keep making them so
+// every record generated after this point (contacts, questions, visitors…) stays exactly the same.
+for (let i = 0; i < 11; i++) {
+  rng.pick(approved);
+  rng.pick(offers.slice(0, 60));
+  rng.pick([...FIRST_F, ...FIRST_M]);
+  rng.pick(LAST);
+  phone();
+  rng.pick([0, 1, 2, 3, 4]);
+  if (i >= 4) rng.chance(0.6);
+  rng.int(0, 3);
+}
 
 /* ---------- coupons ---------- */
 export const coupons: Coupon[] = [
   { id: "cp-1", code: "WELCOME20", serviceId: "all", type: "percent", discount: 20, used: 31, usageLimit: 100, multiUse: false, active: true, startDate: daysAgo(90), endDate: daysAhead(60) },
   { id: "cp-2", code: "CLEAN10", serviceId: "svc-cleaning", type: "fixed", discount: 10, used: 12, usageLimit: 50, multiUse: true, active: true, startDate: daysAgo(30), endDate: daysAhead(30) },
-  { id: "cp-3", code: "OFFICE25", serviceId: "svc-office", type: "percent", discount: 25, used: 4, usageLimit: 20, multiUse: false, active: true, startDate: daysAgo(10), endDate: daysAhead(80) },
+  { id: "cp-3", code: "MOVECLEAN25", serviceId: "svc-move-clean", type: "percent", discount: 25, used: 4, usageLimit: 20, multiUse: false, active: true, startDate: daysAgo(10), endDate: daysAhead(80) },
   { id: "cp-4", code: "SUMMER15", serviceId: "all", type: "percent", discount: 15, used: 80, usageLimit: 80, multiUse: true, active: false, startDate: daysAgo(150), endDate: daysAgo(40) },
 ];
 
@@ -523,14 +622,14 @@ export const notifications: Notification[] = [
   },
   {
     id: "n-5",
-    kind: "complaint",
+    kind: "contact",
     title: l(
-      "New complaint about a partner",
-      "Neue Beschwerde über einen Partner",
-      "Nouvelle réclamation concernant un partenaire",
-      "Nuovo reclamo su un partner",
+      "Customer request waiting more than 24 hours",
+      "Kundenanfrage wartet seit über 24 Stunden",
+      "Demande client en attente depuis plus de 24 heures",
+      "Richiesta cliente in attesa da più di 24 ore",
     ),
-    href: "/admin/moderation/complaints",
+    href: "/admin/inbox",
     read: true,
     createdAt: daysAgo(3),
   },
@@ -551,7 +650,6 @@ export const refunds: Refund[] = [
         partnerId: o.partnerId,
         amount: o.price,
         reason: "fake_lead" as const,
-        method: "wallet" as const,
         orderId: o.id,
         note: r.reason,
         status: "refunded" as const,
@@ -568,37 +666,231 @@ export const refunds: Refund[] = [
       partnerId: x.partnerId,
       amount: x.price,
       reason: "fake_lead" as const,
-      method: "wallet" as const,
       orderId: x.id,
       note: "Offer cancelled as fake by Kompass.",
       status: "refunded" as const,
       createdAt: offers.find((o) => o.id === x.offerId)!.cancelledAt!,
       decidedAt: offers.find((o) => o.id === x.offerId)!.cancelledAt!,
     })),
+  // claims still waiting: the company reported the lead as fake and Kompass is still checking
+  ...fakeReports
+    .filter((r) => r.status === "pending")
+    .map((r, i) => {
+      const o = orderById[r.orderId];
+      return {
+        id: `RF-${pad(i + 21, 3)}`,
+        partnerId: o.partnerId,
+        amount: o.price,
+        reason: "fake_lead" as const,
+        orderId: o.id,
+        note: r.reason,
+        status: "pending" as const,
+        createdAt: r.createdAt,
+      };
+    }),
   ...(
     [
-      ["duplicate_lead", "wallet", "pending", "Same customer bought twice under two lead IDs."],
-      ["wallet_payout", "bank", "pending", "Closing our Kompass account — please pay out the remaining wallet balance."],
-      ["cancelled_job", "wallet", "pending", "Customer cancelled the move before we could quote."],
-      ["goodwill", "wallet", "refunded", "Compensation for the shop outage on 2 October."],
-      ["duplicate_lead", "wallet", "refunded", "Lead appeared twice in the shop."],
-      ["wallet_payout", "bank", "refunded", "Season ended, unused top-up returned."],
-      ["cancelled_job", "bank", "rejected", "Customer cancelled after our site visit."],
+      // the customer was real and cancelled: policy says no refund
+      ["fake_lead", "rejected", "Customer cancelled after our site visit.", true],
+      // admin exceptions, each with its reason written down
+      ["manual", "refunded", "Compensation for the shop outage on 2 October.", false],
+      ["manual", "refunded", "Coupon WELCOME20 was not applied at checkout.", true],
     ] as const
-  ).map(([reason, method, status, note], i) => {
+  ).map(([reason, status, note, withOrder], i) => {
     const o = rrng.pick(orders);
     const age = rrng.int(1, 40);
     return {
-      id: `RF-${pad(i + 21, 3)}`,
+      id: `RF-${pad(i + 41, 3)}`,
       partnerId: o.partnerId,
-      amount: reason === "wallet_payout" ? rrng.int(4, 18) * 10 : reason === "goodwill" ? 50 : o.price,
+      amount: withOrder ? (reason === "manual" ? Math.round(o.price * 0.2) : o.price) : 50,
       reason,
-      method,
-      orderId: reason === "wallet_payout" || reason === "goodwill" ? undefined : o.id,
+      orderId: withOrder ? o.id : undefined,
       note,
       status,
       createdAt: daysAgo(age),
-      decidedAt: status === "pending" ? undefined : daysAgo(Math.max(0, age - rrng.int(1, 3))),
+      decidedAt: daysAgo(Math.max(0, age - rrng.int(1, 3))),
     };
   }),
 ];
+
+/* ---------- wallet top-ups & credit invoices ---------- */
+// Own stream again, so none of the data above moves.
+const wrng = createRng(20261021);
+const ADMINS = ["u-1", "u-3"];
+export const topups: WalletTopup[] = [];
+export const invoices: Invoice[] = [];
+
+// online card / TWINT payments made in the portal, and payments recorded by the finance team
+approved.slice(0, 14).forEach((p, i) => {
+  const online = i % 2 === 0;
+  const age = wrng.int(2, 70);
+  topups.push({
+    id: `TU-${pad(topups.length + 1, 4)}`,
+    partnerId: p.id,
+    amount: wrng.pick([100, 150, 200, 300, 500]),
+    method: online ? "online" : "admin",
+    payMethod: online ? wrng.pick(["card", "twint"] as const) : wrng.pick(["bank_transfer", "cash"] as const),
+    reference: online ? `PAY-${wrng.int(100000, 999999)}` : `BANK-${wrng.int(1000, 9999)}`,
+    note: online ? "" : "Payment received on the Kompass account.",
+    byUserId: online ? undefined : wrng.pick(ADMINS),
+    createdAt: daysAgo(age),
+  });
+});
+
+// credit: amount now, invoice to pay later. One paid, two still due (one of them overdue).
+(
+  [
+    [300, 50, 30, "paid"],
+    [250, 12, 30, "due"],
+    [400, 41, 30, "due"],
+  ] as const
+).forEach(([amount, age, term, status], i) => {
+  const p = approved[(i * 5 + 2) % approved.length];
+  const topupId = `TU-${pad(topups.length + 1, 4)}`;
+  const invoiceId = `INV-2026-${pad(i + 31, 4)}`;
+  topups.push({
+    id: topupId,
+    partnerId: p.id,
+    amount,
+    method: "credit",
+    reference: invoiceId,
+    note: "Agreed credit for the busy season.",
+    byUserId: ADMINS[i % 2],
+    invoiceId,
+    createdAt: daysAgo(age),
+  });
+  invoices.push({
+    id: invoiceId,
+    partnerId: p.id,
+    topupId,
+    amount,
+    status,
+    issuedAt: daysAgo(age),
+    dueAt: daysAgo(age - term),
+    ...(status === "paid" ? { paidAt: daysAgo(age - 21), paidMethod: "bank_transfer" as const, paidReference: `BANK-${wrng.int(1000, 9999)}` } : {}),
+  });
+});
+
+// Wallet balances must equal their ledger. Money in before the history above (first deposits)
+// becomes an opening balance recorded by admin, so every franc is accounted for.
+for (const p of partners) {
+  const moved =
+    dues.filter((d) => d.partnerId === p.id && d.status === "confirmed").reduce((a, d) => a + d.amount, 0) +
+    topups.filter((x) => x.partnerId === p.id).reduce((a, x) => a + x.amount, 0) +
+    refunds.filter((r) => r.partnerId === p.id && r.status === "refunded").reduce((a, r) => a + r.amount, 0) -
+    orders.filter((o) => o.partnerId === p.id).reduce((a, o) => a + o.price, 0);
+  const opening = p.wallet - moved;
+  if (opening > 0) {
+    topups.push({
+      id: `TU-${pad(topups.length + 1, 4)}`,
+      partnerId: p.id,
+      amount: opening,
+      method: "admin",
+      payMethod: "bank_transfer",
+      reference: "OPENING",
+      note: "Opening balance carried over from the previous system.",
+      byUserId: "u-1",
+      createdAt: new Date(Date.parse(p.createdAt) + DAY).toISOString(),
+    });
+  } else if (opening < 0) {
+    p.wallet = moved > 0 ? moved : 0;
+    if (moved < 0)
+      topups.push({
+        id: `TU-${pad(topups.length + 1, 4)}`,
+        partnerId: p.id,
+        amount: -moved,
+        method: "admin",
+        payMethod: "bank_transfer",
+        reference: "OPENING",
+        note: "Opening balance carried over from the previous system.",
+        byUserId: "u-1",
+        createdAt: new Date(Date.parse(p.createdAt) + DAY).toISOString(),
+      });
+  }
+}
+
+/* ---------- company files, messages, regional nominations ---------- */
+const frng = createRng(20261023);
+const PHOTOS = ["/images/hero.png", "/images/companies.png", "/images/start-now.png", "/images/about-hero.png"];
+export const files: CompanyFile[] = approved.slice(0, 12).flatMap((p, i) => [
+  { id: `F-${pad(i * 3 + 1, 4)}`, partnerId: p.id, name: "logo.svg", category: "logo" as const, url: "/brand/icon.svg", size: frng.int(8, 40) * 1024, uploadedBy: "company" as const, uploadedAt: daysAgo(frng.int(30, 200)) },
+  { id: `F-${pad(i * 3 + 2, 4)}`, partnerId: p.id, name: "team-truck.jpg", category: "photo" as const, url: frng.pick(PHOTOS), size: frng.int(300, 1400) * 1024, uploadedBy: "company" as const, uploadedAt: daysAgo(frng.int(10, 150)) },
+  ...(i % 3 === 0
+    ? [{ id: `F-${pad(i * 3 + 3, 4)}`, partnerId: p.id, name: "price-list-2026.pdf", category: "document" as const, url: "#", size: frng.int(80, 400) * 1024, uploadedBy: "admin" as const, uploadedAt: daysAgo(frng.int(5, 60)) }]
+    : []),
+]);
+
+export const messages: CompanyMessage[] = [
+  { id: "MSG-0001", partnerId: "p-001", subject: "Welcome to the new partner portal", body: "Your wallet, invoices and documents are now all in one place. Reply to this email if anything looks wrong.", channel: "email", byUserId: "u-1", createdAt: daysAgo(6) },
+  { id: "MSG-0002", partnerId: "p-001", subject: "Insurance renewal", body: "Your liability insurance runs out in a few months. Please upload the renewed certificate in your profile when you have it.", channel: "portal", byUserId: "u-3", createdAt: daysAgo(2) },
+];
+
+// priority companies per canton chosen by admin (first one is offered new leads there first)
+export const nominations: Nomination[] = [
+  { canton: "ZH", partnerIds: approved.filter((p) => p.canton === "ZH").slice(0, 2).map((p) => p.id) },
+  { canton: "BE", partnerIds: approved.filter((p) => p.canton === "BE").slice(0, 1).map((p) => p.id) },
+].filter((n) => n.partnerIds.length);
+
+/* ---------- offer-form sessions & contact follow-up ---------- */
+const srng = createRng(20261024);
+const STEPS_ABANDONED: FormSession["step"][] = ["started", "started", "started", "details", "details", "details", "contact", "contact"];
+const minutes = (iso: string, m: number) => new Date(Date.parse(iso) + m * 60_000).toISOString();
+
+export const formSessions: FormSession[] = [
+  // every website offer went through the form
+  ...offers
+    .filter((o) => o.source === "website")
+    .map((o, i) => {
+      const startedAt = minutes(o.createdAt, -srng.int(3, 18));
+      return {
+        id: `FS-${pad(i + 1, 4)}`,
+        step: "submitted" as const,
+        serviceId: o.serviceId,
+        name: `${o.firstName} ${o.lastName}`,
+        email: o.email,
+        phone: o.phone,
+        offerId: o.id,
+        device: o.device,
+        startedAt,
+        updatedAt: o.createdAt,
+      };
+    }),
+  // visitors who started the form and left before submitting (a few very recent ones left contact details)
+  ...Array.from({ length: 240 }, (_, i) => {
+    const recent = i < 14;
+    const step = recent && i % 2 === 0 ? ("contact" as const) : srng.pick(STEPS_ABANDONED);
+    const startedAt = daysAgo(recent ? srng.int(0, 9) : srng.int(0, 360), -srng.int(0, 14));
+    const first = srng.pick([...FIRST_F, ...FIRST_M]);
+    const last = srng.pick(LAST);
+    const withContact = step === "contact";
+    return {
+      id: `FS-${pad(i + 501, 4)}`,
+      step,
+      serviceId: srng.chance(0.85) ? current(srng.pick(LEGACY_SERVICES)) : undefined,
+      ...(withContact
+        ? { name: `${first} ${last}`, email: `${first.toLowerCase()}.${last.toLowerCase().replace(/ü/g, "ue")}@${srng.pick(["gmail.com", "bluewin.ch", "gmx.ch"])}`, phone: phone2(srng) }
+        : {}),
+      device: srng.pick(["desktop", "mobile", "mobile", "tablet"] as const),
+      startedAt,
+      updatedAt: minutes(startedAt, srng.int(1, step === "started" ? 3 : 12)),
+    };
+  }),
+];
+function phone2(r: ReturnType<typeof createRng>) {
+  return `+41 7${r.int(5, 9)} ${r.int(100, 999)} ${pad(r.int(0, 99))} ${pad(r.int(0, 99))}`;
+}
+
+// Contact Us requests: most were answered within hours; a few have been waiting longer than 24 hours.
+contacts.forEach((c, i) => {
+  const ageHours = (NOW - Date.parse(c.createdAt)) / 3_600_000;
+  if (ageHours > 24 && i % 5 !== 1) c.handledAt = minutes(c.createdAt, srng.int(30, 20 * 60));
+});
+
+/** Website visitors on one day (YYYY-MM-DD), deterministic so any month or year can be summed. */
+export function visitorsOnDay(day: string) {
+  let h = 2166136261;
+  for (const ch of day) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const r = createRng(h);
+  const weekday = new Date(`${day}T12:00:00Z`).getUTCDay();
+  return (weekday === 0 || weekday === 6 ? 340 : 520) + r.int(-80, 160);
+}

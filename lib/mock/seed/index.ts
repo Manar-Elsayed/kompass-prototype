@@ -2,7 +2,6 @@ import type { DB } from "@/lib/types";
 import { services } from "./catalog";
 import { blogs, config, faqs, modelOffers, roles, site, users } from "./content";
 import {
-  complaints,
   contacts,
   coupons,
   dues,
@@ -14,6 +13,12 @@ import {
   partners,
   refunds,
   removals,
+  topups,
+  invoices,
+  files,
+  messages,
+  nominations,
+  formSessions,
   reviews,
   visitors,
 } from "./generated";
@@ -28,9 +33,14 @@ export function createSeed(): DB {
     partners,
     dues,
     refunds,
+    topups,
+    invoices,
+    files,
+    messages,
+    nominations,
+    formSessions,
     reviews,
     removals,
-    complaints,
     coupons,
     contacts,
     faqQuestions,
@@ -46,5 +56,5 @@ export function createSeed(): DB {
   });
 }
 
-export { CITIES, KOMPASS_REVIEW_L10N, trafficSeries } from "./generated";
+export { CITIES, KOMPASS_REVIEW_L10N, trafficSeries, visitorsOnDay } from "./generated";
 export { NOW, DAY } from "./rng";
