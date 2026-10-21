@@ -50,6 +50,7 @@ export function SiteFooter() {
           <ul className={col}>
             {services
               .filter((s) => s.active)
+              .sort((a, b) => a.order - b.order)
               .slice(0, 6)
               .map((s) => (
                 <li key={s.id}>
