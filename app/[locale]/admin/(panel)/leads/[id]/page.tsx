@@ -360,14 +360,11 @@ export default function LeadDetail() {
               </div>
               {offer.requester && (
                 <div className="rounded-xl bg-surface-2/70 p-3 text-sm">
-                  <p className="mb-1 text-xs font-semibold text-muted-foreground">{tl(offer.organization ? "bookedByOrg" : "bookedBy")}</p>
-                  {offer.organization && (
-                    <p className="flex items-center gap-1.5 font-semibold text-ink"><Building2 className="size-3.5" /> {offer.organization.name}</p>
-                  )}
+                  <p className="mb-1 text-xs font-semibold text-muted-foreground">{tl("bookedBy")}</p>
                   <p className="font-semibold text-ink">{offer.requester.firstName} {offer.requester.lastName}</p>
                   <a href={`mailto:${offer.requester.email}`} className="block text-muted-foreground hover:text-primary" dir="ltr">{offer.requester.email}</a>
                   <a href={`tel:${offer.requester.phone}`} className="block text-muted-foreground hover:text-primary" dir="ltr">{offer.requester.phone}</a>
-                  {offer.organization?.address && <p className="text-muted-foreground">{offer.organization.address}</p>}
+                  {offer.requester.address && <p className="text-muted-foreground">{offer.requester.address}</p>}
                 </div>
               )}
               <Button asChild size="sm" variant="ghost" className="w-full justify-start">

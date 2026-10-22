@@ -274,7 +274,6 @@ export const admin: Built<typeof Def> = {
       chosen: "Scelta del cliente",
       noShowBadge: "Mancata presenza",
       bookedBy: "Prenotato da",
-      bookedByOrg: "Prenotato da un’organizzazione",
       customerPage: "Apri la pagina richiesta del cliente",
     },
     newTitle: "Aggiungi lead manualmente",

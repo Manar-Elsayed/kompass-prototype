@@ -271,7 +271,6 @@ export const admin = {
       chosen: "Customer’s choice",
       noShowBadge: "No-show",
       bookedBy: "Booked by",
-      bookedByOrg: "Booked by an organization",
       customerPage: "Open the customer’s request page",
     },
     newTitle: "Add a lead manually",

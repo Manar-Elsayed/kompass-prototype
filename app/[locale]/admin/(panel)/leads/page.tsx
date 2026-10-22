@@ -208,12 +208,6 @@ function Leads() {
             ],
             get: (o) => (o.noShow && o.noShow.status !== "resolved" ? "noshow" : o.status === "new" ? "review" : isExpiringSoon(o) ? "expiring" : ""),
           },
-          {
-            id: "booking",
-            label: t("site.booking.who"),
-            options: (["personal", "other", "organization"] as const).map((b) => ({ value: b, label: t(`site.booking.${b}`) })),
-            get: (o) => o.booking,
-          },
           { id: "service", label: t("common.fields.service"), options: services.map((s) => ({ value: s.id, label: L(s.name) })), get: (o) => o.serviceId },
           { id: "lang", label: t("common.fields.language"), options: ["de", "en", "fr", "it"].map((l) => ({ value: l, label: t(`common.lang.${l}`) })), get: (o) => o.lang },
         ]}

@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, ArrowRight, Building2, Check, CheckCircle2, ExternalLink, Lock, MapPin, Flag, User, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, ExternalLink, Lock, MapPin, Flag, User, Users } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import type { BookingType, Offer } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -44,20 +44,19 @@ const schema = z
     executionDate: z.string().min(1, "required"),
     offersWanted: z.string(),
     details: z.string(),
-    booking: z.enum(["personal", "other", "organization"]),
+    booking: z.enum(["personal", "other"]),
     // the person moving — the one companies serve and call
     gender: z.enum(["male", "female"], { message: "required" }),
     firstName: z.string().min(1, "required"),
     lastName: z.string().min(1, "required"),
     email: z.string(),
     phone: z.string().regex(PHONE, "phone"),
-    // whoever books for them: a relative, or a contact person at an organization
+    // the other person, when the request is for someone else: whoever fills in the form
     reqFirstName: z.string(),
     reqLastName: z.string(),
     reqEmail: z.string(),
     reqPhone: z.string(),
-    orgName: z.string(),
-    orgAddress: z.string(),
+    reqAddress: z.string(),
     privacy: z.literal(true, { message: "required" }),
   })
   .superRefine((v, ctx) => {
@@ -71,7 +70,7 @@ const schema = z
     need("reqLastName", !!v.reqLastName.trim());
     need("reqEmail", EMAIL.test(v.reqEmail), "email");
     need("reqPhone", PHONE.test(v.reqPhone), "phone");
-    if (v.booking === "organization") need("orgName", !!v.orgName.trim());
+    need("reqAddress", !!v.reqAddress.trim());
   });
 type FormValues = z.infer<typeof schema>;
 
@@ -127,8 +126,7 @@ export function OfferForm({
       reqLastName: "",
       reqEmail: "",
       reqPhone: "",
-      orgName: "",
-      orgAddress: "",
+      reqAddress: "",
     } as Partial<FormValues> as FormValues,
   });
   const { register, control, handleSubmit, formState, setValue, watch, trigger, reset } = form;
@@ -171,7 +169,10 @@ export function OfferForm({
   const onSubmit = handleSubmit(async (v) => {
     const toAddr = (a: FormValues["from"]) => ({ ...a, country: "CH" });
     const booking = v.booking as BookingType;
-    const requester = booking === "personal" ? undefined : { firstName: v.reqFirstName.trim(), lastName: v.reqLastName.trim(), email: v.reqEmail.trim(), phone: v.reqPhone.trim() };
+    const requester =
+      booking === "personal"
+        ? undefined
+        : { firstName: v.reqFirstName.trim(), lastName: v.reqLastName.trim(), email: v.reqEmail.trim(), phone: v.reqPhone.trim(), address: v.reqAddress.trim() };
     const offer = await mock(
       () =>
         submitOffer({
@@ -184,7 +185,6 @@ export function OfferForm({
           phone: v.phone,
           booking,
           requester,
-          organization: booking === "organization" ? { name: v.orgName.trim(), email: v.reqEmail.trim(), phone: v.reqPhone.trim(), address: v.orgAddress.trim() || undefined } : undefined,
           lang,
           from: toAddr(v.from),
           to: toAddr(v.to),
@@ -283,6 +283,8 @@ export function OfferForm({
   const svc = services.find((s) => s.id === values.serviceId);
   const booking = values.booking as BookingType;
   const forOther = booking !== "personal";
+  // admin enters the request for a customer, so the labels talk about the customer, not "you"
+  const bk = (key: string) => t(`site.booking.${key}${source === "admin" ? "Admin" : ""}` as "site.booking.who");
 
   if (done) {
     return shell(
@@ -479,57 +481,25 @@ export function OfferForm({
       ) : (
         <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           <div className="grid gap-5">
-            <Field label={t("site.booking.who")} required>
+            <Field label={t("site.booking.who")} hint={bk(`${booking}Hint`)} required>
               <Controller
                 control={control}
                 name="booking"
                 render={({ field }) => (
                   <RadioCards
-                    className="grid-cols-1 sm:grid-cols-3"
+                    className="grid-cols-1 sm:grid-cols-2"
                     value={field.value}
                     onValueChange={field.onChange}
                     options={[
                       { value: "personal", label: t("site.booking.personal"), icon: <User className="size-4" /> },
                       { value: "other", label: t("site.booking.other"), icon: <Users className="size-4" /> },
-                      { value: "organization", label: t("site.booking.organization"), icon: <Building2 className="size-4" /> },
                     ]}
                   />
                 )}
               />
             </Field>
 
-            {booking === "organization" && (
-              <fieldset className="grid gap-4 rounded-xl border border-border bg-surface-2/40 p-4 sm:grid-cols-2 sm:p-5">
-                <legend className="px-1 text-sm font-bold text-ink">{t("site.booking.orgTitle")}</legend>
-                <Field label={t("site.booking.orgName")} error={err(errors.orgName?.message)} required>
-                  <Input {...register("orgName")} autoComplete="organization" aria-invalid={!!errors.orgName} />
-                </Field>
-                <Field label={t("site.booking.orgAddress")} hint={t("common.form.optional")}>
-                  <Input {...register("orgAddress")} autoComplete="street-address" />
-                </Field>
-              </fieldset>
-            )}
-
-            {forOther && (
-              <fieldset className="grid gap-4 rounded-xl border border-border bg-surface-2/40 p-4 sm:grid-cols-2 sm:p-5">
-                <legend className="px-1 text-sm font-bold text-ink">{t(booking === "organization" ? "site.booking.contactTitle" : "site.booking.requesterTitle")}</legend>
-                <p className="-mt-1 text-xs text-muted-foreground sm:col-span-2">{t("site.booking.requesterHint")}</p>
-                <Field label={t("common.fields.firstName")} error={err(errors.reqFirstName?.message)} required>
-                  <Input {...register("reqFirstName")} autoComplete="given-name" aria-invalid={!!errors.reqFirstName} />
-                </Field>
-                <Field label={t("common.fields.lastName")} error={err(errors.reqLastName?.message)} required>
-                  <Input {...register("reqLastName")} autoComplete="family-name" aria-invalid={!!errors.reqLastName} />
-                </Field>
-                <Field label={t("common.fields.email")} error={err(errors.reqEmail?.message)} required>
-                  <Input type="email" dir="ltr" {...register("reqEmail")} autoComplete="email" aria-invalid={!!errors.reqEmail} />
-                </Field>
-                <Field label={t("common.fields.phone")} error={err(errors.reqPhone?.message)} required>
-                  <Input type="tel" dir="ltr" placeholder="+41 79 123 45 67" {...register("reqPhone")} autoComplete="tel" aria-invalid={!!errors.reqPhone} />
-                </Field>
-              </fieldset>
-            )}
-
-            {forOther && <p className="-mb-2 text-sm font-bold text-ink">{t("site.booking.movingPerson")}</p>}
+            <p className="-mb-2 text-sm font-bold text-ink">{forOther ? t("site.booking.movingPerson") : bk("yourDetails")}</p>
             <Field label={t("common.fields.salutation")} error={err(errors.gender?.message)} required>
               <Controller
                 control={control}
@@ -566,6 +536,27 @@ export function OfferForm({
                 <Input type="tel" dir="ltr" placeholder="+41 79 123 45 67" {...register("phone", { onBlur: trackContact })} autoComplete="tel" aria-invalid={!!errors.phone} />
               </Field>
             </div>
+            {forOther && (
+              <fieldset className="grid gap-4 rounded-xl border border-border bg-surface-2/40 p-4 sm:grid-cols-2 sm:p-5">
+                <legend className="px-1 text-sm font-bold text-ink">{bk("requesterTitle")}</legend>
+                <p className="-mt-1 text-xs text-muted-foreground sm:col-span-2">{bk("requesterHint")}</p>
+                <Field label={t("common.fields.firstName")} error={err(errors.reqFirstName?.message)} required>
+                  <Input {...register("reqFirstName")} autoComplete="given-name" aria-invalid={!!errors.reqFirstName} />
+                </Field>
+                <Field label={t("common.fields.lastName")} error={err(errors.reqLastName?.message)} required>
+                  <Input {...register("reqLastName")} autoComplete="family-name" aria-invalid={!!errors.reqLastName} />
+                </Field>
+                <Field label={t("common.fields.email")} error={err(errors.reqEmail?.message)} required>
+                  <Input type="email" dir="ltr" {...register("reqEmail")} autoComplete="email" aria-invalid={!!errors.reqEmail} />
+                </Field>
+                <Field label={t("common.fields.phone")} error={err(errors.reqPhone?.message)} required>
+                  <Input type="tel" dir="ltr" placeholder="+41 79 123 45 67" {...register("reqPhone")} autoComplete="tel" aria-invalid={!!errors.reqPhone} />
+                </Field>
+                <Field label={t("site.booking.address")} error={err(errors.reqAddress?.message)} className="sm:col-span-2" required>
+                  <Input {...register("reqAddress")} placeholder={t("site.booking.addressPh")} autoComplete="street-address" aria-invalid={!!errors.reqAddress} />
+                </Field>
+              </fieldset>
+            )}
             <div className="rounded-xl border border-primary/20 bg-primary-soft/50 p-4 text-sm">
               <p className="flex items-center gap-2 font-bold text-ink">
                 <Lock className="size-4 text-primary" /> {t("site.booking.privacyTitle")}

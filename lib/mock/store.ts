@@ -664,10 +664,10 @@ export const useStore = create<Store>()(
       // lifecycle; v5 added wallet top-ups, credit invoices and the fake-only refund policy; v6 dated
       // company documents, files, messages and regional nominations; v7 removed complaints and added
       // offer-form sessions and contact follow-up; v8 the six services, booking types, chosen
-      // companies and no-shows. Older saves start again from the current seed, keeping the signed-in sessions.
-      version: 8,
+      // companies and no-shows; v9 two booking types (same / other person). Older saves start again from the current seed, keeping the signed-in sessions.
+      version: 9,
       migrate: (persisted, version) => {
-        if (version >= 8) return persisted as Store;
+        if (version >= 9) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },
