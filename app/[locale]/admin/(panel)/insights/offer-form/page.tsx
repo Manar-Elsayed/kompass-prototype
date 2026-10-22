@@ -88,7 +88,7 @@ export default function OfferFormInsights() {
         <KpiCard label={ts("completed")} value={s.visitors.completed} icon={<CheckCircle2 />} tone="success" footer={ts("notCompletedHint", { count: s.visitors.notCompleted })} />
         <KpiCard label={ts("fakeSubmitted")} value={s.visitors.fake} icon={<ShieldAlert />} tone="accent" />
       </div>
-      <div className="grid gap-4 xl:grid-cols-[380px_1fr]">
+      <div className="grid gap-4 2xl:grid-cols-[380px_1fr]">
         <Card className="h-fit">
           <CardBody>
             <Funnel steps={s.visitors.funnel} />

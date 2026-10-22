@@ -311,6 +311,9 @@ export const admin = {
       step1: "Move",
       step2: "Contacts",
     },
+    serviceRoute: "Service & route",
+    localMove: "{city} · local",
+    visibility: "Visibility",
   },
   services: {
     title: "Services & pricing",

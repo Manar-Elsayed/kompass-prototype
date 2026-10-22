@@ -189,6 +189,7 @@ export const portal: Built<typeof Def> = {
     reportRejectedTitle: "Votre signalement de faux lead n’a pas été confirmé",
     reportRejectedBody: "Kompass a vérifié les coordonnées du client et la demande est réelle, il n’y a donc pas de remboursement.",
     reportSteps: "Suivi du signalement",
+    boughtOn: "Acheté le {date}",
   },
   payments: {
     topUpOnline: "Recharger en ligne",

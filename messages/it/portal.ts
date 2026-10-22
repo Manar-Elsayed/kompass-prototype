@@ -189,6 +189,7 @@ export const portal: Built<typeof Def> = {
     reportRejectedTitle: "La Sua segnalazione di lead falso non è stata confermata",
     reportRejectedBody: "Kompass ha verificato i dati del cliente e ha ritenuto la richiesta reale: non è previsto alcun rimborso.",
     reportSteps: "Stato della segnalazione",
+    boughtOn: "Acquistato il {date}",
   },
   payments: {
     topUpOnline: "Ricarica online",

@@ -186,6 +186,7 @@ export const portal = {
     reportRejectedTitle: "Your fake-lead report was not confirmed",
     reportRejectedBody: "Kompass checked the customer’s details and found the request real, so there is no refund.",
     reportSteps: "Report progress",
+    boughtOn: "Bought {date}",
   },
   payments: {
     topUpOnline: "Top up online",

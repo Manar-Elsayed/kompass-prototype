@@ -57,9 +57,9 @@ export default function WalletsPage() {
       ),
     },
     { id: "balance", header: tw("balance"), accessorFn: (r) => r.wallet, cell: (c) => <span className="font-bold text-ink">{formatCHF(c.getValue() as number, lang)}</span> },
-    { id: "toppedUp", header: tw("toppedUp"), accessorFn: (r) => r.toppedUp, cell: (c) => <span className="text-success">{formatCHF(c.getValue() as number, lang)}</span> },
-    { id: "spent", header: tw("spent"), accessorFn: (r) => r.spent, cell: (c) => formatCHF(c.getValue() as number, lang) },
-    { id: "refunded", header: tw("refunded"), accessorFn: (r) => r.refunded, cell: (c) => <span className="text-muted-foreground">{formatCHF(c.getValue() as number, lang)}</span> },
+    { id: "toppedUp", meta: { className: "hidden 2xl:table-cell" }, header: tw("toppedUp"), accessorFn: (r) => r.toppedUp, cell: (c) => <span className="text-success">{formatCHF(c.getValue() as number, lang)}</span> },
+    { id: "spent", meta: { className: "hidden 2xl:table-cell" }, header: tw("spent"), accessorFn: (r) => r.spent, cell: (c) => formatCHF(c.getValue() as number, lang) },
+    { id: "refunded", meta: { className: "hidden 2xl:table-cell" }, header: tw("refunded"), accessorFn: (r) => r.refunded, cell: (c) => <span className="text-muted-foreground">{formatCHF(c.getValue() as number, lang)}</span> },
     {
       id: "credit",
       header: tw("creditDue"),

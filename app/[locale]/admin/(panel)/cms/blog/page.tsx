@@ -54,7 +54,7 @@ export default function BlogAdmin() {
       ),
     },
     { id: "cat", header: tb("category"), accessorFn: (b) => L(serviceMap[b.serviceId]?.name) },
-    { id: "read", header: tb("readMins"), accessorFn: (b) => b.readMins },
+    { id: "read", meta: { className: "hidden 2xl:table-cell" }, header: tb("readMins"), accessorFn: (b) => b.readMins },
     { id: "date", header: t("common.fields.date"), accessorFn: (b) => b.createdAt, cell: (c) => <span className="text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
     { id: "status", header: t("common.fields.status"), accessorFn: (b) => (b.published ? "published" : "draft"), cell: (c) => <StatusBadge status={c.getValue() as string} /> },
     {

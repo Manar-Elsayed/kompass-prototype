@@ -92,8 +92,8 @@ export default function CouponsPage() {
         </div>
       ),
     },
-    { id: "multi", header: tc("multiUse"), accessorFn: (c) => (c.multiUse ? 1 : 0), cell: (c) => (c.getValue() ? t("common.form.yes") : t("common.form.no")) },
-    { id: "validity", header: tc("validity"), accessorFn: (c) => c.endDate, cell: ({ row: { original: c } }) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.startDate, lang)} – {formatDate(c.endDate, lang)}</span> },
+    { id: "multi", meta: { className: "hidden 2xl:table-cell" }, header: tc("multiUse"), accessorFn: (c) => (c.multiUse ? 1 : 0), cell: (c) => (c.getValue() ? t("common.form.yes") : t("common.form.no")) },
+    { id: "validity", header: tc("validity"), accessorFn: (c) => c.endDate, cell: ({ row: { original: c } }) => <span className="block whitespace-nowrap text-xs text-muted-foreground">{formatDate(c.startDate, lang)} –<br />{formatDate(c.endDate, lang)}</span> },
     { id: "status", header: t("common.fields.status"), accessorFn: status, cell: (c) => <StatusBadge status={c.getValue() as string} /> },
     {
       id: "actions",

@@ -63,30 +63,62 @@ function Leads() {
     });
 
   const columns: ColumnDef<Offer, unknown>[] = [
-    { id: "id", header: t("admin.leads.id"), accessorFn: (o) => o.id, cell: ({ row }) => <Mono>{row.original.id}</Mono> },
+    // the lead number with the day it came in (sorting by number = sorting by age)
+    {
+      id: "id",
+      header: t("admin.leads.id"),
+      accessorFn: (o) => o.id,
+      cell: ({ row: { original: o } }) => (
+        <div className="whitespace-nowrap">
+          <Mono>{o.id}</Mono>
+          <p className="text-xs text-muted-foreground">{formatDate(o.createdAt, lang)}</p>
+        </div>
+      ),
+    },
     {
       id: "customer",
       header: t("admin.leads.customer"),
       accessorFn: (o) => `${o.firstName} ${o.lastName}`,
       cell: ({ row: { original: o } }) => (
-        <div className="min-w-0">
-          <p className="font-semibold text-ink">{o.firstName} {o.lastName}</p>
-          <p className="truncate text-xs text-muted-foreground" dir="ltr">{o.email}</p>
+        <div className="w-32 min-w-0 2xl:w-48">
+          <p className="truncate font-semibold text-ink">{o.firstName} {o.lastName}</p>
+          <p className="truncate text-xs text-muted-foreground" dir="ltr" title={o.email}>{o.email}</p>
         </div>
       ),
     },
-    { id: "service", header: t("common.fields.service"), accessorFn: (o) => L(serviceMap[o.serviceId]?.name), cell: (c) => <span className="whitespace-nowrap">{c.getValue() as string}</span> },
+    // what and where in one cell; the route has a fixed width and shows the full addresses on hover
     {
-      id: "route",
-      header: t("admin.leads.route"),
-      accessorFn: (o) => `${o.from.city} → ${o.to.city}`,
+      id: "service",
+      header: t("admin.leads.serviceRoute"),
+      accessorFn: (o) => L(serviceMap[o.serviceId]?.name),
+      cell: ({ row: { original: o } }) => {
+        const local = o.from.city === o.to.city;
+        return (
+          <div className="w-36 min-w-0 2xl:w-52">
+            <p className="truncate font-medium text-ink">{L(serviceMap[o.serviceId]?.name)}</p>
+            <p className="truncate text-xs text-muted-foreground" title={`${o.from.zip} ${o.from.city} → ${o.to.zip} ${o.to.city}`}>
+              {local ? t("admin.leads.localMove", { city: o.from.city }) : <>{o.from.city} <span className="text-foreground/40">→</span> {o.to.city}</>}
+            </p>
+          </div>
+        );
+      },
+    },
+    // the job date with how long the offer stays on sale
+    {
+      id: "execution",
+      header: t("admin.leads.execution"),
+      accessorFn: (o) => o.executionDate,
       cell: ({ row: { original: o } }) => (
-        <span className="whitespace-nowrap text-muted-foreground">
-          {o.from.zip} {o.from.city} <span className="text-foreground/40">→</span> {o.to.zip} {o.to.city}
-        </span>
+        <div className="whitespace-nowrap">
+          <p>{formatDate(o.executionDate, lang)}</p>
+          {(o.status === "in_progress" || o.status === "new") && (
+            <p className={cn("text-xs", isExpiringSoon(o) ? "font-semibold text-warning" : "text-muted-foreground")}>
+              {t("admin.leads.expiresIn", { days: Math.max(0, daysLeft(o.deadline)) })}
+            </p>
+          )}
+        </div>
       ),
     },
-    { id: "execution", header: t("admin.leads.execution"), accessorFn: (o) => o.executionDate, cell: (c) => <span className="whitespace-nowrap">{formatDate(c.getValue() as string, lang)}</span> },
     {
       id: "sold",
       header: t("admin.leads.sold"),
@@ -101,39 +133,31 @@ function Leads() {
       },
     },
     {
-      id: "expires",
-      header: t("admin.leads.expires"),
-      accessorFn: (o) => o.deadline,
-      cell: ({ row: { original: o } }) =>
-        o.status === "in_progress" || o.status === "new" ? (
-          <span className={cn("whitespace-nowrap", isExpiringSoon(o) ? "font-semibold text-warning" : "text-muted-foreground")}>
-            {t("admin.leads.expiresIn", { days: Math.max(0, daysLeft(o.deadline)) })}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">–</span>
-        ),
-    },
-    {
       id: "status",
       header: t("common.fields.status"),
       accessorFn: (o) => o.status,
       cell: ({ row: { original: o } }) => (
-        <span className="flex items-center gap-1.5">
-          <StatusBadge status={o.status} />
+        <div className="flex flex-col items-start gap-1">
+          <span className="flex items-center gap-1.5">
+            <StatusBadge status={o.status} />
+            {o.status === "new" && o.flags.length > 0 && (
+              <span title={t("admin.leads.flagged")} className="text-warning"><AlertTriangle className="size-4" aria-label={t("admin.leads.flagged")} /></span>
+            )}
+          </span>
           {o.noShow && o.noShow.status !== "resolved" && <Badge tone="danger">{t("admin.leads.noShowOpen")}</Badge>}
-          {o.status === "new" && o.flags.length > 0 && (
-            <span title={t("admin.leads.flagged")} className="text-warning"><AlertTriangle className="size-4" aria-label={t("admin.leads.flagged")} /></span>
-          )}
-        </span>
+        </div>
       ),
     },
-    { id: "created", header: t("common.fields.created"), accessorFn: (o) => o.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
     {
       id: "visible",
-      header: t("admin.leads.visible"),
+      header: t("admin.leads.visibility"),
       accessorFn: (o) => (o.active ? 1 : 0),
       cell: ({ row: { original: o } }) =>
-        o.status === "in_progress" ? <Switch checked={o.active} onCheckedChange={() => toggleVisible(o)} aria-label={t("admin.leads.visible")} /> : null,
+        o.status === "in_progress" ? (
+          <span title={t("admin.leads.visible")}>
+            <Switch checked={o.active} onCheckedChange={() => toggleVisible(o)} aria-label={t("admin.leads.visible")} />
+          </span>
+        ) : null,
     },
     actionsColumn<Offer>((o) => {
       const open = o.status === "new" || o.status === "in_progress";
@@ -193,7 +217,7 @@ function Leads() {
         data={offers}
         initialFilters={attention ? { attention } : undefined}
         columns={columns}
-        search={(o) => `${o.id} ${o.firstName} ${o.lastName} ${o.email} ${o.from.city} ${o.to.city} ${o.from.zip}`}
+        search={(o) => `${o.id} ${o.firstName} ${o.lastName} ${o.email} ${o.from.city} ${o.to.city} ${o.from.zip} ${o.to.zip}`}
         searchPlaceholder={t("admin.shell.search")}
         onRowClick={(o) => router.push(`/admin/leads/${o.id}`)}
         filters={[

@@ -104,13 +104,15 @@ function MyLeads() {
     });
 
   const columns: ColumnDef<Order, unknown>[] = [
+    // the reference with the day it was bought (sorting by it = newest purchases first)
     {
-      id: "lead",
+      id: "bought",
       header: tf("reference"),
-      accessorFn: (o) => o.offerId,
+      accessorFn: (o) => o.createdAt,
       cell: ({ row: { original: o } }) => (
-        <span className="flex flex-col items-start gap-1">
+        <span className="flex flex-col items-start gap-0.5 whitespace-nowrap">
           <Mono>{o.offerId}</Mono>
+          <span className="text-xs text-muted-foreground">{t("boughtOn", { date: formatDate(o.createdAt, lang) })}</span>
           {o.channel === "manual" && <Badge tone="accent"><Headset /> {t("assigned")}</Badge>}
         </span>
       ),
@@ -122,19 +124,42 @@ function MyLeads() {
       cell: ({ row: { original: o } }) => {
         const x = offerMap[o.offerId];
         return (
-          <div>
-            <p className="font-semibold text-ink">{x?.firstName} {x?.lastName}</p>
-            <p className="text-xs text-muted-foreground" dir="ltr">{x?.phone}</p>
+          <div className="w-36 min-w-0">
+            <p className="truncate font-semibold text-ink">{x?.firstName} {x?.lastName}</p>
+            <p className="truncate text-xs text-muted-foreground" dir="ltr">{x?.phone}</p>
           </div>
         );
       },
     },
-    { id: "svc", header: tf("service"), accessorFn: (o) => L(serviceMap[offerMap[o.offerId]?.serviceId ?? ""]?.name) },
-    { id: "route", header: tl("route"), accessorFn: (o) => `${offerMap[o.offerId]?.from.city} → ${offerMap[o.offerId]?.to.city}`, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{c.getValue() as string}</span> },
+    {
+      id: "svc",
+      header: tl("serviceRoute"),
+      accessorFn: (o) => L(serviceMap[offerMap[o.offerId]?.serviceId ?? ""]?.name),
+      cell: ({ row: { original: o } }) => {
+        const x = offerMap[o.offerId];
+        return (
+          <div className="w-40 min-w-0">
+            <p className="truncate font-medium text-ink">{L(serviceMap[x?.serviceId ?? ""]?.name)}</p>
+            <p className="truncate text-xs text-muted-foreground" title={x ? `${x.from.zip} ${x.from.city} → ${x.to.zip} ${x.to.city}` : undefined}>
+              {x?.from.city} <span className="text-foreground/40">→</span> {x?.to.city}
+            </p>
+          </div>
+        );
+      },
+    },
     { id: "exec", header: tl("execution"), accessorFn: (o) => offerMap[o.offerId]?.executionDate ?? "", cell: (c) => <span className="whitespace-nowrap">{c.getValue() ? formatDate(c.getValue() as string, lang) : "–"}</span> },
-    { id: "paid", header: t("paid"), accessorFn: (o) => o.price, cell: ({ row: { original: o } }) => <span className="font-semibold">{formatCHF(o.price, lang)}{o.couponCode && <span className="ms-1 text-xs font-normal text-success" dir="ltr">({o.couponCode})</span>}</span> },
-    { id: "bought", header: t("bought"), accessorFn: (o) => o.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
-    { id: "choice", header: t("choiceCol"), accessorFn: (o) => choiceOf(o), cell: ({ row: { original: o } }) => choice(o) },
+    {
+      id: "paid",
+      header: t("paid"),
+      accessorFn: (o) => o.price,
+      cell: ({ row: { original: o } }) => (
+        <div className="whitespace-nowrap">
+          <p className="font-semibold">{formatCHF(o.price, lang)}</p>
+          {o.couponCode && <p className="font-mono text-xs text-success" dir="ltr">{o.couponCode}</p>}
+        </div>
+      ),
+    },
+    { id: "choice", meta: { className: "hidden 2xl:table-cell" }, header: t("choiceCol"), accessorFn: (o) => choiceOf(o), cell: ({ row: { original: o } }) => choice(o) },
     { id: "status", header: tf("status"), accessorFn: (o) => outcomeOf(o).status, cell: ({ row: { original: o } }) => status(o) },
   ];
 

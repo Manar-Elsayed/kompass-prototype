@@ -87,8 +87,8 @@ export default function ServicesAdmin() {
       accessorFn: (s) => s.estimate.from,
       cell: ({ row: { original: s } }) => <span className="whitespace-nowrap tabular-nums">{formatCHF(s.estimate.from, lang)} – {formatCHF(s.estimate.to, lang)}</span>,
     },
-    { id: "leads", header: t("admin.services.leads"), accessorFn: (s) => offers.filter((o) => o.serviceId === s.id).length },
-    { id: "partners", header: t("admin.services.partners"), accessorFn: (s) => partners.filter((p) => p.status === "approved" && p.serviceIds.includes(s.id)).length },
+    { id: "leads", meta: { className: "hidden 2xl:table-cell" }, header: t("admin.services.leads"), accessorFn: (s) => offers.filter((o) => o.serviceId === s.id).length },
+    { id: "partners", meta: { className: "hidden 2xl:table-cell" }, header: t("admin.services.partners"), accessorFn: (s) => partners.filter((p) => p.status === "approved" && p.serviceIds.includes(s.id)).length },
     {
       id: "active",
       header: t("admin.services.visible"),
@@ -96,7 +96,7 @@ export default function ServicesAdmin() {
       cell: ({ row: { original: s } }) => (
         <Select
           size="sm"
-          className="w-40"
+          className="w-36"
           value={visibilityOf(s)}
           onValueChange={(v) => {
             patch("services", s.id, fromVisibility(v as Visibility));

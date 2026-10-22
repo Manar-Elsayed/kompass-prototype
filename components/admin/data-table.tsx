@@ -205,7 +205,7 @@ export function DataTable<T>({
                     <th
                       key={h.id}
                       className={cn(
-                        "whitespace-nowrap px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground",
+                        "whitespace-nowrap px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground first:ps-4 last:pe-4",
                         (h.column.columnDef.meta as { className?: string } | undefined)?.className,
                       )}
                     >
@@ -243,7 +243,7 @@ export function DataTable<T>({
                   <td
                     key={cell.id}
                     className={cn(
-                      "px-4 align-middle",
+                      "px-3 align-middle first:ps-4 last:pe-4",
                       dense ? "py-2" : "py-3",
                       (cell.column.columnDef.meta as { className?: string } | undefined)?.className,
                     )}

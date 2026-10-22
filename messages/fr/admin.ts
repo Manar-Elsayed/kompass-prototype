@@ -314,6 +314,9 @@ export const admin: Built<typeof Def> = {
       step1: "Déménagement",
       step2: "Contacts",
     },
+    serviceRoute: "Service et trajet",
+    localMove: "{city} · local",
+    visibility: "Visibilité",
   },
   services: {
     title: "Prestations et tarifs",

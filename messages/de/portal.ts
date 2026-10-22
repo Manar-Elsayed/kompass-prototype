@@ -189,6 +189,7 @@ export const portal: Built<typeof Def> = {
     reportRejectedTitle: "Ihre Fake-Lead-Meldung wurde nicht bestätigt",
     reportRejectedBody: "Kompass hat die Angaben des Kunden geprüft und die Anfrage als echt eingestuft. Es gibt daher keine Rückerstattung.",
     reportSteps: "Stand der Meldung",
+    boughtOn: "Gekauft am {date}",
   },
   payments: {
     topUpOnline: "Online aufladen",
