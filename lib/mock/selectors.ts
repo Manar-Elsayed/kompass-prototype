@@ -352,11 +352,11 @@ export function partnerFeed(db: FeedDB, partnerId: string): FeedItem[] {
   for (const o of mine) {
     const offer = offerById.get(o.offerId);
     const href = `/portal/leads?open=${o.offerId}`;
-    if (o.channel === "manual") push(o.id, o.createdAt, "assigned", "info", href, { lead: o.offerId, amount: o.price });
+    if (o.channel === "manual") push(o.id, o.createdAt, "assigned", "info", href, { offer: o.offerId, amount: o.price });
     if (!offer) continue;
     if (offer.status === "cancelled" && offer.cancelledAt && offer.cancelledAt > o.createdAt)
-      push(o.id, offer.cancelledAt, offer.cancelReason === "fake" ? "cancelledFake" : "cancelledCustomer", offer.cancelReason === "fake" ? "info" : "warning", href, { lead: o.offerId });
-    if (offer.chosenPartnerId === partnerId) push(o.id, offer.chosenAt, "chosen", "success", href, { lead: o.offerId, city: offer.from.city });
+      push(o.id, offer.cancelledAt, offer.cancelReason === "fake" ? "cancelledFake" : "cancelledCustomer", offer.cancelReason === "fake" ? "info" : "warning", href, { offer: o.offerId });
+    if (offer.chosenPartnerId === partnerId) push(o.id, offer.chosenAt, "chosen", "success", href, { offer: o.offerId, city: offer.from.city });
   }
 
   // one notification per conversation: its latest message from Kompass

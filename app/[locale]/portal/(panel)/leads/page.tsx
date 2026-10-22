@@ -219,7 +219,7 @@ function MyLeads() {
                   {lead.requester && (
                     <p className="mt-1 text-sm text-muted-foreground">
                       {t("bookedBy", { name: `${lead.requester.firstName} ${lead.requester.lastName}` })}
-                      {" · "}
+                      {lead.organization ? ` · ${lead.organization.name} · ` : " · "}
                       <span dir="ltr">{lead.requester.phone}</span>
                     </p>
                   )}

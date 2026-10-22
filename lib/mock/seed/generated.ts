@@ -391,19 +391,35 @@ for (const o of offers) {
     }
     if (form.cleaningType) job.cleaningType = jrng.pick(["endOfTenancy", "endOfTenancy", "deepClean", "regular"] as const);
     if (form.instrument) job.instrument = jrng.pick(["upright", "upright", "grand", "digital"] as const);
-    if (form.amounts) job.amount = jrng.pick(form.amounts);
+    if (form.amounts) job.amount = jrng.pick(form.amounts.filter((x) => x !== "other"));
     if (form.duration) job.duration = jrng.pick(DURATIONS);
-    if (form.items) job.items = jrng.sample(DISPOSAL_ITEMS, jrng.int(1, 3));
-    if (form.extras.length) job.extras = jrng.sample(form.extras, jrng.int(0, Math.min(2, form.extras.length)));
+    if (form.items) job.items = jrng.sample(DISPOSAL_ITEMS.filter((x) => x !== "other"), jrng.int(1, 3));
     o.job = job;
   }
 }
 
 /* ---------- who booked, and which company did the job (from the review survey) ---------- */
 const brng = createRng(20261025);
+const ORGANIZATIONS = [
+  { name: "Pro Senectute Kanton Zürich", address: "Forchstrasse 145, 8032 Zürich", email: "umzug@zh.prosenectute.ch", phone: "+41 58 451 51 00" },
+  { name: "Caritas Bern", address: "Eigerplatz 5, 3007 Bern", email: "sozialberatung@caritas-bern.ch", phone: "+41 31 378 60 00" },
+  { name: "Heilsarmee Basel", address: "Rheinfelderstrasse 29, 4058 Basel", email: "basel@heilsarmee.ch", phone: "+41 61 690 70 70" },
+  { name: "Stiftung Wohnhilfe Luzern", address: "Pilatusstrasse 4, 6003 Luzern", email: "info@wohnhilfe-luzern.ch", phone: "+41 41 220 15 15" },
+];
 for (const o of offers) {
-  // about one request in six is filled in by another person (a son for his mother, a social worker…)
-  if (brng.int(0, 99) < 16) {
+  // where the person receiving the service lives: their current home
+  o.customerAddress = `${o.from.street}, ${o.from.zip} ${o.from.city}`;
+  const who = brng.int(0, 99);
+  if (who >= 10 && who < 16) {
+    // a social service or foundation books for one of its clients
+    const org = ORGANIZATIONS[who % ORGANIZATIONS.length];
+    const first = brng.pick([...FIRST_F, ...FIRST_M]);
+    const last = brng.pick(LAST);
+    o.booking = "organization";
+    o.organization = { name: org.name, address: org.address };
+    o.requester = { firstName: first, lastName: last, email: org.email, phone: org.phone, address: org.address };
+  } else if (who < 10) {
+    // a relative fills in the form (a son for his mother…)
     o.booking = "other";
     const first = brng.pick([...FIRST_F, ...FIRST_M]);
     const last = brng.chance(0.6) ? o.lastName : brng.pick(LAST);
@@ -431,7 +447,7 @@ export const fakeReports: FakeReport[] = rng.sample(orders, 9).map((o, i) => ({
   reason: rng.pick([
     "Customer phone number does not exist.",
     "Customer says they never requested a move.",
-    "Duplicate of a lead bought last week.",
+    "Duplicate of an offer bought last week.",
     "Email bounced, no reply on phone.",
   ]),
   status: (["open", "open", "testing", "pending", "confirmed", "canceled", "open", "pending", "testing"] as const)[i],
@@ -643,10 +659,10 @@ export const notifications: Notification[] = [
     id: "n-1",
     kind: "lead",
     title: l(
-      `New lead ${offers[0].id} · ${offers[0].from.city}`,
-      `Neuer Lead ${offers[0].id} · ${offers[0].from.city}`,
-      `Nouveau lead ${offers[0].id} · ${offers[0].from.city}`,
-      `Nuovo lead ${offers[0].id} · ${offers[0].from.city}`,
+      `New offer ${offers[0].id} · ${offers[0].from.city}`,
+      `Neue Anfrage ${offers[0].id} · ${offers[0].from.city}`,
+      `Nouvelle demande ${offers[0].id} · ${offers[0].from.city}`,
+      `Nuova richiesta ${offers[0].id} · ${offers[0].from.city}`,
     ),
     href: `/admin/leads/${offers[0].id}`,
     read: false,
@@ -682,10 +698,10 @@ export const notifications: Notification[] = [
     id: "n-4",
     kind: "report",
     title: l(
-      "Fake-lead report FR-101 opened",
-      "Meldung zu gefälschtem Lead FR-101 eröffnet",
-      "Signalement de faux lead FR-101 ouvert",
-      "Segnalazione di lead falso FR-101 aperta",
+      "Fake-offer report FR-101 opened",
+      "Meldung zu gefälschter Anfrage FR-101 eröffnet",
+      "Signalement de fausse demande FR-101 ouvert",
+      "Segnalazione di richiesta falsa FR-101 aperta",
     ),
     href: "/admin/leads/fake-reports",
     read: true,
@@ -901,7 +917,7 @@ export const files: CompanyFile[] = approved.slice(0, 12).flatMap((p, i) => [
 // conversations: the first message of each thread is its root (threadId = id)
 export const messages: CompanyMessage[] = [
   { id: "MSG-0001", threadId: "MSG-0001", from: "kompass", topic: "general", partnerId: "p-001", subject: "Welcome to the new partner portal", body: "Your wallet, invoices and documents are now all in one place. Reply here if anything looks wrong.", channel: "email", byUserId: "u-1", createdAt: daysAgo(6), readAt: daysAgo(5) },
-  { id: "MSG-0003", threadId: "MSG-0001", from: "company", topic: "general", partnerId: "p-001", subject: "Welcome to the new partner portal", body: "Thank you! Can we get leads from canton Zug as well? We often work there.", channel: "portal", createdAt: daysAgo(5, 2), readAt: daysAgo(5, 4) },
+  { id: "MSG-0003", threadId: "MSG-0001", from: "company", topic: "general", partnerId: "p-001", subject: "Welcome to the new partner portal", body: "Thank you! Can we get offers from canton Zug as well? We often work there.", channel: "portal", createdAt: daysAgo(5, 2), readAt: daysAgo(5, 4) },
   { id: "MSG-0004", threadId: "MSG-0001", from: "kompass", topic: "general", partnerId: "p-001", subject: "Welcome to the new partner portal", body: "Of course. Add Zug under Company profile › Service area and the shop will show its leads.", channel: "portal", byUserId: "u-1", createdAt: daysAgo(5, 5), readAt: daysAgo(4) },
   { id: "MSG-0002", threadId: "MSG-0002", from: "kompass", topic: "documents", partnerId: "p-001", subject: "Insurance renewal", body: "Your liability insurance runs out in a few months. Please upload the renewed certificate in your profile when you have it.", channel: "portal", byUserId: "u-3", createdAt: daysAgo(2) },
   { id: "MSG-0005", threadId: "MSG-0005", from: "company", topic: "billing", partnerId: "p-003", subject: "Payout of our balance", body: "We are pausing for the winter. Could you pay out what is left in our wallet?", channel: "portal", createdAt: daysAgo(1, 3) },

@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import type { CancelReason, Offer, Order } from "@/lib/types";
+import type { Offer, Order } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { CITIES } from "@/lib/mock/seed";
@@ -36,7 +36,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { Avatar, Checkbox, Progress, RadioCards, Switch } from "@/components/ui/controls";
+import { Avatar, Progress, Switch } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge, useConfirm } from "@/components/shared/bits";
@@ -346,12 +346,19 @@ export default function LeadDetail() {
                     <a href={`mailto:${offer.email}`} className="flex items-center gap-2 hover:text-primary" dir="ltr"><Mail className="size-4 text-muted-foreground" />{offer.email}</a>
                   )}
                   <a href={`tel:${offer.phone}`} className="flex items-center gap-2 hover:text-primary" dir="ltr"><Phone className="size-4 text-muted-foreground" />{offer.phone}</a>
+                  {offer.customerAddress && <p className="flex items-start gap-2"><MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />{offer.customerAddress}</p>}
                 </div>
               </section>
               {/* whoever filled in the request for them: gets the confirmation and the survey */}
               {offer.requester && (
                 <section className="space-y-3 rounded-xl border bg-surface-2/60 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tl("filledInBy")}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tl(offer.organization ? "bookedByOrg" : "filledInBy")}</p>
+                  {offer.organization && (
+                    <div className="text-sm">
+                      <p className="flex items-center gap-2 font-bold text-ink"><Building2 className="size-4 text-muted-foreground" />{offer.organization.name}</p>
+                      <p className="ms-6 text-muted-foreground">{offer.organization.address}</p>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <Avatar name={`${offer.requester.firstName} ${offer.requester.lastName}`} className="size-11" />
                     <p className="font-bold text-ink">{offer.requester.firstName} {offer.requester.lastName}</p>
@@ -359,7 +366,7 @@ export default function LeadDetail() {
                   <div className="space-y-2 text-sm">
                     <a href={`mailto:${offer.requester.email}`} className="flex items-center gap-2 hover:text-primary" dir="ltr"><Mail className="size-4 text-muted-foreground" />{offer.requester.email}</a>
                     <a href={`tel:${offer.requester.phone}`} className="flex items-center gap-2 hover:text-primary" dir="ltr"><Phone className="size-4 text-muted-foreground" />{offer.requester.phone}</a>
-                    {offer.requester.address && <p className="flex items-start gap-2"><MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />{offer.requester.address}</p>}
+                    {!offer.organization && offer.requester.address && <p className="flex items-start gap-2"><MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />{offer.requester.address}</p>}
                   </div>
                   <p className="text-xs text-muted-foreground">{tl("filledInByHint")}</p>
                 </section>
@@ -408,7 +415,7 @@ export default function LeadDetail() {
         </div>
       </div>
 
-      {cancelOpen && <CancelDialog offer={offer} orders={orders} onClose={() => setCancelOpen(false)} />}
+      {cancelOpen && <CancelDialog offer={offer} onClose={() => setCancelOpen(false)} />}
       {notifyOpen && <NotifyDialog offer={offer} orders={orders} onClose={() => setNotifyOpen(false)} />}
       {dialog}
     </>
@@ -493,61 +500,28 @@ function AssignPanel({ offer, orders }: { offer: Offer; orders: Order[] }) {
 }
 
 /** Cancelling needs a reason because it decides the money: fake = refundable, customer = not. */
-function CancelDialog({ offer, orders, onClose }: { offer: Offer; orders: Order[]; onClose: () => void }) {
+/**
+ * Taking an offer out of the shop. No refund happens here: a fake offer is refunded from the
+ * fake-offer reports, where Kompass confirms it.
+ */
+function CancelDialog({ offer, onClose }: { offer: Offer; onClose: () => void }) {
   const t = useTranslations("admin.leads.detail");
   const tc = useTranslations("common.actions");
-  const lang = useLang();
-  const partnerMap = usePartnerMap();
   const cancelOffer = useStore((s) => s.cancelOffer);
-  const [reason, setReason] = useState<CancelReason>("fake");
-  const [refund, setRefund] = useState<string[]>(orders.map((o) => o.id));
-  const refundTotal = orders.filter((o) => refund.includes(o.id)).reduce((a, o) => a + o.price, 0);
 
   const submit = () => {
-    cancelOffer(offer.id, reason, reason === "fake" ? refund : []);
+    cancelOffer(offer.id, "customer", []);
     toast.success(t("cancelled", { id: offer.id }));
     onClose();
   };
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{t("cancelTitle", { id: offer.id })}</DialogTitle>
-          <DialogDescription>{t(reason === "fake" ? "cancelFakeHint" : "cancelCustomerHint")}</DialogDescription>
+          <DialogDescription>{t("cancelHint")}</DialogDescription>
         </DialogHeader>
-        <RadioCards
-          value={reason}
-          onValueChange={(v) => setReason(v as CancelReason)}
-          className="grid-cols-2"
-          options={[
-            { value: "fake", label: t("cancelFake"), icon: <AlertTriangle className="size-4" /> },
-            { value: "customer", label: t("cancelCustomer"), icon: <XCircle className="size-4" /> },
-          ]}
-        />
-        {reason === "fake" &&
-          (orders.length ? (
-            <div className="rounded-xl border p-3">
-              <p className="mb-2 text-sm font-semibold text-ink">{t("refundBuyers")}</p>
-              <ul className="space-y-2">
-                {orders.map((o) => (
-                  <li key={o.id}>
-                    <label className="flex cursor-pointer items-center gap-3 text-sm">
-                      <Checkbox
-                        checked={refund.includes(o.id)}
-                        onCheckedChange={(v) => setRefund((r) => (v ? [...r, o.id] : r.filter((x) => x !== o.id)))}
-                      />
-                      <span className="flex-1">{partnerMap[o.partnerId]?.name}</span>
-                      <span className="font-semibold">{formatCHF(o.price, lang)}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 border-t pt-2 text-end text-sm font-bold">{formatCHF(refundTotal, lang)}</p>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">{t("noBuyersToRefund")}</p>
-          ))}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{tc("cancel")}</Button>
           <Button variant="danger" onClick={submit}><Ban /> {t("cancel")}</Button>

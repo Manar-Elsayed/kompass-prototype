@@ -23,25 +23,27 @@ export type RowAction = {
 };
 
 /**
- * The same end-of-row controls on every admin table: an eye button that opens the record, and a "…"
- * menu with what can be done to it. Clicks here never trigger the row's own click.
+ * The same end-of-row control on every admin table: one "…" menu whose first item opens the record
+ * (the row itself opens it too), followed by what can be done to it. Clicks here never trigger the
+ * row's own click.
  */
-export function RowActions({ onView, viewHref, actions = [] }: { onView?: () => void; viewHref?: string; actions?: RowAction[] }) {
+export function RowActions({
+  onView,
+  viewHref,
+  viewLabel,
+  actions = [],
+}: {
+  onView?: () => void;
+  viewHref?: string;
+  /** e.g. "View offer"; defaults to "View". */
+  viewLabel?: string;
+  actions?: RowAction[];
+}) {
   const t = useTranslations("common.actions");
-  const shown = actions.filter((a) => !a.hidden);
+  const view: RowAction[] = viewHref || onView ? [{ label: viewLabel ?? t("view"), icon: <Eye />, href: viewHref, onSelect: viewHref ? undefined : onView }] : [];
+  const shown = [...view, ...actions.filter((a) => !a.hidden)];
   return (
-    <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
-      {viewHref ? (
-        <Button asChild variant="ghost" size="icon-sm" aria-label={t("view")}>
-          <Link href={viewHref}>
-            <Eye />
-          </Link>
-        </Button>
-      ) : onView ? (
-        <Button variant="ghost" size="icon-sm" aria-label={t("view")} onClick={onView}>
-          <Eye />
-        </Button>
-      ) : null}
+    <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
       {shown.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

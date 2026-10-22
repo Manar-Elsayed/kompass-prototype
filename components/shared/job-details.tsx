@@ -36,7 +36,7 @@ export function JobPlaces({ offer, className }: { offer: Offer; className?: stri
   );
 }
 
-/** The service-specific answers (property, amount, extras…), only those the request has. */
+/** The service-specific answers (property, amount, items…), only those the request has. */
 export function JobFacts({ offer, cols = 2 }: { offer: Offer; cols?: 1 | 2 | 3 }) {
   const t = useTranslations("site.job");
   const lang = useLang();
@@ -53,7 +53,7 @@ export function JobFacts({ offer, cols = 2 }: { offer: Offer; cols?: 1 | 2 | 3 }
   if (j.duration) items.push({ label: t("durationLabel"), value: t(`duration.${j.duration}`) });
   if (JOB_FORMS[kind].cleaningDate && j.cleaningDate) items.push({ label: t("cleaningDateLabel"), value: formatDate(j.cleaningDate, lang) });
   if (j.flexibleDate) items.push({ label: t("flexibleLabel"), value: t("flexibleYes") });
-  if (j.extras?.length) items.push({ label: t("extrasLabel"), value: j.extras.map((x) => t(`extras.${x}`)).join(", ") });
+  if (j.otherNote) items.push({ label: t(`otherLabel.${kind}`), value: j.otherNote });
   if (!items.length) return null;
   return <DL items={items} cols={cols} />;
 }

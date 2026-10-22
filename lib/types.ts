@@ -62,7 +62,7 @@ export interface Address {
  * phone are always the person moving — the one the companies serve; the other person's details are
  * stored separately as the requester.
  */
-export type BookingType = "personal" | "other";
+export type BookingType = "personal" | "other" | "organization";
 export interface Person {
   firstName: string;
   lastName: string;
@@ -85,7 +85,7 @@ export interface Offer {
   from: Address;
   /** Only for jobs between two places (moving, moving & cleaning, piano). */
   to?: Address;
-  /** The answers specific to the service (property, amount, extras…). */
+  /** The answers specific to the service (property, amount, items…). */
   job?: JobDetails;
   executionDate: string;
   deadline: string; // last date for submitting offers
@@ -95,8 +95,12 @@ export interface Offer {
   status: LeadStatus;
   flags: VerificationFlag[];
   booking: BookingType;
-  /** The other person (who filled in the form) when the request is for someone else. */
+  /** Where the person receiving the service lives (asked for every request). */
+  customerAddress?: string;
+  /** Who filled in the form when it is for someone else: the other person, or the organization's contact. */
   requester?: Person;
+  /** When an organization (social service, foundation…) books for one of its clients. */
+  organization?: { name: string; address: string };
   /** The company that did the job, as the customer answered in the review survey sent after the move date. */
   chosenPartnerId?: ID;
   chosenAt?: string;

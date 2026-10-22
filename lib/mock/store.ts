@@ -232,8 +232,8 @@ export const useStore = create<Store>()(
           notifications: notify(s, {
             kind: "lead",
             title: review
-              ? { en: `Lead ${offer.id} needs review · ${offer.from.city}`, de: `Lead ${offer.id} muss geprüft werden · ${offer.from.city}`, fr: `Le lead ${offer.id} doit être vérifié · ${offer.from.city}`, it: `Il lead ${offer.id} va verificato · ${offer.from.city}` }
-              : { en: `New lead ${offer.id} · ${offer.from.city}`, de: `Neuer Lead ${offer.id} · ${offer.from.city}`, fr: `Nouveau lead ${offer.id} · ${offer.from.city}`, it: `Nuovo lead ${offer.id} · ${offer.from.city}` },
+              ? { en: `Offer ${offer.id} needs review · ${offer.from.city}`, de: `Anfrage ${offer.id} muss geprüft werden · ${offer.from.city}`, fr: `La demande ${offer.id} doit être vérifiée · ${offer.from.city}`, it: `Il lead ${offer.id} va verificato · ${offer.from.city}` }
+              : { en: `New offer ${offer.id} · ${offer.from.city}`, de: `Neue Anfrage ${offer.id} · ${offer.from.city}`, fr: `Nouvelle demande ${offer.id} · ${offer.from.city}`, it: `Nuova richiesta ${offer.id} · ${offer.from.city}` },
             href: `/admin/leads/${offer.id}`,
           }),
         });
@@ -695,7 +695,7 @@ export const useStore = create<Store>()(
             fakeReports: [{ id: `FR-${101 + s.fakeReports.length}`, orderId, reason, status: "open", createdAt: nowIso() }, ...s.fakeReports],
             notifications: notify(s, {
               kind: "report",
-              title: { en: `Fake-lead report from ${partner?.name ?? "partner"}`, de: `Fake-Lead-Meldung von ${partner?.name ?? "Partner"}`, fr: `Signalement de faux lead par ${partner?.name ?? "un partenaire"}`, it: `Segnalazione di lead falso da ${partner?.name ?? "partner"}` },
+              title: { en: `Fake-offer report from ${partner?.name ?? "partner"}`, de: `Meldung einer gefälschten Anfrage von ${partner?.name ?? "Partner"}`, fr: `Signalement de fausse demande par ${partner?.name ?? "un partenaire"}`, it: `Segnalazione di richiesta falsa da ${partner?.name ?? "partner"}` },
               href: "/admin/leads/fake-reports",
             }),
           };
@@ -739,11 +739,11 @@ export const useStore = create<Store>()(
       // offer-form sessions and contact follow-up; v8 the six services, booking types, chosen
       // companies and no-shows; v9 the partner portal flows (onboarding contract, message threads,
       // payouts, service areas); v10 two booking types (same / other person); v11 no-shows removed
-      // (customers only answer a review survey); v12 service-specific request details. Older saves start again from the current seed,
+      // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address. Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 12,
+      version: 13,
       migrate: (persisted, version) => {
-        if (version >= 12) return persisted as Store;
+        if (version >= 13) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

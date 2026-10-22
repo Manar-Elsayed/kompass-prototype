@@ -75,6 +75,7 @@ export function ConfirmationEmail({ offer }: { offer: Offer }) {
     [t("companies"), t("companiesValue", { count: offer.offersWanted })],
   ];
   if (forOther) rows.unshift([t("for"), `${offer.firstName} ${offer.lastName}`]);
+  if (offer.organization) rows.unshift([t("organization"), offer.organization.name]);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-surface text-start shadow-card" aria-label={t("label")}>
