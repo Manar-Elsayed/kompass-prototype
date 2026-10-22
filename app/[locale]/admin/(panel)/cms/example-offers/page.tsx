@@ -73,7 +73,7 @@ export default function ExampleOffersAdmin() {
         subtitle={tm("subtitle")}
         actions={<Button onClick={() => setDraft({ id: "", serviceId: services[0].id, title: same(), route: same(), rooms: "3.5", price: 1200, active: true })}><Plus /> {tm("add")}</Button>}
       />
-      <DataTable data={items} columns={columns} search={(m) => `${m.title.en} ${m.route.en}`} />
+      <DataTable data={items} columns={columns} search={(m) => `${m.title.en} ${m.route.en}`} onRowClick={setDraft} />
       <Dialog open={!!draft} onOpenChange={(v) => !v && setDraft(null)}>
         <DialogContent className="max-w-xl">
           <DialogHeader><DialogTitle>{draft?.id ? t("common.actions.edit") : tm("add")}</DialogTitle></DialogHeader>

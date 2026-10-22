@@ -1,8 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Info, Lock, LockOpen, Star } from "lucide-react";
-import { toast } from "sonner";
+import { Star } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { Partner } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
@@ -12,10 +11,12 @@ import { documentState } from "@/lib/mock/selectors";
 import { DocStateBadge } from "@/components/admin/doc-state";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, Tooltip } from "@/components/ui/controls";
-import { StatusBadge, useConfirm } from "@/components/shared/bits";
+import { Avatar } from "@/components/ui/controls";
+import { StatusBadge } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { PageHeader } from "@/components/admin/ui";
+import { RowActions, actionsColumn } from "@/components/admin/row-actions";
+import { useCompanyActions } from "@/components/admin/company-actions";
 
 export default function PartnersPage() {
   const t = useTranslations();
@@ -28,19 +29,7 @@ export default function PartnersPage() {
   const patch = useStore((s) => s.patch);
   const ratings = usePartnerRatings();
   const serviceMap = useServiceMap();
-  const { confirm, dialog } = useConfirm();
-
-  const toggleBan = (p: Partner) =>
-    confirm({
-      title: t(p.banned ? "admin.partners.unbanTitle" : "admin.partners.banTitle", { name: p.name }),
-      body: t(p.banned ? "admin.partners.unbanBody" : "admin.partners.banBody"),
-      tone: p.banned ? "success" : "danger",
-      confirmLabel: t(p.banned ? "admin.partners.unban" : "admin.partners.ban"),
-      onConfirm: () => {
-        patch("partners", p.id, { banned: !p.banned });
-        toast.success(t("common.toast.updated"));
-      },
-    });
+  const { actionsFor, dialogs } = useCompanyActions();
 
   const columns: ColumnDef<Partner, unknown>[] = [
     {
@@ -94,25 +83,7 @@ export default function PartnersPage() {
       cell: ({ row: { original: p } }) => <DocStateBadge partner={p} withDate />,
     },
     { id: "status", header: t("common.fields.status"), accessorFn: (p) => (p.banned ? "banned" : "active"), cell: (c) => <StatusBadge status={c.getValue() as string} /> },
-    {
-      id: "actions",
-      header: "",
-      enableSorting: false,
-      cell: ({ row: { original: p } }) => (
-        <div className="flex justify-end gap-1">
-          <Tooltip content={t(p.banned ? "admin.partners.unban" : "admin.partners.ban")}>
-            <Button variant="ghost" size="icon-sm" onClick={() => toggleBan(p)} aria-label={t(p.banned ? "admin.partners.unban" : "admin.partners.ban")}>
-              {p.banned ? <Lock className="text-danger" /> : <LockOpen className="text-success" />}
-            </Button>
-          </Tooltip>
-          <Button asChild variant="ghost" size="icon-sm" aria-label={t("common.actions.view")}>
-            <Link href={`/admin/partners/${p.id}`}>
-              <Info />
-            </Link>
-          </Button>
-        </div>
-      ),
-    },
+    actionsColumn<Partner>((p) => <RowActions viewHref={`/admin/partners/${p.id}`} actions={actionsFor(p)} />),
   ];
 
   return (
@@ -136,7 +107,7 @@ export default function PartnersPage() {
           },
         ]}
       />
-      {dialog}
+      {dialogs}
     </>
   );
 }

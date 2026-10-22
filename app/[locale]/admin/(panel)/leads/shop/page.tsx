@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Banknote, Headset, ShoppingCart, Store as StoreIcon, Zap } from "lucide-react";
+import { Banknote, Building2, CheckCircle2, ClipboardList, Headset, RotateCcw, ShoppingCart, Store as StoreIcon, Zap } from "lucide-react";
+import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import type { Order } from "@/lib/types";
 import { formatCHF, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, usePartnerMap, useServiceMap } from "@/lib/mock/hooks";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogTitle, SheetContent } from "@/components/ui/dialog";
 import { Avatar } from "@/components/ui/controls";
 import { StatusBadge } from "@/components/shared/bits";
+import { Button } from "@/components/ui/button";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
+import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 
 export default function ShopPage() {
@@ -24,7 +26,13 @@ export default function ShopPage() {
   const partnerMap = usePartnerMap();
   const serviceMap = useServiceMap();
   const offerMap = Object.fromEntries(offers.map((o) => [o.id, o]));
-  const [open, setOpen] = useState<Order | null>(null);
+  const patch = useStore((s) => s.patch);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const open = orders.find((x) => x.id === openId);
+  const setExecuted = (x: Order, executed: boolean) => {
+    patch("orders", x.id, { executed });
+    toast.success(t(executed ? "admin.rows.markedDone" : "admin.rows.markedNotDone", { id: x.offerId }));
+  };
 
   const shopRev = orders.filter((o) => o.channel === "shop").reduce((a, o) => a + o.price, 0);
   const dynRev = orders.filter((o) => o.channel === "dynamic").reduce((a, o) => a + o.price, 0);
@@ -61,6 +69,22 @@ export default function ShopPage() {
     { id: "price", header: t("common.fields.price"), accessorFn: (o) => o.price, cell: (c) => <span className="font-semibold">{formatCHF(c.getValue() as number, lang)}</span> },
     { id: "coupon", header: t("admin.shop.coupon"), accessorFn: (o) => o.couponCode ?? "", cell: (c) => (c.getValue() ? <Mono>{c.getValue() as string}</Mono> : <span className="text-muted-foreground">–</span>) },
     { id: "date", header: t("common.fields.date"), accessorFn: (o) => o.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDateTime(c.getValue() as string, lang)}</span> },
+    {
+      id: "done",
+      header: t("common.fields.status"),
+      accessorFn: (o) => (o.executed ? 1 : 0),
+      cell: ({ row: { original: x } }) => (x.executed ? <Badge tone="success" dot>{t("admin.shop.executed")}</Badge> : <Badge dot>{t("admin.shop.notExecuted")}</Badge>),
+    },
+    actionsColumn<Order>((x) => (
+      <RowActions
+        onView={() => setOpenId(x.id)}
+        actions={[
+          { label: t(x.executed ? "admin.rows.markNotDone" : "admin.rows.markDone"), icon: x.executed ? <RotateCcw /> : <CheckCircle2 />, onSelect: () => setExecuted(x, !x.executed) },
+          { label: t("admin.rows.openLead"), icon: <ClipboardList />, href: `/admin/leads/${x.offerId}`, separated: true },
+          { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${x.partnerId}` },
+        ]}
+      />
+    )),
   ];
 
   const o = open ? offerMap[open.offerId] : undefined;
@@ -78,25 +102,34 @@ export default function ShopPage() {
         data={orders}
         columns={columns}
         search={(x) => `${x.id} ${x.offerId} ${partnerMap[x.partnerId]?.name}`}
-        onRowClick={setOpen}
+        onRowClick={(x) => setOpenId(x.id)}
         initialSort={[{ id: "date", desc: true }]}
         filters={[
           { id: "channel", label: t("admin.shop.channel"), options: (["shop", "dynamic", "manual"] as const).map((c) => ({ value: c, label: t(`admin.shop.${c}`) })), get: (x) => x.channel },
+          { id: "done", label: t("common.fields.status"), options: [{ value: "yes", label: t("admin.shop.executed") }, { value: "no", label: t("admin.shop.notExecuted") }], get: (x) => (x.executed ? "yes" : "no") },
         ]}
       />
 
-      <Dialog open={!!open} onOpenChange={(v) => !v && setOpen(null)}>
-        <SheetContent className="max-w-lg overflow-y-auto">
+      <DetailSheet
+        wide
+        open={!!open}
+        onOpenChange={(v) => !v && setOpenId(null)}
+        title={<><ShoppingCart className="size-5 text-primary" /> {t("admin.shop.details")}</>}
+        subtitle={open && <Mono>{open.id}</Mono>}
+        footer={
+          open ? (
+            <>
+              <Button asChild variant="outline"><Link href={`/admin/leads/${open.offerId}`}><ClipboardList /> {t("admin.rows.openLead")}</Link></Button>
+              <Button variant={open.executed ? "outline" : "success"} className="flex-1" onClick={() => setExecuted(open, !open.executed)}>
+                {open.executed ? <RotateCcw /> : <CheckCircle2 />} {t(open.executed ? "admin.rows.markNotDone" : "admin.rows.markDone")}
+              </Button>
+            </>
+          ) : undefined
+        }
+      >
           {open && (
-            <div className="space-y-6 p-6">
-              <div>
-                <DialogTitle className="flex items-center gap-2">
-                  <ShoppingCart className="size-5 text-primary" /> {t("admin.shop.details")}
-                </DialogTitle>
-                <p className="mt-1"><Mono>{open.id}</Mono></p>
-              </div>
-              <section className="rounded-xl border p-4">
-                <p className="mb-3 text-sm font-bold text-ink">{t("admin.shop.order")}</p>
+            <>
+              <SheetSection title={t("admin.shop.order")}>
                 <DL
                   items={[
                     { label: t("common.fields.price"), value: formatCHF(open.price, lang) },
@@ -106,7 +139,7 @@ export default function ShopPage() {
                     { label: t("common.fields.status"), value: open.executed ? t("admin.shop.executed") : t("admin.shop.notExecuted") },
                   ]}
                 />
-              </section>
+              </SheetSection>
               {o && (
                 <section className="rounded-xl border p-4">
                   <div className="mb-3 flex items-center justify-between">
@@ -140,10 +173,9 @@ export default function ShopPage() {
                   </div>
                 </section>
               )}
-            </div>
+            </>
           )}
-        </SheetContent>
-      </Dialog>
+      </DetailSheet>
     </>
   );
 }

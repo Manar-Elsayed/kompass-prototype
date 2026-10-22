@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, FilePlus2, MousePointerClick, Phone, ShieldAlert, Users, XCircle } from "lucide-react";
+import { CheckCircle2, FilePlus2, Mail, MousePointerClick, Phone, ShieldAlert, Users, XCircle } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import type { FormSession } from "@/lib/types";
-import { formatNumber, timeAgo } from "@/lib/utils";
+import { formatDateTime, formatNumber, timeAgo } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { dashboardStats, periodRange, type Period } from "@/lib/mock/selectors";
@@ -14,7 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
-import { KpiCard, PageHeader } from "@/components/admin/ui";
+import { DL, KpiCard, PageHeader } from "@/components/admin/ui";
+import { DetailSheet, RowActions, SheetSection } from "@/components/admin/row-actions";
 import { PeriodPicker, currentMonth } from "@/components/admin/period-picker";
 import { Funnel } from "@/components/admin/funnel";
 
@@ -32,6 +33,8 @@ export default function OfferFormInsights() {
   const db = useStore();
   const serviceMap = useServiceMap();
   const [period, setPeriod] = useState<Period>(currentMonth);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const open = db.formSessions.find((x) => x.id === openId);
   const s = useMemo(() => dashboardStats(db, period, visitorsOnDay), [db, period]);
   const { from, to } = periodRange(period);
 
@@ -60,15 +63,17 @@ export default function OfferFormInsights() {
       header: "",
       enableSorting: false,
       cell: ({ row: { original: x } }) => (
-        <div className="flex justify-end gap-1.5">
-          {x.phone && (
-            <Button asChild size="icon-sm" variant="ghost" aria-label={t("call")}>
-              <a href={`tel:${x.phone}`}><Phone /></a>
-            </Button>
-          )}
+        <div className="flex items-center justify-end gap-1.5">
           <Button asChild size="sm" variant="outline">
             <Link href={`/admin/leads/new?session=${x.id}`}><FilePlus2 /> {t("complete")}</Link>
           </Button>
+          <RowActions
+            onView={() => setOpenId(x.id)}
+            actions={[
+              { label: t("call"), icon: <Phone />, onSelect: () => window.open(`tel:${x.phone}`), hidden: !x.phone },
+              { label: tf("email"), icon: <Mail />, onSelect: () => window.open(`mailto:${x.email}`), hidden: !x.email },
+            ]}
+          />
         </div>
       ),
     },
@@ -92,10 +97,54 @@ export default function OfferFormInsights() {
         <Card className="overflow-hidden">
           <CardHeader title={<span className="flex items-center gap-2"><XCircle className="size-4 text-warning" /> {t("needsCompletion")}</span>} description={t("needsCompletionHint")} />
           <div className="mt-4 border-t p-4">
-            <DataTable data={followUp} columns={columns} search={(x) => `${x.name ?? ""} ${x.email ?? ""} ${x.phone ?? ""}`} />
+            <DataTable data={followUp} columns={columns} search={(x) => `${x.name ?? ""} ${x.email ?? ""} ${x.phone ?? ""}`} onRowClick={(x) => setOpenId(x.id)} />
           </div>
         </Card>
       </div>
+      <DetailSheet
+        open={!!open}
+        onOpenChange={(v) => !v && setOpenId(null)}
+        title={open?.name || open?.email || open?.phone || "–"}
+        badge={open && <Badge tone="warning">{ts(`steps.${open.step}`)}</Badge>}
+        subtitle={open && t("leftAgo", { when: timeAgo(open.updatedAt, lang) })}
+        footer={
+          open ? (
+            <>
+              {open.phone && (
+                <Button asChild variant="outline"><a href={`tel:${open.phone}`}><Phone /> {t("call")}</a></Button>
+              )}
+              <Button asChild className="flex-1"><Link href={`/admin/leads/new?session=${open.id}`}><FilePlus2 /> {t("complete")}</Link></Button>
+            </>
+          ) : undefined
+        }
+      >
+        {open && (
+          <>
+            <SheetSection title={t("contact")}>
+              <DL
+                cols={1}
+                items={[
+                  { label: tf("name"), value: open.name || "–" },
+                  { label: tf("email"), value: open.email ? <a href={`mailto:${open.email}`} className="text-primary hover:underline">{open.email}</a> : "–", ltr: true },
+                  { label: tf("phone"), value: open.phone ? <a href={`tel:${open.phone}`} className="text-primary hover:underline">{open.phone}</a> : "–", ltr: true },
+                ]}
+              />
+            </SheetSection>
+            <SheetSection title={t("session")}>
+              <DL
+                items={[
+                  { label: tf("service"), value: open.serviceId ? L(serviceMap[open.serviceId]?.name) : "–" },
+                  { label: t("reached"), value: ts(`steps.${open.step}`) },
+                  { label: t("startedAt"), value: formatDateTime(open.startedAt, lang) },
+                  { label: t("left"), value: formatDateTime(open.updatedAt, lang) },
+                  { label: t("device"), value: t(`devices.${open.device}`) },
+                ]}
+              />
+            </SheetSection>
+            <p className="text-xs text-muted-foreground">{t("completeHint")}</p>
+          </>
+        )}
+      </DetailSheet>
     </>
   );
 }

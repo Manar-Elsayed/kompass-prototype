@@ -287,6 +287,12 @@ export const portal: Built<typeof Def> = {
     topup: "Recharge {ref}",
     refund: "Remboursement (faux lead)",
     quick: "Montants rapides",
+    amount: "Montant",
+    dueHint: {
+      pending: "Kompass vérifie le justificatif sous un jour ouvrable. Le montant est ensuite ajouté à votre portefeuille.",
+      confirmed: "Confirmé : le montant a été ajouté à votre portefeuille.",
+      canceled: "Non accepté. Contactez Kompass si vous pensez qu’il s’agit d’une erreur.",
+    },
   },
   reviews: {
     title: "Avis",

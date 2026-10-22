@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ArrowDownToLine, Check, Clock, Copy, CreditCard, Download, FileText, HandCoins, ImageUp, Landmark, Upload, Wallet } from "lucide-react";
@@ -20,7 +21,8 @@ import { RadioCards } from "@/components/ui/controls";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge } from "@/components/shared/bits";
-import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { DetailSheet, SheetSection } from "@/components/admin/row-actions";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
 import { KOMPASS_IBAN, MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
 import { useCompose } from "@/components/portal/compose";
@@ -60,6 +62,8 @@ function Payments() {
   const [payout, setPayout] = useState(false);
   const [paying, setPaying] = useState<Invoice | null>(null);
   const [doc, setDoc] = useState<MoneyDoc | null>(null);
+  const [dueId, setDueId] = useState<string | null>(null);
+  const due = dues.find((d) => d.id === dueId);
 
   const wanted = params.get("tab");
   useEffect(() => {
@@ -123,13 +127,13 @@ function Payments() {
               <div className="mt-4 divide-y border-t">
                 {myDues.length ? (
                   myDues.map((d) => (
-                    <div key={d.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-sm">
+                    <button key={d.id} onClick={() => setDueId(d.id)} className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-start text-sm transition hover:bg-surface-2/60">
                       <Mono>{d.reference}</Mono>
                       <span className="flex-1 text-muted-foreground">{td(d.method)}</span>
                       <span className="font-bold">{formatCHF(d.amount, lang)}</span>
                       <StatusBadge status={d.status} />
                       <span className="w-24 text-end text-xs text-muted-foreground">{formatDate(d.createdAt, lang)}</span>
-                    </div>
+                    </button>
                   ))
                 ) : (
                   <EmptyState icon={<ImageUp />} title={t("noReceipts")} body={t("noReceiptsBody")} action={<Button variant="outline" size="sm" onClick={() => setUpload(true)}><Upload /> {t("upload")}</Button>} />
@@ -215,6 +219,30 @@ function Payments() {
       {payout && <PayoutDialog onClose={() => setPayout(false)} onDone={() => setTab("payouts")} />}
       {paying && <PayInvoiceDialog invoice={paying} onClose={() => setPaying(null)} />}
       {doc && <MoneyDocDialog doc={doc} onClose={() => setDoc(null)} />}
+      <DetailSheet
+        open={!!due}
+        onOpenChange={(v) => !v && setDueId(null)}
+        title={<Mono className="text-lg">{due?.reference}</Mono>}
+        badge={due && <StatusBadge status={due.status} />}
+        subtitle={due && formatDate(due.createdAt, lang)}
+      >
+        {due && (
+          <>
+            <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-surface-2">
+              <Image src={due.receipt} alt={t("receipt")} fill className="object-contain" sizes="440px" />
+            </div>
+            <SheetSection>
+              <DL
+                items={[
+                  { label: t("amount"), value: <span className="font-bold">{formatCHF(due.amount, lang)}</span> },
+                  { label: td("method"), value: td(due.method) },
+                ]}
+              />
+            </SheetSection>
+            <p className="text-sm text-muted-foreground">{t(`dueHint.${due.status}`)}</p>
+          </>
+        )}
+      </DetailSheet>
     </>
   );
 }

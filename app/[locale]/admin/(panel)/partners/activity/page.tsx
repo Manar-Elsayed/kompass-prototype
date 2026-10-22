@@ -10,6 +10,8 @@ import { inLastDays, refNow } from "@/lib/mock/selectors";
 import { Avatar } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
+import { RowActions, actionsColumn } from "@/components/admin/row-actions";
+import { useCompanyActions } from "@/components/admin/company-actions";
 import { PageHeader } from "@/components/admin/ui";
 
 type Row = Partner & { leads30: number; spend30: number; health: "healthy" | "atRisk" | "dormant"; spark: number[] };
@@ -21,6 +23,7 @@ export default function ActivityPage() {
   const partners = useStore((s) => s.partners).filter((p) => p.status === "approved");
   const orders = useStore((s) => s.orders);
   const now = refNow();
+  const { actionsFor, dialogs } = useCompanyActions();
 
   const rows: Row[] = partners.map((p) => {
     const mine = orders.filter((o) => o.partnerId === p.id);
@@ -59,6 +62,7 @@ export default function ActivityPage() {
     },
     { id: "lastSeen", header: t("common.fields.lastSeen"), accessorFn: (r) => r.lastSeen, cell: (c) => <span className="text-muted-foreground">{timeAgo(c.getValue() as string, lang)}</span> },
     { id: "health", header: t("admin.activity.health"), accessorFn: (r) => r.health, cell: (c) => <Badge dot tone={tone[c.getValue() as Row["health"]]}>{t(`admin.activity.${c.getValue()}`)}</Badge> },
+    actionsColumn<Row>((r) => <RowActions viewHref={`/admin/partners/${r.id}`} actions={actionsFor(r)} />),
   ];
 
   return (
@@ -72,6 +76,7 @@ export default function ActivityPage() {
         onRowClick={(r) => router.push(`/admin/partners/${r.id}`)}
         filters={[{ id: "health", label: t("admin.activity.health"), options: (["healthy", "atRisk", "dormant"] as const).map((h) => ({ value: h, label: t(`admin.activity.${h}`) })), get: (r) => r.health }]}
       />
+      {dialogs}
     </>
   );
 }

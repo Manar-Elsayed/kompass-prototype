@@ -53,17 +53,18 @@ export interface Address {
 }
 
 /**
- * Who books: personal = for themselves; other = for someone else (e.g. a parent); organization = an
- * association or institution books for one of its beneficiaries. The offer's own name / email / phone
- * are always the beneficiary — the person the companies serve; the requester and organization are
- * stored separately because they can differ.
+ * Who the request is for: personal = the same person fills in the form and moves; other = someone
+ * books for another person (a parent, a client of a social service…). The offer's own name / email /
+ * phone are always the person moving — the one the companies serve; the other person's details are
+ * stored separately as the requester.
  */
-export type BookingType = "personal" | "other" | "organization";
+export type BookingType = "personal" | "other";
 export interface Person {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
+  address?: string;
 }
 
 /** A customer reports that the chosen company did not show up; Kompass follows it up. */
@@ -102,9 +103,8 @@ export interface Offer {
   status: LeadStatus;
   flags: VerificationFlag[];
   booking: BookingType;
-  /** Who submitted the request, when it was booked for someone else or by an organization. */
+  /** The other person (who filled in the form) when the request is for someone else. */
   requester?: Person;
-  organization?: { name: string; email: string; phone: string; address?: string };
   /** The company the customer chose to do the job (selling the details doesn't mean it was booked). */
   chosenPartnerId?: ID;
   chosenAt?: string;

@@ -55,6 +55,7 @@ export function DataTable<T>({
   initialSort,
   emptyState,
   dense,
+  initialFilters,
 }: {
   data: T[];
   columns: ColumnDef<T, unknown>[];
@@ -68,10 +69,12 @@ export function DataTable<T>({
   initialSort?: SortingState;
   emptyState?: React.ReactNode;
   dense?: boolean;
+  /** Filter values to start with, e.g. from the URL so a dashboard link opens a filtered list. */
+  initialFilters?: Record<string, string>;
 }) {
   const t = useTranslations("common");
   const [q, setQ] = React.useState("");
-  const [active, setActive] = React.useState<Record<string, string>>({});
+  const [active, setActive] = React.useState<Record<string, string>>(initialFilters ?? {});
   const [sorting, setSorting] = React.useState<SortingState>(initialSort ?? []);
   const [visibility, setVisibility] = React.useState<VisibilityState>({});
   const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize });
@@ -225,6 +228,8 @@ export function DataTable<T>({
               <tr
                 key={row.id}
                 onClick={onRowClick ? (e) => {
+                  // clicks inside menus, selects and dialogs opened from a cell bubble here through their portal
+                  if (!e.currentTarget.contains(e.target as Node)) return;
                   if ((e.target as HTMLElement).closest("button,a,[role=switch],[role=combobox],input,label")) return;
                   onRowClick(row.original);
                 } : undefined}

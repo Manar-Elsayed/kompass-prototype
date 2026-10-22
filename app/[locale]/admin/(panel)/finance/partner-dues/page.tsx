@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Check, CheckCircle2, Clock, Receipt, X } from "lucide-react";
+import { Building2, Check, CheckCircle2, Clock, Receipt, X } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "@/i18n/navigation";
 import type { PartnerDue } from "@/lib/types";
 import { formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
@@ -12,10 +13,10 @@ import { useLang, usePartnerMap } from "@/lib/mock/hooks";
 import { inLastDays } from "@/lib/mock/selectors";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/controls";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusBadge, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
-import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
+import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 
 export default function PartnerDuesPage() {
   const t = useTranslations();
@@ -64,7 +65,7 @@ export default function PartnerDuesPage() {
       header: td("receipt"),
       enableSorting: false,
       cell: ({ row: { original: d } }) => (
-        <button onClick={() => setReceipt(d)} className="group relative block h-10 w-16 overflow-hidden rounded-md border bg-surface-2" aria-label={td("receipt")}>
+        <button onClick={(e) => { e.stopPropagation(); setReceipt(d); }} className="group relative block h-10 w-16 overflow-hidden rounded-md border bg-surface-2" aria-label={td("receipt")}>
           <Image src={d.receipt} alt="" fill className="object-cover transition group-hover:scale-110" sizes="64px" />
         </button>
       ),
@@ -74,17 +75,20 @@ export default function PartnerDuesPage() {
       id: "status",
       header: t("common.fields.status"),
       accessorFn: (d) => d.status,
-      cell: ({ row: { original: d } }) =>
-        d.status === "pending" ? (
-          <div className="flex gap-1.5">
-            <Button size="sm" variant="success" onClick={() => approve(d)}><Check /> {t("common.actions.approve")}</Button>
-            <Button size="icon-sm" variant="danger-soft" onClick={() => cancel(d)} aria-label={t("common.actions.reject")}><X /></Button>
-          </div>
-        ) : (
-          <StatusBadge status={d.status} />
-        ),
+      cell: ({ row: { original: d } }) => <StatusBadge status={d.status} />,
     },
+    actionsColumn<PartnerDue>((d) => (
+      <RowActions
+        onView={() => setReceipt(d)}
+        actions={[
+          { label: t("common.actions.approve"), icon: <Check />, onSelect: () => approve(d), hidden: d.status !== "pending" },
+          { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => cancel(d), hidden: d.status !== "pending" },
+          { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${d.partnerId}`, separated: d.status === "pending" },
+        ]}
+      />
+    )),
   ];
+  const partner = receipt ? partnerMap[receipt.partnerId] : undefined;
 
   return (
     <>
@@ -99,34 +103,57 @@ export default function PartnerDuesPage() {
         columns={columns}
         search={(d) => `${d.id} ${d.reference} ${partnerMap[d.partnerId]?.name}`}
         filters={[{ id: "status", label: t("common.fields.status"), options: (["pending", "confirmed", "canceled"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (d) => d.status }]}
+        onRowClick={setReceipt}
         rowClassName={(d) => (d.status === "pending" ? "bg-warning-soft/25" : undefined)}
       />
 
-      <Dialog open={!!receipt} onOpenChange={(v) => !v && setReceipt(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{td("receipt")} · {receipt?.id}</DialogTitle>
-          </DialogHeader>
-          {receipt && (
+      <DetailSheet
+        wide
+        open={!!receipt}
+        onOpenChange={(v) => !v && setReceipt(null)}
+        title={<Mono className="text-lg">{receipt?.id}</Mono>}
+        badge={receipt && <StatusBadge status={receipt.status} />}
+        subtitle={receipt && `${partner?.name ?? "–"} · ${formatDate(receipt.createdAt, lang)}`}
+        footer={
+          receipt?.status === "pending" ? (
             <>
-              <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-surface-2">
-                <Image src={receipt.receipt} alt="" fill className="object-contain" sizes="640px" />
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-                <span><strong>{partnerMap[receipt.partnerId]?.name}</strong> · {formatCHF(receipt.amount, lang)} · {td(receipt.method)}</span>
-                {receipt.status === "pending" ? (
-                  <div className="flex gap-2">
-                    <Button variant="danger-soft" size="sm" onClick={() => { setReceipt(null); cancel(receipt); }}>{t("common.actions.reject")}</Button>
-                    <Button variant="success" size="sm" onClick={() => { setReceipt(null); approve(receipt); }}>{t("common.actions.approve")}</Button>
-                  </div>
-                ) : (
-                  <StatusBadge status={receipt.status} />
-                )}
-              </div>
+              <Button variant="danger-soft" onClick={() => { setReceipt(null); cancel(receipt); }}><X /> {t("common.actions.reject")}</Button>
+              <Button variant="success" className="flex-1" onClick={() => { setReceipt(null); approve(receipt); }}><Check /> {t("common.actions.approve")}</Button>
             </>
-          )}
-        </DialogContent>
-      </Dialog>
+          ) : undefined
+        }
+      >
+        {receipt && (
+          <>
+            <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-surface-2">
+              <Image src={receipt.receipt} alt={td("receipt")} fill className="object-contain" sizes="560px" />
+            </div>
+            <SheetSection>
+              <DL
+                items={[
+                  { label: t("common.fields.amount"), value: <span className="font-bold">{formatCHF(receipt.amount, lang)}</span> },
+                  { label: td("method"), value: td(receipt.method) },
+                  { label: t("common.fields.reference"), value: <Mono>{receipt.reference}</Mono> },
+                  { label: t("common.fields.company"), value: partner ? <Link href={`/admin/partners/${partner.id}`} className="font-semibold text-primary hover:underline">{partner.name}</Link> : "–" },
+                ]}
+              />
+            </SheetSection>
+            {partner && (
+              <SheetSection title={t("admin.rows.walletImpact")}>
+                <DL
+                  items={[
+                    { label: t("admin.rows.walletNow"), value: formatCHF(partner.wallet, lang) },
+                    {
+                      label: receipt.status === "pending" ? t("admin.rows.walletAfter") : t("common.fields.status"),
+                      value: receipt.status === "pending" ? <span className="font-bold text-success">{formatCHF(partner.wallet + receipt.amount, lang)}</span> : <StatusBadge status={receipt.status} />,
+                    },
+                  ]}
+                />
+              </SheetSection>
+            )}
+          </>
+        )}
+      </DetailSheet>
       {dialog}
     </>
   );

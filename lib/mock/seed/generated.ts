@@ -317,25 +317,20 @@ for (const o of offers) {
 
 /* ---------- who booked, which company the customer chose, no-shows ---------- */
 const brng = createRng(20261025);
-const ORGANIZATIONS = [
-  { name: "Pro Senectute Kanton Zürich", email: "umzug@zh.prosenectute.ch", phone: "+41 58 451 51 00" },
-  { name: "Caritas Bern", email: "sozialberatung@caritas-bern.ch", phone: "+41 31 378 60 00" },
-  { name: "Heilsarmee Basel", email: "basel@heilsarmee.ch", phone: "+41 61 690 70 70" },
-  { name: "Stiftung Wohnhilfe Luzern", email: "info@wohnhilfe-luzern.ch", phone: "+41 41 220 15 15" },
-];
 for (const o of offers) {
-  const r = brng.int(0, 99);
-  if (r < 10) {
+  // about one request in six is filled in by another person (a son for his mother, a social worker…)
+  if (brng.int(0, 99) < 16) {
     o.booking = "other";
     const first = brng.pick([...FIRST_F, ...FIRST_M]);
-    o.requester = { firstName: first, lastName: o.lastName, email: `${first.toLowerCase()}.${o.lastName.toLowerCase().replace(/ü/g, "ue")}@bluewin.ch`, phone: phone2(brng) };
-  } else if (r < 16) {
-    o.booking = "organization";
-    const org = brng.pick(ORGANIZATIONS);
-    const first = brng.pick([...FIRST_F, ...FIRST_M]);
-    const last = brng.pick(LAST);
-    o.organization = org;
-    o.requester = { firstName: first, lastName: last, email: org.email, phone: org.phone };
+    const last = brng.chance(0.6) ? o.lastName : brng.pick(LAST);
+    const city = brng.pick(CITIES);
+    o.requester = {
+      firstName: first,
+      lastName: last,
+      email: `${first.toLowerCase()}.${last.toLowerCase().replace(/ü/g, "ue")}@bluewin.ch`,
+      phone: phone2(brng),
+      address: `${brng.pick(STREETS)} ${brng.int(1, 80)}, ${city.zip} ${city.city}`,
+    };
   }
   // the company that did the job is the one the customer chose
   const done = orders.find((x) => x.offerId === o.id && x.executed);

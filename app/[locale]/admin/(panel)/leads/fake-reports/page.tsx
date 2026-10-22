@@ -1,16 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Building2, ClipboardList, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import type { FakeReport, FakeReportStatus } from "@/lib/types";
-import { cn, formatCHF, formatDate } from "@/lib/utils";
+import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
-import { useLang, usePartnerMap } from "@/lib/mock/hooks";
+import { useL, useLang, usePartnerMap, useServiceMap } from "@/lib/mock/hooks";
+import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { useConfirm } from "@/components/shared/bits";
+import { StatusBadge, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
-import { PageHeader } from "@/components/admin/ui";
+import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
+import { DL, PageHeader } from "@/components/admin/ui";
 
 const FLOW: FakeReportStatus[] = ["open", "testing", "pending", "confirmed", "canceled"];
 const TONE: Record<FakeReportStatus, string> = {
@@ -30,7 +34,10 @@ export default function FakeReportsPage() {
   const patch = useStore((s) => s.patch);
   const cancelOffer = useStore((s) => s.cancelOffer);
   const partnerMap = usePartnerMap();
+  const serviceMap = useServiceMap();
+  const L = useL();
   const { confirm, dialog } = useConfirm();
+  const [openId, setOpenId] = useState<string | null>(null);
   const orderMap = Object.fromEntries(orders.map((o) => [o.id, o]));
   const offerMap = Object.fromEntries(offers.map((o) => [o.id, o]));
 
@@ -83,7 +90,7 @@ export default function FakeReportsPage() {
       header: t("common.fields.status"),
       accessorFn: (r) => r.status,
       cell: ({ row: { original: r } }) => (
-        <div className={cn("w-36 rounded-lg", TONE[r.status])}>
+        <div className={cn("w-36 rounded-lg", TONE[r.status])} onClick={(e) => e.stopPropagation()}>
           <Select
             size="sm"
             className="border-transparent bg-transparent font-semibold text-inherit shadow-none"
@@ -95,7 +102,28 @@ export default function FakeReportsPage() {
         </div>
       ),
     },
+    actionsColumn<FakeReport>((r) => {
+      const order = orderMap[r.orderId];
+      const final = r.status === "confirmed" || r.status === "canceled";
+      return (
+        <RowActions
+          onView={() => setOpenId(r.id)}
+          actions={[
+            { label: t("admin.rows.openLead"), icon: <ClipboardList />, href: order ? `/admin/leads/${order.offerId}` : undefined, hidden: !order },
+            { label: t("admin.rows.openCompany"), icon: <Building2 />, href: order ? `/admin/partners/${order.partnerId}` : undefined, hidden: !order },
+            { label: t("admin.rows.confirmFake"), icon: <ShieldCheck />, onSelect: () => setStatus(r, "confirmed"), hidden: final, separated: true },
+            { label: t("admin.rows.rejectReport"), icon: <XCircle />, tone: "danger", onSelect: () => setStatus(r, "canceled"), hidden: final },
+          ]}
+        />
+      );
+    }),
   ];
+
+  const open = reports.find((r) => r.id === openId);
+  const openOrder = open && orderMap[open.orderId];
+  const openOffer = openOrder && offerMap[openOrder.offerId];
+  const buyers = openOrder ? orders.filter((o) => o.offerId === openOrder.offerId) : [];
+  const openFinal = open && (open.status === "confirmed" || open.status === "canceled");
 
   return (
     <>
@@ -103,9 +131,68 @@ export default function FakeReportsPage() {
       <DataTable
         data={reports}
         columns={columns}
+        onRowClick={(r) => setOpenId(r.id)}
         search={(r) => `${r.id} ${r.reason} ${partnerMap[orderMap[r.orderId]?.partnerId]?.name}`}
         filters={[{ id: "status", label: t("common.fields.status"), options: FLOW.map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (r) => r.status }]}
       />
+      <DetailSheet
+        open={!!open}
+        onOpenChange={(v) => !v && setOpenId(null)}
+        title={<span className="font-mono" dir="ltr">{open?.id}</span>}
+        badge={open && <StatusBadge status={open.status} />}
+        subtitle={open && `${partnerMap[openOrder?.partnerId ?? ""]?.name ?? "–"} · ${formatDateTime(open.createdAt, lang)}`}
+        footer={
+          open && !openFinal ? (
+            <>
+              <Button variant="ghost" className="text-danger hover:bg-danger-soft" onClick={() => setStatus(open, "canceled")}>
+                <XCircle /> {t("admin.rows.rejectReport")}
+              </Button>
+              <Button variant="success" className="flex-1" onClick={() => setStatus(open, "confirmed")}>
+                <ShieldCheck /> {t("admin.rows.confirmFake")}
+              </Button>
+            </>
+          ) : undefined
+        }
+      >
+        {open && (
+          <>
+            <SheetSection title={t("admin.fake.reason")}>
+              <p className="text-sm text-foreground">“{open.reason}”</p>
+            </SheetSection>
+            {openOffer && (
+              <SheetSection title={t("admin.rows.theOffer")}>
+                <DL
+                  items={[
+                    { label: t("admin.leads.id"), value: <Link href={`/admin/leads/${openOffer.id}`} className="font-mono font-semibold text-primary hover:underline">{openOffer.id}</Link> },
+                    { label: t("common.fields.service"), value: L(serviceMap[openOffer.serviceId]?.name) },
+                    { label: t("admin.leads.customer"), value: `${openOffer.firstName} ${openOffer.lastName}` },
+                    { label: t("common.fields.phone"), value: openOffer.phone, ltr: true },
+                    { label: t("common.fields.email"), value: openOffer.email, ltr: true },
+                    { label: t("common.fields.status"), value: <StatusBadge status={openOffer.status} /> },
+                  ]}
+                />
+              </SheetSection>
+            )}
+            <SheetSection title={t("admin.rows.allBuyers", { count: buyers.length })}>
+              <ul className="divide-y">
+                {buyers.map((o) => {
+                  const rep = reports.find((x) => x.orderId === o.id);
+                  return (
+                    <li key={o.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                      <Link href={`/admin/partners/${o.partnerId}`} className="font-semibold text-ink hover:text-primary">{partnerMap[o.partnerId]?.name}</Link>
+                      <span className="flex items-center gap-2">
+                        {rep ? <StatusBadge status={rep.status} /> : <span className="text-xs text-muted-foreground">{t("admin.rows.notReported")}</span>}
+                        <span className="tabular-nums">{formatCHF(o.price, lang)}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {!openFinal && <p className="mt-3 text-xs text-muted-foreground">{t("admin.rows.confirmFakeHint")}</p>}
+            </SheetSection>
+          </>
+        )}
+      </DetailSheet>
       {dialog}
     </>
   );

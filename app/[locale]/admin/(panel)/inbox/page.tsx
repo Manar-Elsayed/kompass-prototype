@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { AlarmClock, ArrowLeft, CheckCheck, Mail, MailOpen, Phone, Reply, Send, Sparkles } from "lucide-react";
+import { AlarmClock, ArrowLeft, CheckCheck, Mail, MailOpen, Phone, Reply, RotateCcw, Send, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { LANGS, type ContactMessage, type FaqQuestion } from "@/lib/types";
 import { cn, formatDateTime, l10n, timeAgo, withFallback } from "@/lib/utils";
@@ -20,6 +20,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge } from "@/components/shared/bits";
 import { PageHeader } from "@/components/admin/ui";
+import { RowActions } from "@/components/admin/row-actions";
+import { useConfirm } from "@/components/shared/bits";
 
 export default function InboxPage() {
   const t = useTranslations();
@@ -32,6 +34,8 @@ export default function InboxPage() {
   const markHandled = useStore((s) => s.markContactHandled);
   const [onlyFollowUp, setOnlyFollowUp] = useState(false);
   const add = useStore((s) => s.add);
+  const remove = useStore((s) => s.remove);
+  const { confirm, dialog } = useConfirm();
   const [tab, setTab] = useState<"messages" | "questions">("messages");
   const [sel, setSel] = useState<string | null>(null);
   const [reply, setReply] = useState("");
@@ -161,13 +165,45 @@ export default function InboxPage() {
                 <p className="font-semibold text-ink">{q.question}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{q.name} · <span dir="ltr">{q.email}</span> · {timeAgo(q.createdAt, lang)}</p>
               </div>
-              {q.answered ? (
-                <StatusBadge status="answered" />
-              ) : (
-                <Button variant="secondary" onClick={() => { setPublish(q); setAnswer({ q: { ...l10n(), en: q.question }, a: l10n() }); }}>
-                  <Sparkles /> {ti("toFaq")}
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {q.answered ? (
+                  <StatusBadge status="answered" />
+                ) : (
+                  <Button variant="secondary" onClick={() => { setPublish(q); setAnswer({ q: { ...l10n(), en: q.question }, a: l10n() }); }}>
+                    <Sparkles /> {ti("toFaq")}
+                  </Button>
+                )}
+                <RowActions
+                  actions={[
+                    { label: t("admin.rows.replyByEmail"), icon: <Mail />, onSelect: () => window.open(`mailto:${q.email}?subject=${encodeURIComponent(q.question)}`) },
+                    {
+                      label: t(q.answered ? "admin.rows.markUnanswered" : "admin.rows.markAnswered"),
+                      icon: q.answered ? <RotateCcw /> : <CheckCheck />,
+                      onSelect: () => {
+                        patch("faqQuestions", q.id, { answered: !q.answered });
+                        toast.success(t("common.toast.updated"));
+                      },
+                    },
+                    {
+                      label: t("common.actions.delete"),
+                      icon: <Trash2 />,
+                      tone: "danger",
+                      separated: true,
+                      onSelect: () =>
+                        confirm({
+                          title: t("common.confirm.title"),
+                          body: q.question,
+                          tone: "danger",
+                          confirmLabel: t("common.actions.delete"),
+                          onConfirm: () => {
+                            remove("faqQuestions", q.id);
+                            toast.success(t("common.toast.deleted"));
+                          },
+                        }),
+                    },
+                  ]}
+                />
+              </div>
             </Card>
           ))}
           {questions.length === 0 && <Card><EmptyState title={t("common.table.noResults")} /></Card>}
@@ -206,6 +242,7 @@ export default function InboxPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {dialog}
     </>
   );
 }

@@ -287,6 +287,12 @@ export const portal: Built<typeof Def> = {
     topup: "Aufladung {ref}",
     refund: "Rückerstattung (Fake-Lead)",
     quick: "Schnellbeträge",
+    amount: "Betrag",
+    dueHint: {
+      pending: "Kompass prüft den Beleg innerhalb eines Arbeitstages. Danach wird der Betrag Ihrem Guthaben gutgeschrieben.",
+      confirmed: "Bestätigt: Der Betrag wurde Ihrem Guthaben gutgeschrieben.",
+      canceled: "Nicht akzeptiert. Kontaktieren Sie Kompass, wenn Sie das für einen Fehler halten.",
+    },
   },
   reviews: {
     title: "Bewertungen",

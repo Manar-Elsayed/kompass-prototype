@@ -111,7 +111,6 @@ export default function RequestPage() {
             <dt className="text-muted-foreground">{t("bookedFor")}</dt>
             <dd className="mt-0.5 font-semibold text-ink">
               {offer.firstName} {offer.lastName}
-              {offer.organization && <span className="font-normal text-muted-foreground"> · {t("via", { name: offer.organization.name })}</span>}
             </dd>
           </div>
         )}

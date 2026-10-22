@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -63,6 +63,14 @@ export default function LeadDetail() {
   const { confirm, dialog } = useConfirm();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
+  // row menus on the leads list link here with #cancel (open the dialog) or #assign (jump to the panel)
+  const hasOffer = !!offer;
+  useEffect(() => {
+    if (!hasOffer) return;
+    const hash = window.location.hash;
+    if (hash === "#cancel") setCancelOpen(true);
+    else if (hash === "#assign") document.getElementById("assign")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [hasOffer]);
 
   if (!offer) {
     return (
@@ -325,7 +333,11 @@ export default function LeadDetail() {
                   <Mail className="size-3.5" /> {tl("notifiedOn", { date: formatDateTime(offer.buyersNotifiedAt, lang) })}
                 </p>
               )}
-              {open && left > 0 && <AssignPanel offer={offer} orders={orders} />}
+              {open && left > 0 && (
+                <div id="assign" className="scroll-mt-24">
+                  <AssignPanel offer={offer} orders={orders} />
+                </div>
+              )}
             </CardBody>
           </Card>
         </div>
@@ -348,14 +360,11 @@ export default function LeadDetail() {
               </div>
               {offer.requester && (
                 <div className="rounded-xl bg-surface-2/70 p-3 text-sm">
-                  <p className="mb-1 text-xs font-semibold text-muted-foreground">{tl(offer.organization ? "bookedByOrg" : "bookedBy")}</p>
-                  {offer.organization && (
-                    <p className="flex items-center gap-1.5 font-semibold text-ink"><Building2 className="size-3.5" /> {offer.organization.name}</p>
-                  )}
+                  <p className="mb-1 text-xs font-semibold text-muted-foreground">{tl("bookedBy")}</p>
                   <p className="font-semibold text-ink">{offer.requester.firstName} {offer.requester.lastName}</p>
                   <a href={`mailto:${offer.requester.email}`} className="block text-muted-foreground hover:text-primary" dir="ltr">{offer.requester.email}</a>
                   <a href={`tel:${offer.requester.phone}`} className="block text-muted-foreground hover:text-primary" dir="ltr">{offer.requester.phone}</a>
-                  {offer.organization?.address && <p className="text-muted-foreground">{offer.organization.address}</p>}
+                  {offer.requester.address && <p className="text-muted-foreground">{offer.requester.address}</p>}
                 </div>
               )}
               <Button asChild size="sm" variant="ghost" className="w-full justify-start">

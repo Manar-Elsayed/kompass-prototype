@@ -31,6 +31,7 @@ export const common = {
     preview: "Preview",
     copy: "Copy",
     open: "Open",
+    more: "More actions",
   },
   table: {
     noResults: "No results",

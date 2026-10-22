@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Eye, Plus } from "lucide-react";
+import { AlertTriangle, Ban, ExternalLink, Plus, RotateCcw, ShieldCheck, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { Offer } from "@/lib/types";
@@ -15,12 +16,23 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/controls";
 import { StatusBadge, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
+import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { Mono, PageHeader } from "@/components/admin/ui";
 
 const STATUSES = ["new", "in_progress", "completed", "expired", "cancelled"] as const;
 
 export default function LeadsPage() {
+  return (
+    <Suspense>
+      <Leads />
+    </Suspense>
+  );
+}
+
+function Leads() {
   const t = useTranslations();
+  // the dashboard to-do links here with ?attention=noshow|review|expiring
+  const attention = useSearchParams().get("attention");
   const L = useL();
   const lang = useLang();
   const router = useRouter();
@@ -28,6 +40,8 @@ export default function LeadsPage() {
   const orders = useStore((s) => s.orders);
   const services = useStore((s) => s.services);
   const patch = useStore((s) => s.patch);
+  const approveOffer = useStore((s) => s.approveOffer);
+  const repostOffer = useStore((s) => s.repostOffer);
   const serviceMap = useServiceMap();
   const { confirm, dialog } = useConfirm();
 
@@ -121,18 +135,45 @@ export default function LeadsPage() {
       cell: ({ row: { original: o } }) =>
         o.status === "in_progress" ? <Switch checked={o.active} onCheckedChange={() => toggleVisible(o)} aria-label={t("admin.leads.visible")} /> : null,
     },
-    {
-      id: "actions",
-      header: "",
-      enableSorting: false,
-      cell: ({ row: { original: o } }) => (
-        <Button asChild variant="ghost" size="icon-sm" aria-label={t("common.actions.view")}>
-          <Link href={`/admin/leads/${o.id}`}>
-            <Eye />
-          </Link>
-        </Button>
-      ),
-    },
+    actionsColumn<Offer>((o) => {
+      const open = o.status === "new" || o.status === "in_progress";
+      const full = (sold[o.id] ?? 0) >= o.offersWanted;
+      return (
+        <RowActions
+          viewHref={`/admin/leads/${o.id}`}
+          actions={[
+            {
+              label: t("admin.leads.detail.approve"),
+              icon: <ShieldCheck />,
+              hidden: o.status !== "new",
+              onSelect: () =>
+                confirm({
+                  title: t("admin.leads.detail.approve"),
+                  body: t("admin.leads.detail.checksFlagged"),
+                  tone: "success",
+                  confirmLabel: t("admin.leads.detail.approve"),
+                  onConfirm: () => {
+                    approveOffer(o.id);
+                    toast.success(t("admin.leads.detail.approved", { id: o.id }));
+                  },
+                }),
+            },
+            {
+              label: t("admin.leads.detail.repost"),
+              icon: <RotateCcw />,
+              hidden: o.status !== "in_progress" || full,
+              onSelect: () => {
+                repostOffer(o.id);
+                toast.success(t("admin.rows.reposted", { id: o.id }));
+              },
+            },
+            { label: t("admin.rows.assignCompany"), icon: <UserPlus />, href: `/admin/leads/${o.id}#assign`, hidden: !open || full },
+            { label: t("admin.leads.detail.customerPage"), icon: <ExternalLink />, href: `/requests/${o.id}` },
+            { label: t("admin.leads.detail.cancel"), icon: <Ban />, tone: "danger", href: `/admin/leads/${o.id}#cancel`, hidden: o.status === "cancelled", separated: true },
+          ]}
+        />
+      );
+    }),
   ];
 
   return (
@@ -150,6 +191,7 @@ export default function LeadsPage() {
       />
       <DataTable
         data={offers}
+        initialFilters={attention ? { attention } : undefined}
         columns={columns}
         search={(o) => `${o.id} ${o.firstName} ${o.lastName} ${o.email} ${o.from.city} ${o.to.city} ${o.from.zip}`}
         searchPlaceholder={t("admin.shell.search")}
@@ -165,12 +207,6 @@ export default function LeadsPage() {
               { value: "expiring", label: t("admin.leads.expiringSoon") },
             ],
             get: (o) => (o.noShow && o.noShow.status !== "resolved" ? "noshow" : o.status === "new" ? "review" : isExpiringSoon(o) ? "expiring" : ""),
-          },
-          {
-            id: "booking",
-            label: t("site.booking.who"),
-            options: (["personal", "other", "organization"] as const).map((b) => ({ value: b, label: t(`site.booking.${b}`) })),
-            get: (o) => o.booking,
           },
           { id: "service", label: t("common.fields.service"), options: services.map((s) => ({ value: s.id, label: L(s.name) })), get: (o) => o.serviceId },
           { id: "lang", label: t("common.fields.language"), options: ["de", "en", "fr", "it"].map((l) => ({ value: l, label: t(`common.lang.${l}`) })), get: (o) => o.lang },
