@@ -283,7 +283,7 @@ function SpendChart() {
   const total = data.reduce((a, d) => a + d.spent, 0);
   return (
     <Card>
-      <CardHeader title={t("chartTitle")} description={t("chartSub", { leads: data.reduce((a, d) => a + d.leads, 0), amount: formatCHF(total, lang) })} />
+      <CardHeader title={t("chartTitle")} description={t("chartSub", { offers: data.reduce((a, d) => a + d.leads, 0), amount: formatCHF(total, lang) })} />
       <CardBody>
         <div className="h-48" dir="ltr">
           <ResponsiveContainer width="100%" height="100%">

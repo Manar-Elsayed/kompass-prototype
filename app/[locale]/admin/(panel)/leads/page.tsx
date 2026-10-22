@@ -154,6 +154,7 @@ function Leads() {
       return (
         <RowActions
           viewHref={`/admin/leads/${o.id}`}
+          viewLabel={t("admin.leads.viewOffer")}
           actions={[
             {
               label: t("admin.leads.detail.approve"),

@@ -7,23 +7,12 @@ import type { Offer, Service } from "./types";
 export type JobKind = "move" | "moveClean" | "cleaning" | "piano" | "storage" | "disposal";
 export const JOB_KINDS: readonly JobKind[] = ["move", "moveClean", "cleaning", "piano", "storage", "disposal"];
 
-export type JobExtra =
-  | "packing"
-  | "assembly"
-  | "heavyItems"
-  | "parkingPermit"
-  | "handoverGuarantee"
-  | "windows"
-  | "balcony"
-  | "cellarAttic"
-  | "appliances"
-  | "broomClean";
 export type PropertyType = "flat" | "house" | "office";
 export type CleaningType = "endOfTenancy" | "deepClean" | "regular";
 export type Instrument = "upright" | "grand" | "digital";
-export type JobAmount = "fewItems" | "boxes" | "oneRoom" | "rooms" | "home";
+export type JobAmount = "fewItems" | "boxes" | "oneRoom" | "rooms" | "home" | "other";
 export type StorageDuration = "under1" | "1to3" | "3to6" | "6to12" | "over12" | "unsure";
-export type DisposalItem = "furniture" | "household" | "electronics" | "garden";
+export type DisposalItem = "furniture" | "household" | "electronics" | "garden" | "other";
 
 /** The job-specific answers of a request (only the ones its service asks for are set). */
 export interface JobDetails {
@@ -38,7 +27,8 @@ export interface JobDetails {
   amount?: JobAmount;
   duration?: StorageDuration;
   items?: DisposalItem[];
-  extras?: JobExtra[];
+  /** What the customer described when they chose "Other" (storage or disposal). */
+  otherNote?: string;
 }
 
 /** Which questions each kind of job asks. */
@@ -56,23 +46,22 @@ export interface JobForm {
   amounts?: JobAmount[];
   duration?: boolean;
   items?: boolean;
-  extras: JobExtra[];
 }
 
 export const JOB_FORMS: Record<JobKind, JobForm> = {
-  move: { to: true, rooms: true, flexible: true, extras: ["packing", "assembly", "heavyItems", "parkingPermit"] },
-  moveClean: { to: true, rooms: true, flexible: true, cleaningDate: true, extras: ["packing", "assembly", "handoverGuarantee", "windows"] },
-  cleaning: { to: false, rooms: false, property: true, cleaningType: true, extras: ["windows", "balcony", "cellarAttic", "appliances"] },
-  piano: { to: true, rooms: false, instrument: true, extras: [] },
-  storage: { to: false, rooms: false, amounts: ["boxes", "oneRoom", "rooms", "home"], duration: true, extras: ["packing"] },
-  disposal: { to: false, rooms: false, items: true, amounts: ["fewItems", "oneRoom", "rooms", "home"], extras: ["cellarAttic", "broomClean"] },
+  move: { to: true, rooms: true, flexible: true },
+  moveClean: { to: true, rooms: true, flexible: true, cleaningDate: true },
+  cleaning: { to: false, rooms: false, property: true, cleaningType: true },
+  piano: { to: true, rooms: false, instrument: true },
+  storage: { to: false, rooms: false, amounts: ["boxes", "oneRoom", "rooms", "home", "other"], duration: true },
+  disposal: { to: false, rooms: false, items: true, amounts: ["fewItems", "oneRoom", "rooms", "home", "other"] },
 };
 
 export const PROPERTY_TYPES: readonly PropertyType[] = ["flat", "house", "office"];
 export const CLEANING_TYPES: readonly CleaningType[] = ["endOfTenancy", "deepClean", "regular"];
 export const INSTRUMENTS: readonly Instrument[] = ["upright", "grand", "digital"];
 export const DURATIONS: readonly StorageDuration[] = ["under1", "1to3", "3to6", "6to12", "over12", "unsure"];
-export const DISPOSAL_ITEMS: readonly DisposalItem[] = ["furniture", "household", "electronics", "garden"];
+export const DISPOSAL_ITEMS: readonly DisposalItem[] = ["furniture", "household", "electronics", "garden", "other"];
 
 export const jobKind = (svc?: Pick<Service, "kind"> | null): JobKind => svc?.kind ?? "move";
 
