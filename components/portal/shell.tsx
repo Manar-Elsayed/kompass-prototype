@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, ChevronDown, ExternalLink, LayoutDashboard, LogOut, Menu, Repeat, ShieldOff, ShoppingBag, Star, Store as StoreIcon, UserCog, Wallet, ClipboardCheck } from "lucide-react";
+import { AlertTriangle, ChevronDown, ExternalLink, LayoutDashboard, LogOut, Menu, MessageSquare, Repeat, ShieldOff, ShoppingBag, Star, Store as StoreIcon, UserCog, Wallet, ClipboardCheck } from "lucide-react";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
-import { useCurrentPartner, useHydrated, useLang } from "@/lib/mock/hooks";
-import { availableLeads, canBuyLeads, documentState } from "@/lib/mock/selectors";
+import { useCompanyMedia, useCurrentPartner, useHydrated, useLang } from "@/lib/mock/hooks";
+import { availableLeads, canBuyLeads, documentState, leadOutcome } from "@/lib/mock/selectors";
 import type { DocKey } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/controls";
@@ -23,12 +23,15 @@ import {
 import { Logo } from "@/components/shared/bits";
 import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 import { PrototypeDock } from "@/components/shared/prototype-dock";
+import { NotificationBell } from "./feed";
+import { useCompose } from "./compose";
 
 const NAV = [
   { key: "dashboard", href: "/portal", icon: LayoutDashboard },
   { key: "shop", href: "/portal/shop", icon: ShoppingBag },
   { key: "leads", href: "/portal/leads", icon: ClipboardCheck },
   { key: "payments", href: "/portal/payments", icon: Wallet },
+  { key: "messages", href: "/portal/messages", icon: MessageSquare },
   { key: "reviews", href: "/portal/reviews", icon: Star },
   { key: "profile", href: "/portal/profile", icon: UserCog },
 ] as const;
@@ -41,13 +44,17 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileNav, setMobileNav] = useState(false);
+  const t = useTranslations("portal.shell");
 
+  // applicants (and declined companies) see their onboarding status instead of the portal
+  const onboarding = !!partner && partner.status !== "approved";
   useEffect(() => {
     if (hydrated && (!session || !partner)) router.replace("/portal/login");
-  }, [hydrated, session, partner, router]);
+    else if (hydrated && onboarding) router.replace("/portal/onboarding");
+  }, [hydrated, session, partner, onboarding, router]);
   useEffect(() => setMobileNav(false), [pathname]);
 
-  if (!hydrated || !partner) {
+  if (!hydrated || !partner || onboarding) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="size-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
@@ -62,7 +69,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
       </aside>
       <Dialog open={mobileNav} onOpenChange={setMobileNav}>
         <SheetContent side="start" className="max-w-[280px] p-0">
-          <DialogTitle className="sr-only">Menu</DialogTitle>
+          <DialogTitle className="sr-only">{t("menu")}</DialogTitle>
           <Sidebar />
         </SheetContent>
       </Dialog>
@@ -82,9 +89,14 @@ function Sidebar() {
   const partner = useCurrentPartner()!;
   const offers = useStore((s) => s.offers);
   const orders = useStore((s) => s.orders);
+  const fakeReports = useStore((s) => s.fakeReports);
+  const refunds = useStore((s) => s.refunds);
+  const messages = useStore((s) => s.messages);
+  const { logo } = useCompanyMedia(partner.id);
   const available = availableLeads({ offers, orders }, partner).length;
-  const openLeads = orders.filter((o) => o.partnerId === partner.id && !o.executed).length;
-  const badges: Partial<Record<(typeof NAV)[number]["key"], number>> = { shop: available, leads: openLeads };
+  const openLeads = orders.filter((o) => o.partnerId === partner.id && leadOutcome({ offers, fakeReports, refunds }, o).group === "open").length;
+  const unread = messages.filter((m) => m.partnerId === partner.id && m.from === "kompass" && !m.readAt).length;
+  const badges: Partial<Record<(typeof NAV)[number]["key"], number>> = { shop: available, leads: openLeads, messages: unread };
   const active = (href: string) => (href === "/portal" ? pathname === "/portal" : pathname.startsWith(href));
 
   return (
@@ -95,7 +107,7 @@ function Sidebar() {
       </div>
       <div className="m-3 rounded-xl bg-surface-2 p-3">
         <div className="flex items-center gap-3">
-          <Avatar name={partner.name} square className="size-10" />
+          <Avatar name={partner.name} src={logo?.url} square className="size-10" />
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-ink">{partner.name}</p>
             <p className="truncate text-xs text-muted-foreground">{partner.city} · {partner.canton}</p>
@@ -146,7 +158,7 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-surface/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
-      <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenu} aria-label="Menu">
+      <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenu} aria-label={t("shell.menu")}>
         <Menu className="size-5" />
       </Button>
       <Link href="/portal" className="lg:hidden"><Logo className="h-6" /></Link>
@@ -158,6 +170,7 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
           <Link href="/portal/shop"><StoreIcon /> {t("nav.shop")}</Link>
         </Button>
         <LocaleSwitcher className="hidden md:inline-flex" />
+        <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 rounded-lg p-1 pe-2 transition hover:bg-muted">
@@ -188,7 +201,7 @@ function StatusBanner() {
   const tp = useTranslations("admin.partners");
   const lang = useLang();
   const partner = useCurrentPartner()!;
-  const email = useStore((s) => s.config.supportEmail);
+  const { compose, dialog } = useCompose();
   const docs = documentState(partner);
   const names = (keys: DocKey[]) => keys.map((k) => tp(k)).join(", ");
   let tone = "";
@@ -214,10 +227,11 @@ function StatusBanner() {
       <Icon className="size-4 shrink-0" />
       <span className="flex-1">{text}</span>
       {partner.banned ? (
-        <a href={`mailto:${email}`} className="underline underline-offset-2">{t("support")}</a>
+        <button className="underline underline-offset-2" onClick={() => compose({ topic: "general", subject: t("supportSubject"), openThread: true })}>{t("support")}</button>
       ) : (
-        <Link href="/portal/profile" className="underline underline-offset-2">{t("updateDocs")}</Link>
+        <Link href="/portal/profile?tab=documents" className="underline underline-offset-2">{t("updateDocs")}</Link>
       )}
+      {dialog}
     </div>
   );
 }

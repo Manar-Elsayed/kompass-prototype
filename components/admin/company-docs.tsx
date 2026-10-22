@@ -24,8 +24,10 @@ const fromInput = (v: string) => (v ? new Date(`${v}T12:00:00`).toISOString() : 
  * The three required documents with their file, check status and expiry. Admin can accept / reject an
  * upload, set the expiry and upload a replacement; a company can upload a new version, which waits
  * for Kompass to check it. Leads can be bought only while all three are checked and unexpired.
+ * During onboarding the portal lists only the documents the applicant uploads (`keys`), without the
+ * "blocked" warning, since the company can't buy leads yet anyway.
  */
-export function CompanyDocuments({ partner, as }: { partner: Partner; as: "admin" | "company" }) {
+export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: { partner: Partner; as: "admin" | "company"; keys?: readonly DocKey[]; onboarding?: boolean }) {
   const t = useTranslations("admin.partners");
   const td = useTranslations("admin.partners.docs");
   const lang = useLang();
@@ -36,9 +38,9 @@ export function CompanyDocuments({ partner, as }: { partner: Partner; as: "admin
 
   return (
     <div>
-      {!state.ok && <p className="mb-3 rounded-lg bg-danger-soft/50 px-3 py-2 text-sm font-medium text-danger">{td("blocked")}</p>}
+      {!state.ok && !onboarding && <p className="mb-3 rounded-lg bg-danger-soft/50 px-3 py-2 text-sm font-medium text-danger">{td("blocked")}</p>}
       <ul className="space-y-2">
-        {DOC_KEYS.map((key) => {
+        {keys.map((key) => {
           const d = partner.documents[key];
           const exp = d?.expiresAt ? Date.parse(d.expiresAt) : undefined;
           const expired = exp !== undefined && exp < refNow();

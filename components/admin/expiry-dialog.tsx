@@ -23,7 +23,7 @@ export function ExpiryDialog({
   current?: string;
   onSave: (iso: string) => void;
   title?: string;
-  body?: string;
+  body?: React.ReactNode;
   confirmLabel?: string;
 }) {
   const t = useTranslations();

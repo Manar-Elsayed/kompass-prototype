@@ -10,6 +10,7 @@ import type { LeadStatus } from "@/lib/types";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useHydrated, useL, useLang, usePartnerRatings } from "@/lib/mock/hooks";
+import { CompanyLogo } from "@/components/shared/company-logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
@@ -127,7 +128,7 @@ export default function RequestPage() {
               const r = ratings[p.id];
               return (
                 <li key={p.id} className={cn("flex flex-col gap-3 p-4 sm:flex-row sm:items-center", isChosen && "bg-success-soft/40")}>
-                  <Avatar name={p.name} square className="size-11 rounded-xl" />
+                  <CompanyLogo partnerId={p.id} name={p.name} className="size-11 rounded-xl" />
                   <div className="min-w-0 flex-1">
                     <p className="flex flex-wrap items-center gap-2 font-semibold text-ink">
                       {p.name}

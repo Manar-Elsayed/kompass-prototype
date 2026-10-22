@@ -6,7 +6,8 @@ import { Link } from "@/i18n/navigation";
 import { SearchX } from "lucide-react";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL } from "@/lib/mock/hooks";
-import { availableLeads } from "@/lib/mock/selectors";
+import { availableLeads, CANTONS, partnerCantons } from "@/lib/mock/selectors";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -26,16 +27,21 @@ export default function LeadShop() {
   const canBuy = useCanBuy();
   const tsh = useTranslations("portal.shell");
   const [svc, setSvc] = useState("all");
-  const [canton, setCanton] = useState("all");
+  const [pickedCanton, setCanton] = useState<string | null>(null);
   const [sort, setSort] = useState("newest");
 
   const all = useMemo(() => availableLeads({ offers, orders }, partner), [offers, orders, partner]);
   const cantonOf = (zip: string) => CITIES.find((c) => c.zip === zip)?.canton ?? "";
   const cantons = [...new Set(all.map((x) => cantonOf(x.offer.from.zip)).filter(Boolean))].sort();
+  // "my area" = the cantons the company set in its profile (moves starting or ending there)
+  const area = partnerCantons(partner);
+  const inArea = (x: (typeof all)[number]) => area.includes(cantonOf(x.offer.from.zip)) || area.includes(cantonOf(x.offer.to.zip));
+  // start on "my area" when it has leads, otherwise show everything rather than an empty shop
+  const canton = pickedCanton ?? (all.some(inArea) ? "mine" : "all");
 
   const list = all
     .filter((x) => svc === "all" || x.offer.serviceId === svc)
-    .filter((x) => canton === "all" || cantonOf(x.offer.from.zip) === canton)
+    .filter((x) => canton === "all" || (canton === "mine" ? inArea(x) : cantonOf(x.offer.from.zip) === canton))
     .sort((a, b) => {
       if (sort === "date") return a.offer.executionDate.localeCompare(b.offer.executionDate);
       if (sort === "slots") return a.offer.offersWanted - a.sold - (b.offer.offersWanted - b.sold);
@@ -47,12 +53,12 @@ export default function LeadShop() {
       <PageHeader title={t("title")} subtitle={t("subtitle")} actions={<Badge tone="accent" className="text-sm">{list.length}</Badge>} />
       <Card className="mb-4 grid gap-2 p-3 sm:grid-cols-3">
         <Select value={svc} onValueChange={setSvc} options={[{ value: "all", label: t("allServices") }, ...services.filter((s) => partner.serviceIds.includes(s.id)).map((s) => ({ value: s.id, label: L(s.name) }))]} />
-        <Select value={canton} onValueChange={setCanton} options={[{ value: "all", label: t("allCantons") }, ...cantons.map((c) => ({ value: c, label: c }))]} />
+        <Select value={canton} onValueChange={setCanton} options={[{ value: "mine", label: t("myArea", { cantons: area.join(", ") }) }, { value: "all", label: t("allCantons") }, ...cantons.map((c) => ({ value: c, label: `${c} · ${CANTONS[c] ?? c}` }))]} />
         <Select value={sort} onValueChange={setSort} options={[{ value: "newest", label: t("sortNewest") }, { value: "date", label: t("sortDate") }, { value: "slots", label: t("sortSlots") }]} />
       </Card>
       {!canBuy && !partner.banned && (
         <p className="mb-4 rounded-lg bg-danger-soft/50 px-3 py-2 text-sm font-medium text-danger">
-          {t("documents")} <Link href="/portal/profile" className="underline underline-offset-2">{tsh("updateDocs")}</Link>
+          {t("documents")} <Link href="/portal/profile?tab=documents" className="underline underline-offset-2">{tsh("updateDocs")}</Link>
         </p>
       )}
       {list.length ? (
@@ -62,7 +68,14 @@ export default function LeadShop() {
           ))}
         </div>
       ) : (
-        <Card><EmptyState icon={<SearchX />} title={t("empty")} body={t("emptyHint")} /></Card>
+        <Card>
+          <EmptyState
+            icon={<SearchX />}
+            title={t("empty")}
+            body={canton === "mine" ? t("emptyArea") : t("emptyHint")}
+            action={canton === "mine" && all.length > 0 ? <Button variant="outline" size="sm" onClick={() => setCanton("all")}>{t("showAll", { count: all.length })}</Button> : undefined}
+          />
+        </Card>
       )}
     </>
   );

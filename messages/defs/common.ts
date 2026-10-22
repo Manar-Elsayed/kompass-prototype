@@ -67,6 +67,7 @@ export const common = {
     due: "Due",
     paid: "Paid",
     overdue: "Overdue",
+    requested: "Requested",
   },
   form: {
     required: "This field is required",

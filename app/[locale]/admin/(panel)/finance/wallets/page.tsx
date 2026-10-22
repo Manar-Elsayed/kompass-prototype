@@ -33,7 +33,8 @@ export default function WalletsPage() {
   const [topUp, setTopUp] = useState<string | null>(null);
   const [credit, setCredit] = useState<string | null>(null);
 
-  const db = useMemo(() => ({ orders, dues, topups, refunds, invoices, partners }), [orders, dues, topups, refunds, invoices, partners]);
+  const payouts = useStore((s) => s.payouts);
+  const db = useMemo(() => ({ orders, dues, topups, refunds, invoices, partners, payouts }), [orders, dues, topups, refunds, invoices, partners, payouts]);
   const rows: Row[] = useMemo(() => partners.filter((p) => p.status === "approved").map((p) => ({ ...p, ...walletLedger(db, p.id) })), [partners, db]);
   const total = rows.reduce((a, r) => a + r.wallet, 0);
   const topped30 =

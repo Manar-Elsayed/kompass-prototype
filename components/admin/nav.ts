@@ -70,6 +70,7 @@ export const NAV: NavGroup[] = [
     items: [
       { key: "partnerDues", href: "/admin/finance/partner-dues", perm: "finance", badge: (s) => s.dues.filter((d) => d.status === "pending").length },
       { key: "wallets", href: "/admin/finance/wallets", perm: "finance" },
+      { key: "payouts", href: "/admin/finance/payouts", perm: "finance", badge: (s) => s.payouts.filter((p) => p.status === "requested").length },
       { key: "invoices", href: "/admin/finance/invoices", perm: "finance", badge: (s) => s.invoices.filter((i) => i.status === "due" && Date.parse(i.dueAt) < Date.now()).length },
       { key: "refunds", href: "/admin/finance/refunds", perm: "finance", badge: (s) => s.refunds.filter((r) => r.status === "pending").length },
       { key: "coupons", href: "/admin/finance/coupons", perm: "finance" },

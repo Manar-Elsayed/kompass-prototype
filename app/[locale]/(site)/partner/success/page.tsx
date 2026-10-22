@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Check, CheckCircle2, ExternalLink } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, ExternalLink } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,9 @@ export default function PartnerSuccessPage() {
 function SuccessContent() {
   const t = useTranslations("site.partner");
   const tn = useTranslations("site.nav");
-  const name = useSearchParams().get("name") ?? "";
+  const params = useSearchParams();
+  const name = params.get("name") ?? "";
+  const id = params.get("id");
   const steps = [t("timeline1"), t("timeline2"), t("timeline3"), t("timeline4")];
 
   return (
@@ -47,6 +49,13 @@ function SuccessContent() {
           <Button asChild variant="outline">
             <Link href="/">{tn("home")}</Link>
           </Button>
+          {id && (
+            <Button asChild>
+              <Link href={`/portal/login?as=${id}`}>
+                {t("trackApplication")} <ArrowRight />
+              </Link>
+            </Button>
+          )}
           <Button asChild variant="secondary">
             <Link href="/admin/partners/applications">
               <ExternalLink /> {t("reviewInAdmin")}

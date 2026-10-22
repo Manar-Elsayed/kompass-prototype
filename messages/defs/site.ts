@@ -106,6 +106,8 @@ export const site = {
     togetherTitle: "Get an offer from {name}",
     togetherBody: "Submit one request and {name} plus up to 4 other verified companies will send you offers.",
     verifiedReviews: "Only customers who booked this company through Kompass can review it.",
+    photos: "Photos",
+    photoAlt: "Photo from {name}",
   },
   blogs: {
     latest: "Latest articles",
@@ -174,6 +176,7 @@ export const site = {
     timeline3: "Contract signed",
     timeline4: "Start buying leads",
     reviewInAdmin: "Review it in the admin",
+    trackApplication: "Track your application",
   },
   review: {
     title: "Share your experience",
