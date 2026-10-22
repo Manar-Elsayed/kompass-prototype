@@ -14,8 +14,10 @@ import type {
   Notification,
   Offer,
   Order,
+  MessageTopic,
   Partner,
   PartnerDue,
+  Payout,
   Invoice,
   PayMethod,
   Refund,
@@ -24,7 +26,7 @@ import type {
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { createSeed } from "./seed";
-import { documentState, isPurchasable, verificationFlags } from "./selectors";
+import { documentState, isPurchasable, MIN_PAYOUT, verificationFlags, withdrawable } from "./selectors";
 
 type Collections = {
   [K in keyof DB as DB[K] extends { id: string }[] ? K : never]: DB[K];
@@ -47,7 +49,10 @@ interface Actions {
   /* cross-surface flows */
   submitOffer: (input: Omit<Offer, "id" | "createdAt" | "status" | "active" | "ip" | "device" | "source" | "flags" | "cancelReason" | "cancelledAt" | "verifiedAt" | "repostedAt" | "buyersNotifiedAt" | "chosenPartnerId" | "chosenAt" | "noShow"> & { source?: Offer["source"] }) => Offer;
   registerPartner: (input: Omit<Partner, "id" | "slug" | "status" | "banned" | "featured" | "wallet" | "documents" | "lastSeen" | "createdAt">) => Partner;
-  decideApplication: (id: string, decision: "contract_sent" | "approved" | "rejected", expiresAt?: string) => void;
+  /** Approving keeps what the company uploaded and marks it checked; rejecting records the reason it is shown. */
+  decideApplication: (id: string, decision: "contract_sent" | "approved" | "rejected", expiresAt?: string, reason?: string) => void;
+  /** Applicant signs the partnership contract in the portal; Kompass then checks it with the other documents. */
+  signContract: (partnerId: string, name: string) => void;
   decideDue: (id: string, status: "confirmed" | "canceled") => void;
   /** Admin-issued refund: recorded as refunded straight away and applied to the wallet. */
   issueRefund: (input: Pick<Refund, "partnerId" | "amount" | "reason" | "orderId" | "note">) => Refund;
@@ -57,16 +62,27 @@ interface Actions {
   /** Pay later: credit the wallet now and issue an invoice due in `termDays`. */
   addCredit: (input: { partnerId: string; amount: number; termDays: number; note: string; byUserId?: string }) => Invoice;
   markInvoicePaid: (id: string, payMethod: PayMethod, reference: string) => void;
+  /** Company pays a credit invoice by card / TWINT in the portal. */
+  payInvoiceOnline: (id: string, payMethod: "card" | "twint") => void;
+  /** Company asks for unused wallet money to be paid to its bank account (Kompass approves). */
+  requestPayout: (partnerId: string, amount: number) => { ok: true; payout: Payout } | { ok: false; error: "minimum" | "available" };
+  /** Paid takes the amount out of the wallet; rejected leaves the wallet as it was. */
+  decidePayout: (id: string, status: "paid" | "rejected", reference: string, byUserId?: string) => void;
 
   /* company documents, contact, regions */
   /** Company uploads → waits for Kompass to check it; admin uploads → valid straight away. */
   uploadDocument: (partnerId: string, key: DocKey, file: string, expiresAt: string | undefined, by: "company" | "admin") => void;
   reviewDocument: (partnerId: string, key: DocKey, approve: boolean, expiresAt?: string) => void;
   setDocumentExpiry: (partnerId: string, key: DocKey, expiresAt: string) => void;
-  sendCompanyMessage: (input: Pick<CompanyMessage, "partnerId" | "subject" | "body" | "channel" | "byUserId">) => void;
-  markMessagesRead: (partnerId: string) => void;
-  /** Company asks Kompass to change details it can't edit itself; lands in the admin inbox. */
-  requestProfileChange: (partnerId: string, message: string) => void;
+  /** Kompass starts a conversation with a company. */
+  sendCompanyMessage: (input: Pick<CompanyMessage, "partnerId" | "subject" | "body" | "channel" | "byUserId"> & { topic?: MessageTopic }) => void;
+  /**
+   * A message in a thread, or a new thread when `threadId` is missing. Company messages notify
+   * admin; that is also how a company asks to change details it can't edit itself (topic "profile").
+   */
+  sendMessage: (input: { partnerId: string; from: CompanyMessage["from"]; body: string; threadId?: string; subject?: string; topic?: MessageTopic; byUserId?: string }) => CompanyMessage;
+  /** The reader has seen every message the other side wrote in this thread. */
+  markThreadRead: (threadId: string, reader: CompanyMessage["from"]) => void;
   setNominations: (canton: string, partnerIds: string[]) => void;
   submitReview: (input: Pick<Review, "target" | "name" | "email" | "stars" | "comment" | "offerId">) => void;
   /** Customer, from the request link: the company they booked among those that bought the request. */
@@ -254,17 +270,18 @@ export const useStore = create<Store>()(
         return partner;
       },
 
-      decideApplication: (id, decision, expiresAt) =>
+      decideApplication: (id, decision, expiresAt, reason) =>
         set((s) => ({
           partners: s.partners.map((p) =>
             p.id === id
               ? {
                   ...p,
                   status: decision,
+                  rejectionReason: decision === "rejected" ? reason?.trim() || undefined : undefined,
                   documents:
                     decision === "approved"
                       ? {
-                          contract: { file: "contract-signed.pdf", uploadedAt: nowIso(), status: "valid", expiresAt },
+                          contract: { file: "contract-signed.pdf", uploadedAt: p.contractSignedAt ?? nowIso(), ...p.documents.contract, status: "valid", expiresAt },
                           insurance: { file: "insurance.pdf", uploadedAt: nowIso(), ...p.documents.insurance, status: "valid", expiresAt: p.documents.insurance?.expiresAt ?? inDays(365) },
                           register: { file: "hr-extract.pdf", uploadedAt: nowIso(), ...p.documents.register, status: "valid", expiresAt: p.documents.register?.expiresAt ?? inDays(365) },
                         }
@@ -273,6 +290,25 @@ export const useStore = create<Store>()(
               : p,
           ),
         })),
+
+      signContract: (partnerId, name) =>
+        set((s) => {
+          const at = nowIso();
+          const partner = s.partners.find((p) => p.id === partnerId);
+          if (!partner || partner.status !== "contract_sent") return {};
+          return {
+            partners: s.partners.map((p) =>
+              p.id === partnerId
+                ? { ...p, contractSignedAt: at, contractSignedBy: name.trim(), documents: { ...p.documents, contract: { file: "contract-signed.pdf", uploadedAt: at, status: "pending_review" } } }
+                : p,
+            ),
+            notifications: notify(s, {
+              kind: "application",
+              title: { en: `Contract signed: ${partner.name}`, de: `Vertrag unterschrieben: ${partner.name}`, fr: `Contrat signé : ${partner.name}`, it: `Contratto firmato: ${partner.name}` },
+              href: "/admin/partners/applications",
+            }),
+          };
+        }),
 
       issueRefund: (input) => {
         const at = nowIso();
@@ -317,6 +353,49 @@ export const useStore = create<Store>()(
           invoices: s.invoices.map((i) => (i.id === id && i.status === "due" ? { ...i, status: "paid", paidAt: nowIso(), paidMethod: payMethod, paidReference: reference } : i)),
         })),
 
+      payInvoiceOnline: (id, payMethod) => {
+        const s = get();
+        const inv = s.invoices.find((i) => i.id === id);
+        if (!inv || inv.status !== "due") return;
+        s.markInvoicePaid(id, payMethod, `${payMethod.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`);
+        const partner = s.partners.find((p) => p.id === inv.partnerId);
+        set((st) => ({
+          notifications: notify(st, {
+            kind: "due",
+            title: { en: `Invoice ${id} paid online by ${partner?.name}`, de: `Rechnung ${id} online bezahlt von ${partner?.name}`, fr: `Facture ${id} payée en ligne par ${partner?.name}`, it: `Fattura ${id} pagata online da ${partner?.name}` },
+            href: "/admin/finance/invoices",
+          }),
+        }));
+      },
+
+      requestPayout: (partnerId, amount) => {
+        const s = get();
+        const partner = s.partners.find((p) => p.id === partnerId);
+        if (amount < MIN_PAYOUT) return { ok: false, error: "minimum" };
+        if (!partner || amount > withdrawable(s, partnerId).available) return { ok: false, error: "available" };
+        const next = Math.max(0, ...s.payouts.map((x) => Number(x.id.slice(3)) || 0)) + 1;
+        const payout: Payout = { id: `PO-${String(next).padStart(4, "0")}`, partnerId, amount, iban: partner.bank.iban, status: "requested", createdAt: nowIso() };
+        set({
+          payouts: [payout, ...s.payouts],
+          notifications: notify(s, {
+            kind: "payout",
+            title: { en: `Payout request CHF ${amount} from ${partner.name}`, de: `Auszahlungsantrag CHF ${amount} von ${partner.name}`, fr: `Demande de versement CHF ${amount} de ${partner.name}`, it: `Richiesta di pagamento CHF ${amount} da ${partner.name}` },
+            href: "/admin/finance/payouts",
+          }),
+        });
+        return { ok: true, payout };
+      },
+
+      decidePayout: (id, status, reference, byUserId) =>
+        set((s) => {
+          const payout = s.payouts.find((x) => x.id === id);
+          if (!payout || payout.status !== "requested") return {};
+          return {
+            payouts: s.payouts.map((x) => (x.id === id ? { ...x, status, reference: reference.trim() || undefined, byUserId, decidedAt: nowIso() } : x)),
+            partners: status === "paid" ? credit(s.partners, payout.partnerId, -payout.amount) : s.partners,
+          };
+        }),
+
       uploadDocument: (partnerId, key, file, expiresAt, by) =>
         set((s) => ({
           partners: s.partners.map((p) =>
@@ -344,7 +423,7 @@ export const useStore = create<Store>()(
           partners: s.partners.map((p) => {
             const d = p.documents[key];
             if (p.id !== partnerId || !d) return p;
-            return { ...p, documents: { ...p.documents, [key]: { ...d, status: approve ? "valid" : "rejected", expiresAt: expiresAt ?? d.expiresAt } } };
+            return { ...p, documents: { ...p.documents, [key]: { ...d, status: approve ? "valid" : "rejected", expiresAt: expiresAt ?? d.expiresAt, reviewedAt: nowIso() } } };
           }),
         })),
 
@@ -356,17 +435,48 @@ export const useStore = create<Store>()(
           }),
         })),
 
-      sendCompanyMessage: (input) =>
-        set((s) => ({ messages: [{ ...input, id: uid("MSG"), createdAt: nowIso() }, ...s.messages] })),
-
-      markMessagesRead: (partnerId) =>
-        set((s) => ({ messages: s.messages.map((m) => (m.partnerId === partnerId && !m.readAt ? { ...m, readAt: nowIso() } : m)) })),
-
-      requestProfileChange: (partnerId, message) => {
-        const p = get().partners.find((x) => x.id === partnerId);
-        if (!p) return;
-        get().submitContact({ name: `${p.ownerName} · ${p.name}`, email: p.email, phone: p.phone, subject: `Profile change request: ${p.name}`, message });
+      sendCompanyMessage: ({ topic, ...input }) => {
+        const id = uid("MSG");
+        set((s) => ({ messages: [{ ...input, id, threadId: id, from: "kompass", topic: topic ?? "general", createdAt: nowIso() }, ...s.messages] }));
       },
+
+      sendMessage: ({ partnerId, from, body, threadId, subject, topic, byUserId }) => {
+        const s = get();
+        const root = threadId ? s.messages.find((m) => m.id === threadId) : undefined;
+        const id = uid("MSG");
+        const message: CompanyMessage = {
+          id,
+          partnerId,
+          threadId: root?.id ?? id,
+          from,
+          topic: root?.topic ?? topic ?? "general",
+          subject: root?.subject ?? subject?.trim() ?? "",
+          body: body.trim(),
+          channel: "portal",
+          byUserId,
+          createdAt: nowIso(),
+        };
+        const partner = s.partners.find((p) => p.id === partnerId);
+        set({
+          messages: [message, ...s.messages],
+          notifications:
+            from === "company"
+              ? notify(s, {
+                  kind: "contact",
+                  title: { en: `Message from ${partner?.name}: ${message.subject}`, de: `Nachricht von ${partner?.name}: ${message.subject}`, fr: `Message de ${partner?.name} : ${message.subject}`, it: `Messaggio da ${partner?.name}: ${message.subject}` },
+                  href: `/admin/partners/${partnerId}?tab=messages`,
+                })
+              : s.notifications,
+        });
+        return message;
+      },
+
+      markThreadRead: (threadId, reader) =>
+        set((s) => {
+          if (!s.messages.some((m) => m.threadId === threadId && m.from !== reader && !m.readAt)) return {};
+          const at = nowIso();
+          return { messages: s.messages.map((m) => (m.threadId === threadId && m.from !== reader && !m.readAt ? { ...m, readAt: at } : m)) };
+        }),
 
       setNominations: (canton, partnerIds) =>
         set((s) => ({
@@ -378,7 +488,7 @@ export const useStore = create<Store>()(
           const due = s.dues.find((d) => d.id === id);
           if (!due || due.status !== "pending") return {};
           return {
-            dues: s.dues.map((d) => (d.id === id ? { ...d, status } : d)),
+            dues: s.dues.map((d) => (d.id === id ? { ...d, status, decidedAt: nowIso() } : d)),
             partners:
               status === "confirmed"
                 ? s.partners.map((p) => (p.id === due.partnerId ? { ...p, wallet: p.wallet + due.amount } : p))
@@ -664,10 +774,12 @@ export const useStore = create<Store>()(
       // lifecycle; v5 added wallet top-ups, credit invoices and the fake-only refund policy; v6 dated
       // company documents, files, messages and regional nominations; v7 removed complaints and added
       // offer-form sessions and contact follow-up; v8 the six services, booking types, chosen
-      // companies and no-shows; v9 two booking types (same / other person). Older saves start again from the current seed, keeping the signed-in sessions.
-      version: 9,
+      // companies and no-shows; v9 the partner portal flows (onboarding contract, message threads,
+      // payouts, service areas); v10 two booking types (same / other person). Older saves start again
+      // from the current seed, keeping the signed-in sessions.
+      version: 10,
       migrate: (persisted, version) => {
-        if (version >= 9) return persisted as Store;
+        if (version >= 10) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

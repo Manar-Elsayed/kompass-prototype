@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Banknote, Building2, CheckCircle2, ClipboardList, RotateCcw, ShoppingCart, Store as StoreIcon, Zap } from "lucide-react";
+import { Banknote, Building2, CheckCircle2, ClipboardList, Headset, RotateCcw, ShoppingCart, Store as StoreIcon, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import type { Order } from "@/lib/types";
@@ -57,7 +57,14 @@ export default function ShopPage() {
       id: "channel",
       header: t("admin.shop.channel"),
       accessorFn: (o) => o.channel,
-      cell: (c) => (c.getValue() === "shop" ? <Badge tone="primary"><StoreIcon /> {t("admin.shop.shop")}</Badge> : <Badge tone="accent"><Zap /> {t("admin.shop.dynamic")}</Badge>),
+      cell: (c) =>
+        c.getValue() === "shop" ? (
+          <Badge tone="primary"><StoreIcon /> {t("admin.shop.shop")}</Badge>
+        ) : c.getValue() === "manual" ? (
+          <Badge tone="warning"><Headset /> {t("admin.shop.manual")}</Badge>
+        ) : (
+          <Badge tone="accent"><Zap /> {t("admin.shop.dynamic")}</Badge>
+        ),
     },
     { id: "price", header: t("common.fields.price"), accessorFn: (o) => o.price, cell: (c) => <span className="font-semibold">{formatCHF(c.getValue() as number, lang)}</span> },
     { id: "coupon", header: t("admin.shop.coupon"), accessorFn: (o) => o.couponCode ?? "", cell: (c) => (c.getValue() ? <Mono>{c.getValue() as string}</Mono> : <span className="text-muted-foreground">–</span>) },

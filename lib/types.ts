@@ -175,15 +175,25 @@ export interface CompanyFile {
   uploadedAt: string;
 }
 
-/** A message Kompass sent a company from the dashboard (shown in its portal; emailed too when channel is email). */
+/**
+ * One message in a conversation between Kompass and a company. The first message of a thread has
+ * `threadId === id`; replies carry the root's id. Kompass messages show in the portal (and are
+ * emailed when channel is email); company messages reach the admin company page.
+ */
+export type MessageTopic = "general" | "billing" | "leads" | "documents" | "profile";
+export const MESSAGE_TOPICS: readonly MessageTopic[] = ["general", "billing", "leads", "documents", "profile"];
 export interface CompanyMessage {
   id: ID;
   partnerId: ID;
+  threadId: ID;
+  from: "kompass" | "company";
+  topic: MessageTopic;
   subject: string;
   body: string;
   channel: "email" | "portal";
   byUserId?: ID;
   createdAt: string;
+  /** Read by the other side: the company for Kompass messages, Kompass for company messages. */
   readAt?: string;
 }
 
@@ -229,6 +239,24 @@ export interface Invoice {
   paidReference?: string;
 }
 
+/**
+ * A company asks for unused wallet money to be paid to its bank account. Nothing leaves the wallet
+ * until Kompass pays it; while requested, the amount is held back from further payout requests.
+ */
+export type PayoutStatus = "requested" | "paid" | "rejected";
+export interface Payout {
+  id: ID; // PO-0001
+  partnerId: ID;
+  amount: number;
+  iban: string;
+  status: PayoutStatus;
+  /** Bank reference when paid, or the reason when rejected. */
+  reference?: string;
+  byUserId?: ID; // admin who decided it
+  createdAt: string;
+  decidedAt?: string;
+}
+
 /* ---------- Partners ---------- */
 /** Application submitted → documents under review (pending / contract sent) → approved, or rejected. */
 export type PartnerStatus = "pending" | "contract_sent" | "approved" | "rejected";
@@ -243,6 +271,8 @@ export interface CompanyDoc {
   uploadedAt: string;
   expiresAt?: string;
   status: DocStatus;
+  /** When Kompass last approved or rejected it. */
+  reviewedAt?: string;
 }
 
 export interface Partner {
@@ -268,8 +298,26 @@ export interface Partner {
   wallet: number;
   bank: { name: string; owner: string; iban: string };
   documents: Partial<Record<DocKey, CompanyDoc>>;
+  /** Partnership contract signed in the portal during onboarding. */
+  contractSignedAt?: string;
+  contractSignedBy?: string;
+  /** Why Kompass declined the application, shown to the applicant. */
+  rejectionReason?: string;
+  /** Cantons the company works in; without it, its own canton. */
+  cantons?: string[];
+  /** Emails the company wants from Kompass; without it, all on except the digest. */
+  notifyPrefs?: NotifyPrefs;
+  /** Portal notifications newer than this are unread. */
+  feedReadAt?: string;
   lastSeen: string;
   createdAt: string;
+}
+
+export interface NotifyPrefs {
+  leads: boolean; // a new lead in my area and services
+  digest: boolean; // one summary email a day instead of one per lead
+  finance: boolean; // receipts, invoices, refunds, payouts
+  messages: boolean; // messages from Kompass
 }
 
 export type DueStatus = "pending" | "confirmed" | "canceled";
@@ -282,6 +330,7 @@ export interface PartnerDue {
   receipt: string; // image url
   status: DueStatus;
   createdAt: string;
+  decidedAt?: string;
 }
 
 /* ---------- Trust & moderation ---------- */
@@ -381,7 +430,7 @@ export interface Visitor {
 
 export interface Notification {
   id: ID;
-  kind: "lead" | "application" | "due" | "review" | "contact" | "report";
+  kind: "lead" | "application" | "due" | "review" | "contact" | "report" | "payout";
   title: L10n;
   href: string;
   read: boolean;
@@ -547,6 +596,7 @@ export interface DB {
   invoices: Invoice[];
   files: CompanyFile[];
   messages: CompanyMessage[];
+  payouts: Payout[];
   formSessions: FormSession[];
   nominations: Nomination[];
   reviews: Review[];

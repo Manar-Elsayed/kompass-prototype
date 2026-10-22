@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, CheckCircle2, ClipboardList, ExternalLink, EyeOff, HandCoins, Lock, LockOpen, Mail, MessageSquare, Phone, Plus, RotateCcw, Star, Store, Trash2, Wallet, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ClipboardList, ExternalLink, EyeOff, HandCoins, Landmark, Lock, LockOpen, Mail, MessageSquare, Phone, Plus, RotateCcw, Star, Store, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
-import type { Order } from "@/lib/types";
+import type { Order, Payout } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, usePartnerRatings } from "@/lib/mock/hooks";
@@ -30,6 +30,10 @@ import { CreditDialog, TopUpDialog } from "@/components/admin/wallet-actions";
 import { DocStateBadge } from "@/components/admin/doc-state";
 import { CompanyDocuments, ContactCompanyDialog } from "@/components/admin/company-docs";
 import { FileManager } from "@/components/admin/file-manager";
+import { PayoutDecisionDialog } from "@/components/admin/payout-actions";
+import { MessageCenter } from "@/components/shared/message-thread";
+
+const TABS = ["overview", "documents", "bookings", "wallet", "reviews", "files", "messages"] as const;
 
 export default function PartnerDetailPage() {
   return (
@@ -39,13 +43,9 @@ export default function PartnerDetailPage() {
   );
 }
 
-const TABS = ["overview", "documents", "bookings", "wallet", "reviews", "files", "messages"];
-
 function PartnerDetail() {
   const { id } = useParams<{ id: string }>();
-  // lists elsewhere link straight to a tab, e.g. ?tab=wallet
-  const tabParam = useSearchParams().get("tab");
-  const initialTab = tabParam && TABS.includes(tabParam) ? tabParam : "overview";
+  const params = useSearchParams();
   const t = useTranslations();
   const tp = useTranslations("admin.partners");
   const tb = useTranslations("admin.partners.bookings");
@@ -76,6 +76,14 @@ function PartnerDetail() {
   const [addSvc, setAddSvc] = useState("");
   const [stars, setStars] = useState("all");
   const [reviewStatus, setReviewStatus] = useState("all");
+  const [tab, setTab] = useState("overview");
+  const [thread, setThread] = useState<string | null>(null);
+  const [deciding, setDeciding] = useState<{ payout: Payout; decision: "paid" | "rejected" } | null>(null);
+  // deep links from notifications: ?tab=messages, ?tab=wallet
+  const wanted = params.get("tab");
+  useEffect(() => {
+    if (wanted && (TABS as readonly string[]).includes(wanted)) setTab(wanted);
+  }, [wanted]);
 
   const offerMap = useMemo(() => Object.fromEntries(db.offers.map((o) => [o.id, o])), [db.offers]);
   if (!p) return <Card><EmptyState title={t("common.notFound.title")} /></Card>;
@@ -91,7 +99,9 @@ function PartnerDetail() {
   const reviews = db.reviews.filter((r) => r.target === p.id && (stars === "all" || r.stars === Number(stars)) && (reviewStatus === "all" || r.status === reviewStatus));
   const allReviews = db.reviews.filter((r) => r.target === p.id);
   const invoices = db.invoices.filter((i) => i.partnerId === p.id);
-  const messages = db.messages.filter((m) => m.partnerId === p.id).sort((x, y) => y.createdAt.localeCompare(x.createdAt));
+  const unreadFromCompany = db.messages.filter((m) => m.partnerId === p.id && m.from === "company" && !m.readAt).length;
+  const threadCount = new Set(db.messages.filter((m) => m.partnerId === p.id).map((m) => m.threadId)).size;
+  const payouts = db.payouts.filter((x) => x.partnerId === p.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const missing = db.services.filter((s) => s.active && !p.serviceIds.includes(s.id));
   const val = (k: keyof typeof p) => form[k as string] ?? String(p[k] ?? "");
   const userName = (uid?: string) => db.users.find((u) => u.id === uid)?.name ?? "Kompass";
@@ -239,7 +249,7 @@ function PartnerDetail() {
         <KpiCard label={tp("avgRating")} value={ratings[p.id]?.avg.toFixed(1) ?? "–"} icon={<Star />} tone="warning" footer={`${ratings[p.id]?.count ?? 0} ${tp("reviews")}`} />
       </div>
 
-      <Tabs defaultValue={initialTab}>
+      <Tabs value={tab} onValueChange={setTab}>
         <UnderlineTabsList className="mb-4 overflow-x-auto">
           <UnderlineTabsTrigger value="overview">{tp("tabs.overview")}</UnderlineTabsTrigger>
           <UnderlineTabsTrigger value="documents">{tp("docs.title")} <DocStateBadge partner={p} /></UnderlineTabsTrigger>
@@ -247,7 +257,7 @@ function PartnerDetail() {
           <UnderlineTabsTrigger value="wallet">{tp("tabs.wallet")}</UnderlineTabsTrigger>
           <UnderlineTabsTrigger value="reviews">{tp("reviews")} <Badge>{allReviews.length}</Badge></UnderlineTabsTrigger>
           <UnderlineTabsTrigger value="files">{tp("tabs.files")}</UnderlineTabsTrigger>
-          <UnderlineTabsTrigger value="messages">{tp("tabs.messages")} <Badge>{messages.length}</Badge></UnderlineTabsTrigger>
+          <UnderlineTabsTrigger value="messages">{tp("tabs.messages")} <Badge tone={unreadFromCompany ? "accent" : "neutral"}>{unreadFromCompany || threadCount}</Badge></UnderlineTabsTrigger>
         </UnderlineTabsList>
 
         {/* overview: all company data, editable by admin (the company itself may only change its phone) */}
@@ -387,6 +397,30 @@ function PartnerDetail() {
               )}
             </div>
           </Card>
+          <Card className="h-fit overflow-hidden xl:col-start-2">
+            <CardHeader title={t("admin.payouts.title")} />
+            <div className="mt-4 divide-y border-t">
+              {payouts.length ? (
+                payouts.map((x) => (
+                  <div key={x.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
+                    <Landmark className="size-4 text-muted-foreground" />
+                    <Mono>{x.id}</Mono>
+                    <span className="flex-1 font-semibold">{formatCHF(x.amount, lang)}</span>
+                    {x.status === "requested" ? (
+                      <span className="flex gap-1.5">
+                        <Button size="sm" variant="success" onClick={() => setDeciding({ payout: x, decision: "paid" })}><Check /> {t("admin.payouts.pay")}</Button>
+                        <Button size="icon-sm" variant="danger-soft" onClick={() => setDeciding({ payout: x, decision: "rejected" })} aria-label={t("common.actions.reject")}><X /></Button>
+                      </span>
+                    ) : (
+                      <StatusBadge status={x.status} />
+                    )}
+                  </div>
+                ))
+              ) : (
+                <EmptyState title={t("admin.payouts.none")} className="py-8" />
+              )}
+            </div>
+          </Card>
         </TabsContent>
 
         <TabsContent value="reviews">
@@ -447,28 +481,11 @@ function PartnerDetail() {
         </TabsContent>
 
         <TabsContent value="messages">
-          <Card className="overflow-hidden">
-            <CardHeader title={tp("tabs.messages")} action={<Button size="sm" onClick={() => setContact(true)}><MessageSquare /> {tp("contactCo.button")}</Button>} />
-            <ul className="mt-4 divide-y border-t">
-              {messages.length ? (
-                messages.map((m) => (
-                  <li key={m.id} className="px-5 py-3 text-sm">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-ink">{m.subject}</span>
-                      <Badge tone="neutral">{tp(`contactCo.channels.${m.channel}`)}</Badge>
-                      <span className={cn("ms-auto text-xs", m.readAt ? "text-muted-foreground" : "font-semibold text-warning")}>
-                        {m.readAt ? tp("contactCo.read", { date: formatDate(m.readAt, lang) }) : tp("contactCo.unread")}
-                      </span>
-                    </div>
-                    <p className="mt-1 whitespace-pre-line text-muted-foreground">{m.body}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{userName(m.byUserId)} · {formatDateTime(m.createdAt, lang)}</p>
-                  </li>
-                ))
-              ) : (
-                <li><EmptyState title={tp("contactCo.none")} className="py-8" /></li>
-              )}
-            </ul>
-          </Card>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground">{tp("threadsHint")}</p>
+            <Button size="sm" onClick={() => setContact(true)}><MessageSquare /> {tp("contactCo.button")}</Button>
+          </div>
+          <MessageCenter partnerId={p.id} partnerName={p.name} viewer="kompass" selected={thread} onSelect={setThread} empty={<EmptyState title={tp("contactCo.none")} className="py-12" />} />
         </TabsContent>
       </Tabs>
 
@@ -476,6 +493,7 @@ function PartnerDetail() {
       {topUp && <TopUpDialog partner={p} onClose={() => setTopUp(false)} />}
       {credit && <CreditDialog partner={p} onClose={() => setCredit(false)} />}
       {doc && <MoneyDocDialog doc={doc} onClose={() => setDoc(null)} />}
+      {deciding && <PayoutDecisionDialog payout={deciding.payout} decision={deciding.decision} onClose={() => setDeciding(null)} />}
       {dialog}
     </>
   );

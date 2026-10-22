@@ -103,7 +103,7 @@ function CheckoutDialog({ offer, onClose }: { offer: Offer; onClose: () => void 
       toast.success(t("bought", { id: res.order.offerId }), {
         action: { label: t("viewLead"), onClick: () => router.push(`/portal/leads?open=${res.order.offerId}`) },
       });
-    } else toast.error(t(res.error));
+    } else toast.error(t(res.error === "coupon" ? "couponBad" : res.error));
   };
 
   return (

@@ -109,6 +109,8 @@ export const site: Built<typeof Def> = {
     togetherTitle: "Ricevere un’offerta da {name}",
     togetherBody: "Invii una sola richiesta: {name} e fino ad altre 4 ditte verificate Le invieranno le loro offerte.",
     verifiedReviews: "Solo i clienti che hanno prenotato questa ditta tramite Kompass possono valutarla.",
+    photos: "Foto",
+    photoAlt: "Foto di {name}",
   },
   blogs: {
     latest: "Articoli recenti",
@@ -177,6 +179,7 @@ export const site: Built<typeof Def> = {
     timeline3: "Contratto firmato",
     timeline4: "Inizio acquisto lead",
     reviewInAdmin: "Verifica nell’admin",
+    trackApplication: "Segua la Sua candidatura",
   },
   review: {
     title: "Condivida la Sua esperienza",

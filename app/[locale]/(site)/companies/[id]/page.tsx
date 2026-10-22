@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import { BadgeCheck, Briefcase, Calendar, Globe, MapPin, ShieldCheck, User } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
-import { useL, usePartnerRatings } from "@/lib/mock/hooks";
+import { useCompanyMedia, useHydrated, useL, usePartnerRatings } from "@/lib/mock/hooks";
+import { documentState } from "@/lib/mock/selectors";
 import { Button } from "@/components/ui/button";
 import { Avatar, Progress } from "@/components/ui/controls";
 import { Icon } from "@/components/shared/icon";
@@ -24,14 +25,24 @@ export default function CompanyPage() {
   const allReviews = useStore((s) => s.reviews);
   const orders = useStore((s) => s.orders);
   const ratings = usePartnerRatings();
+  const { logo, photos } = useCompanyMedia(id);
 
-  if (!partner || partner.status !== "approved" || partner.banned) notFound();
+  const hydrated = useHydrated();
+
+  // The server renders the seed data; a company approved since then exists only in the browser's
+  // saved state, so only decide "not found" once that state has loaded.
+  if (!partner || partner.status !== "approved" || partner.banned) {
+    if (!hydrated) return <div className="min-h-[60vh]" aria-busy />;
+    notFound();
+  }
 
   const reviews = allReviews.filter((r) => r.target === partner.id && r.status === "approved");
   const rating = ratings[partner.id];
   const jobs = orders.filter((o) => o.partnerId === partner.id).length;
   const svcs = services.filter((s) => partner.serviceIds.includes(s.id));
   const dist = [5, 4, 3, 2, 1].map((n) => ({ n, c: reviews.filter((r) => r.stars === n).length }));
+  // "verified" means Kompass checked the contract, insurance and register extract and none has expired
+  const verified = documentState(partner).ok;
 
   return (
     <>
@@ -44,13 +55,15 @@ export default function CompanyPage() {
           </nav>
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-5">
-              <Avatar name={partner.name} square className="size-20 rounded-2xl text-2xl" />
+              <Avatar name={partner.name} src={logo?.url} square className="size-20 rounded-2xl text-2xl" />
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-3xl font-bold text-ink">{partner.name}</h1>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">
-                    <BadgeCheck className="size-3.5" /> {t("verified")}
-                  </span>
+                  {verified && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary">
+                      <BadgeCheck className="size-3.5" /> {t("verified")}
+                    </span>
+                  )}
                 </div>
                 <p className="mt-1 flex items-center gap-1.5 text-muted-foreground">
                   <MapPin className="size-4" /> {partner.zip} {partner.city}, {partner.canton}
@@ -88,6 +101,20 @@ export default function CompanyPage() {
               ))}
             </div>
           </div>
+
+          {photos.length > 0 && (
+            <div className="rounded-2xl border border-border bg-surface p-6">
+              <h2 className="mb-4 text-lg font-bold text-ink">{t("photos")}</h2>
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {photos.slice(0, 6).map((p) => (
+                  <li key={p.id} className="aspect-[4/3] overflow-hidden rounded-xl bg-surface-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- company uploads are data URLs */}
+                    <img src={p.url} alt={t("photoAlt", { name: partner.name })} className="size-full object-cover" loading="lazy" />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="rounded-2xl border border-border bg-surface p-6">
             <h2 className="text-lg font-bold text-ink">{t("customerReviews")}</h2>

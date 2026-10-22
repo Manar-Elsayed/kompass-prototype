@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ArrowDownLeft, ArrowUpRight, CreditCard, HandCoins, RotateCcw } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, CreditCard, HandCoins, Landmark, RotateCcw } from "lucide-react";
 import type { LedgerEntry } from "@/lib/mock/selectors";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { useLang } from "@/lib/mock/hooks";
@@ -13,6 +13,7 @@ const ICON = {
   credit: HandCoins,
   purchase: ArrowUpRight,
   refund: RotateCcw,
+  payout: Landmark,
 } as const;
 
 /** One company's wallet movements, newest first. Shared by the admin Wallets page and the portal. */

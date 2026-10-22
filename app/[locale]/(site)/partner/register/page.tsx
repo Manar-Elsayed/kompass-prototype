@@ -105,7 +105,7 @@ export default function PartnerRegisterPage() {
         }),
       900,
     );
-    router.push(`/partner/success?name=${encodeURIComponent(p.name)}`);
+    router.push(`/partner/success?name=${encodeURIComponent(p.name)}&id=${p.id}`);
   };
 
   const field = (k: keyof F, label: string, opts: { type?: string; ltr?: boolean; ph?: string; span?: string; required?: boolean } = {}) => (

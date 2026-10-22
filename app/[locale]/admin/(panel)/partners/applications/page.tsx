@@ -2,18 +2,20 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Check, FileSignature, FileText, MapPin, Send, X } from "lucide-react";
+import { AlertTriangle, Check, FileSignature, FileText, MapPin, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Partner } from "@/lib/types";
 import { cn, formatDate, timeAgo } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/input";
+import { Field } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/controls";
-import { Dialog, DialogTitle, SheetContent } from "@/components/ui/dialog";
-import { EmptyState, StatusBadge, useConfirm } from "@/components/shared/bits";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, SheetContent } from "@/components/ui/dialog";
+import { EmptyState, StatusBadge } from "@/components/shared/bits";
 import { DL, PageHeader } from "@/components/admin/ui";
 import { ExpiryDialog } from "@/components/admin/expiry-dialog";
 
@@ -27,29 +29,23 @@ export default function ApplicationsPage() {
   const partners = useStore((s) => s.partners);
   const decide = useStore((s) => s.decideApplication);
   const serviceMap = useServiceMap();
-  const { confirm, dialog } = useConfirm();
   const [approving, setApproving] = useState<Partner | null>(null);
+  const [rejecting, setRejecting] = useState<Partner | null>(null);
   const [open, setOpen] = useState<Partner | null>(null);
 
   const apps = partners.filter((p) => p.status !== "approved");
   const docsCount = (p: Partner) => Object.values(p.documents).filter(Boolean).length;
+  // approving before the applicant signed or uploaded everything is allowed (e.g. paper contract), but flagged
+  const missing = (p: Partner) => [
+    ...(p.contractSignedAt ? [] : [ta("missingSignature")]),
+    ...(["insurance", "register"] as const).filter((k) => !p.documents[k] || p.documents[k]!.status === "rejected").map((k) => t(`admin.partners.${k}`)),
+  ];
 
   const sendContract = (p: Partner) => {
     decide(p.id, "contract_sent");
     toast.success(ta("contractSent", { name: p.name }));
   };
-  const reject = (p: Partner) =>
-    confirm({
-      title: ta("rejectTitle", { name: p.name }),
-      body: ta("rejectBody"),
-      tone: "danger",
-      confirmLabel: t("common.actions.reject"),
-      onConfirm: () => {
-        decide(p.id, "rejected");
-        setOpen(null);
-        toast.success(t("common.toast.updated"));
-      },
-    });
+  const reject = (p: Partner) => setRejecting(p);
 
   const actions = (p: Partner, full?: boolean) =>
     p.status === "rejected" ? null : (
@@ -100,9 +96,11 @@ export default function ApplicationsPage() {
                     <div className="mt-3 flex flex-wrap gap-1">
                       {p.serviceIds.map((id) => <Badge key={id}>{L(serviceMap[id]?.name)}</Badge>)}
                     </div>
-                    <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <p className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                       <FileText className="size-3.5" /> {docsCount(p)}/3 {t("admin.partners.documents")}
+                      {p.contractSignedAt && <Badge tone="success" className="ms-auto"><FileSignature /> {ta("signed")}</Badge>}
                     </p>
+                    {col === "rejected" && p.rejectionReason && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{p.rejectionReason}</p>}
                     {col !== "rejected" && (
                       <div className="mt-3 border-t pt-3" onClick={(e) => e.stopPropagation()}>
                         {actions(p)}
@@ -131,6 +129,9 @@ export default function ApplicationsPage() {
                   </div>
                 </div>
               </div>
+              {open.status === "rejected" && open.rejectionReason && (
+                <p className="rounded-xl bg-danger-soft/60 px-4 py-3 text-sm text-danger"><span className="font-semibold">{ta("reasonLabel")}:</span> {open.rejectionReason}</p>
+              )}
               <section className="rounded-xl border p-4">
                 <p className="mb-3 text-sm font-bold text-ink">{t("site.partner.steps.company")}</p>
                 <DL items={[
@@ -164,6 +165,10 @@ export default function ApplicationsPage() {
               </section>
               <section className="rounded-xl border p-4">
                 <p className="mb-3 text-sm font-bold text-ink">{t("admin.partners.documents")}</p>
+                <p className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+                  <FileSignature className="size-3.5" />
+                  {open.contractSignedAt ? ta("signedBy", { name: open.contractSignedBy ?? open.ownerName, date: formatDate(open.contractSignedAt, lang) }) : open.status === "contract_sent" ? ta("awaitingSignature") : ta("noContractYet")}
+                </p>
                 <ul className="space-y-2 text-sm">
                   {(["contract", "insurance", "register"] as const).map((k) => (
                     <li key={k} className="flex items-center justify-between">
@@ -184,7 +189,16 @@ export default function ApplicationsPage() {
           open
           onOpenChange={(v) => !v && setApproving(null)}
           title={ta("approveTitle", { name: approving.name })}
-          body={ta("approveBody")}
+          body={
+            <>
+              {ta("approveBody")}
+              {missing(approving).length > 0 && (
+                <span className="mt-3 flex gap-2 rounded-lg bg-warning-soft px-3 py-2 text-warning">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {ta("approveMissing", { items: missing(approving).join(", ") })}
+                </span>
+              )}
+            </>
+          }
           confirmLabel={t("common.actions.approve")}
           onSave={(iso) => {
             decide(approving.id, "approved", iso);
@@ -194,7 +208,42 @@ export default function ApplicationsPage() {
           }}
         />
       )}
-      {dialog}
+      {rejecting && (
+        <RejectDialog
+          partner={rejecting}
+          onClose={() => setRejecting(null)}
+          onReject={(reason) => {
+            decide(rejecting.id, "rejected", undefined, reason);
+            toast.success(t("common.toast.updated"));
+            setRejecting(null);
+            setOpen(null);
+          }}
+        />
+      )}
     </>
+  );
+}
+
+/** Declining needs a reason: the applicant sees it in the portal. */
+function RejectDialog({ partner, onClose, onReject }: { partner: Partner; onClose: () => void; onReject: (reason: string) => void }) {
+  const t = useTranslations();
+  const ta = useTranslations("admin.applications");
+  const [reason, setReason] = useState("");
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{ta("rejectTitle", { name: partner.name })}</DialogTitle>
+          <DialogDescription>{ta("rejectBody")}</DialogDescription>
+        </DialogHeader>
+        <Field label={ta("reasonLabel")} hint={ta("reasonHint")} required>
+          <Textarea rows={4} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={ta("reasonPh")} />
+        </Field>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{t("common.actions.cancel")}</Button>
+          <Button variant="danger" disabled={reason.trim().length < 10} onClick={() => onReject(reason)}><X /> {t("common.actions.reject")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -3,13 +3,14 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, Flag, Mail, Phone, ShoppingBag } from "lucide-react";
+import { Ban, BellRing, CheckCircle2, Flag, Headset, Mail, Phone, RotateCcw, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import type { Order } from "@/lib/types";
+import type { FakeReportStatus, Order } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
+import { leadOutcome, type LeadGroup, type LeadOutcome } from "@/lib/mock/selectors";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,11 +19,23 @@ import { Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { RadioCards } from "@/components/ui/controls";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, SheetContent } from "@/components/ui/dialog";
-import { EmptyState, StatusBadge } from "@/components/shared/bits";
+import { EmptyState, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
 
 const REASONS = ["phone", "never", "duplicate", "unreachable"] as const;
+const GROUPS: LeadGroup[] = ["open", "executed", "reported", "cancelled"];
+const OUTCOME_TONE: Record<LeadOutcome, "neutral" | "success" | "warning" | "info" | "danger" | "primary"> = {
+  active: "primary",
+  chosen: "success",
+  chosenOther: "neutral",
+  executed: "success",
+  reported: "warning",
+  cancelledFake: "info",
+  cancelledCustomer: "danger",
+};
+/** How a fake-lead report moves; the last step is confirmed (refunded) or rejected. */
+const REPORT_STEPS: FakeReportStatus[] = ["open", "testing", "pending"];
 
 export default function MyLeadsPage() {
   return (
@@ -45,10 +58,12 @@ function MyLeads() {
   const orders = useStore((s) => s.orders).filter((o) => o.partnerId === partner.id);
   const offers = useStore((s) => s.offers);
   const reports = useStore((s) => s.fakeReports);
+  const refunds = useStore((s) => s.refunds);
   const patch = useStore((s) => s.patch);
+  const { confirm, dialog } = useConfirm();
   const serviceMap = useServiceMap();
   const offerMap = Object.fromEntries(offers.map((o) => [o.id, o]));
-  const reportOf = (orderId: string) => reports.find((r) => r.orderId === orderId);
+  const outcomeOf = (o: Order) => leadOutcome({ offers, fakeReports: reports, refunds }, o);
   const params = useSearchParams();
   const [openId, setOpenId] = useState<string | null>(null);
   const [reporting, setReporting] = useState<Order | null>(null);
@@ -73,13 +88,33 @@ function MyLeads() {
   };
 
   const status = (o: Order) => {
-    const r = reportOf(o.id);
-    if (r) return <StatusBadge status={r.status} />;
-    return o.executed ? <Badge tone="success" dot>{t("executed")}</Badge> : <StatusBadge status="in_progress" />;
+    const { status: s } = outcomeOf(o);
+    return <Badge tone={OUTCOME_TONE[s]} dot>{t(`outcome.${s}`)}</Badge>;
   };
+  const markExecuted = (o: Order) =>
+    confirm({
+      title: t("markDoneTitle", { id: o.offerId }),
+      body: t("markDoneBody"),
+      tone: "success",
+      confirmLabel: t("markDone"),
+      onConfirm: () => {
+        patch("orders", o.id, { executed: true });
+        toast.success(t("executed"));
+      },
+    });
 
   const columns: ColumnDef<Order, unknown>[] = [
-    { id: "lead", header: tf("reference"), accessorFn: (o) => o.offerId, cell: (c) => <Mono>{c.getValue() as string}</Mono> },
+    {
+      id: "lead",
+      header: tf("reference"),
+      accessorFn: (o) => o.offerId,
+      cell: ({ row: { original: o } }) => (
+        <span className="flex flex-col items-start gap-1">
+          <Mono>{o.offerId}</Mono>
+          {o.channel === "manual" && <Badge tone="accent"><Headset /> {t("assigned")}</Badge>}
+        </span>
+      ),
+    },
     {
       id: "customer",
       header: tl("customer"),
@@ -100,7 +135,7 @@ function MyLeads() {
     { id: "paid", header: t("paid"), accessorFn: (o) => o.price, cell: ({ row: { original: o } }) => <span className="font-semibold">{formatCHF(o.price, lang)}{o.couponCode && <span className="ms-1 text-xs font-normal text-success" dir="ltr">({o.couponCode})</span>}</span> },
     { id: "bought", header: t("bought"), accessorFn: (o) => o.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
     { id: "choice", header: t("choiceCol"), accessorFn: (o) => choiceOf(o), cell: ({ row: { original: o } }) => choice(o) },
-    { id: "status", header: tf("status"), accessorFn: (o) => (reportOf(o.id) ? "reported" : o.executed ? "executed" : "open"), cell: ({ row: { original: o } }) => status(o) },
+    { id: "status", header: tf("status"), accessorFn: (o) => outcomeOf(o).status, cell: ({ row: { original: o } }) => status(o) },
   ];
 
   return (
@@ -113,7 +148,7 @@ function MyLeads() {
         onRowClick={(o) => setOpenId(o.id)}
         initialSort={[{ id: "bought", desc: true }]}
         emptyState={<EmptyState icon={<ShoppingBag />} title={t("empty")} action={<Button asChild variant="accent"><Link href="/portal/shop">{tn("shop")}</Link></Button>} />}
-        filters={[{ id: "st", label: tf("status"), options: [{ value: "open", label: tst("in_progress") }, { value: "executed", label: t("executed") }, { value: "reported", label: t("reported") }], get: (o) => (reportOf(o.id) ? "reported" : o.executed ? "executed" : "open") },
+        filters={[{ id: "st", label: tf("status"), options: GROUPS.map((g) => ({ value: g, label: t(`groups.${g}`) })), get: (o) => outcomeOf(o).group },
           { id: "choice", label: t("choiceCol"), options: (["you", "other", "pending"] as const).map((c) => ({ value: c, label: t(`choice.${c}`) })), get: (o) => choiceOf(o) },
         ]}
       />
@@ -127,11 +162,23 @@ function MyLeads() {
                   <DialogTitle className="flex items-center gap-2"><Mono className="text-lg">{lead.id}</Mono> {status(open)}</DialogTitle>
                   <DialogDescription className="mt-1">{L(serviceMap[lead.serviceId]?.name)} · {formatDateTime(open.createdAt, lang)}</DialogDescription>
                 </div>
-                <div className={cn("rounded-xl border p-3 text-sm", choiceOf(open) === "you" ? "border-success/30 bg-success-soft/40" : "bg-surface-2/60")}>
-                  <p className="font-semibold text-ink">{choice(open)}</p>
-                  <p className="mt-1 text-muted-foreground">{t(`choiceHint.${choiceOf(open)}`)}</p>
-                  {lead.noShow?.partnerId === partner.id && <p className="mt-2 font-semibold text-danger">{t("noShowAgainst")}</p>}
-                </div>
+                <OutcomeBanner order={open} />
+                {open.channel === "manual" && (
+                  <div className="rounded-xl border border-accent/30 bg-accent-soft/40 p-3 text-sm">
+                    <p className="flex items-center gap-2 font-semibold text-ink"><Headset className="size-4 text-accent" /> {t("assignedTitle", { price: formatCHF(open.price, lang) })}</p>
+                    <p className="mt-1 text-muted-foreground">{open.note ? `“${open.note}”` : t("assignedNoNote")}</p>
+                  </div>
+                )}
+                {lead.buyersNotifiedAt && (
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground"><BellRing className="size-3.5" /> {t("customerNotified", { date: formatDate(lead.buyersNotifiedAt, lang) })}</p>
+                )}
+                {outcomeOf(open).group !== "cancelled" && (
+                  <div className={cn("rounded-xl border p-3 text-sm", choiceOf(open) === "you" ? "border-success/30 bg-success-soft/40" : "bg-surface-2/60")}>
+                    <p className="font-semibold text-ink">{choice(open)}</p>
+                    <p className="mt-1 text-muted-foreground">{t(`choiceHint.${choiceOf(open)}`)}</p>
+                    {lead.noShow?.partnerId === partner.id && <p className="mt-2 font-semibold text-danger">{t("noShowAgainst")}</p>}
+                  </div>
+                )}
                 <Card className="bg-primary-soft/40 p-4 shadow-none">
                   <p className="text-lg font-bold text-ink">{lead.firstName} {lead.lastName}</p>
                   {lead.requester && (
@@ -163,14 +210,12 @@ function MyLeads() {
                 <DL items={[{ label: tl("execution"), value: formatDate(lead.executionDate, lang) }, { label: t("paid"), value: formatCHF(open.price, lang) }]} />
                 {lead.details && <p className="rounded-xl border border-dashed p-4 text-sm">“{lead.details}”</p>}
               </div>
-              {!reportOf(open.id) && (
+              {outcomeOf(open).group === "open" && (
                 <div className="sticky bottom-0 mt-auto flex gap-2 border-t bg-surface p-4">
-                  <Button variant="ghost" className="text-danger hover:bg-danger-soft" onClick={() => setReporting(open)}><Flag /> {t("report")}</Button>
-                  {!open.executed && (
-                    <Button variant="success" className="flex-1" onClick={() => { patch("orders", open.id, { executed: true }); toast.success(t("executed")); }}>
-                      <CheckCircle2 /> {t("markDone")}
-                    </Button>
-                  )}
+                  {!outcomeOf(open).report && <Button variant="ghost" className="text-danger hover:bg-danger-soft" onClick={() => setReporting(open)}><Flag /> {t("report")}</Button>}
+                  <Button variant="success" className="flex-1" onClick={() => markExecuted(open)}>
+                    <CheckCircle2 /> {t("markDone")}
+                  </Button>
                 </div>
               )}
             </div>
@@ -179,7 +224,60 @@ function MyLeads() {
       </Dialog>
 
       {reporting && <ReportDialog order={reporting} onClose={() => setReporting(null)} />}
+      {dialog}
     </>
+  );
+}
+
+/**
+ * What happened to the purchase, in plain words: refunded because the offer was fake, not refunded
+ * because the customer cancelled, or where a fake-lead report stands (with its steps).
+ */
+function OutcomeBanner({ order }: { order: Order }) {
+  const t = useTranslations("portal.leads");
+  const tst = useTranslations("common.status");
+  const lang = useLang();
+  const offers = useStore((s) => s.offers);
+  const fakeReports = useStore((s) => s.fakeReports);
+  const refunds = useStore((s) => s.refunds);
+  const { status, report, refund, offer } = leadOutcome({ offers, fakeReports, refunds }, order);
+
+  if (status === "cancelledFake")
+    return (
+      <div className="rounded-xl border border-info/30 bg-info-soft/50 p-3 text-sm">
+        <p className="flex items-center gap-2 font-semibold text-info"><RotateCcw className="size-4" /> {t("cancelledFakeTitle")}</p>
+        <p className="mt-1 text-muted-foreground">
+          {refund?.status === "refunded"
+            ? t("cancelledFakeRefunded", { amount: formatCHF(refund.amount, lang), date: formatDate(refund.decidedAt ?? refund.createdAt, lang) })
+            : t("cancelledFakePending")}
+        </p>
+        {refund?.status === "refunded" && <Link href="/portal/payments?tab=statement" className="mt-2 inline-block text-xs font-semibold text-primary hover:underline">{t("seeStatement")}</Link>}
+      </div>
+    );
+  if (status === "cancelledCustomer")
+    return (
+      <div className="rounded-xl border border-danger/20 bg-danger-soft/40 p-3 text-sm">
+        <p className="flex items-center gap-2 font-semibold text-danger"><Ban className="size-4" /> {t("cancelledCustomerTitle", { date: offer?.cancelledAt ? formatDate(offer.cancelledAt, lang) : "" })}</p>
+        <p className="mt-1 text-muted-foreground">{t("cancelledCustomerBody")}</p>
+      </div>
+    );
+  if (!report) return null;
+  const rejected = report.status === "canceled";
+  const reached = rejected ? REPORT_STEPS.length : Math.max(0, REPORT_STEPS.indexOf(report.status));
+  return (
+    <div className={cn("rounded-xl border p-3 text-sm", rejected ? "bg-surface-2/60" : "border-warning/30 bg-warning-soft/40")}>
+      <p className="flex items-center gap-2 font-semibold text-ink"><Flag className="size-4 text-warning" /> {rejected ? t("reportRejectedTitle") : t("reportTitleShort", { date: formatDate(report.createdAt, lang) })}</p>
+      <p className="mt-1 text-muted-foreground">{rejected ? t("reportRejectedBody") : t("reportProgressBody")}</p>
+      <ol className="mt-3 flex items-center gap-1" aria-label={t("reportSteps")}>
+        {[...REPORT_STEPS, rejected ? "canceled" : "confirmed"].map((s, i) => (
+          <li key={s} className="flex flex-1 flex-col gap-1">
+            <span className={cn("h-1.5 rounded-full", i <= reached ? (rejected && i === REPORT_STEPS.length ? "bg-muted-foreground" : "bg-warning") : "bg-muted")} />
+            <span className={cn("text-[11px]", i === reached ? "font-semibold text-ink" : "text-muted-foreground")}>{tst(s)}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-2 text-xs text-muted-foreground">“{report.reason}”</p>
+    </div>
   );
 }
 
