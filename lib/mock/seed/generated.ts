@@ -28,6 +28,7 @@ import type {
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { services } from "./catalog";
+import { DISPOSAL_ITEMS, DURATIONS, JOB_FORMS, jobKind, type JobDetails } from "@/lib/jobs";
 import { DAY, NOW, createRng, daysAgo, daysAhead } from "./rng";
 
 const rng = createRng();
@@ -315,7 +316,90 @@ for (const o of offers) {
   else if (o.status !== "in_progress") o.status = "in_progress";
 }
 
-/* ---------- who booked, which company the customer chose, no-shows ---------- */
+/* ---------- today's requests ---------- */
+// Submitted in the last hours. Most passed the automatic checks and wait in New for the team's look
+// before going on sale; one was flagged by the checks; two are already on sale.
+{
+  const xrng = createRng(20261026);
+  const TODAY: { status: LeadStatus; flags: VerificationFlag[]; service: string }[] = [
+    { status: "new", flags: [], service: "svc-private" },
+    { status: "new", flags: [], service: "svc-move-clean" },
+    { status: "new", flags: [], service: "svc-cleaning" },
+    { status: "new", flags: [], service: "svc-piano" },
+    { status: "new", flags: [], service: "svc-private" },
+    { status: "new", flags: ["invalid_phone"], service: "svc-storage" },
+    { status: "in_progress", flags: [], service: "svc-clearance" },
+    { status: "in_progress", flags: [], service: "svc-private" },
+  ];
+  const newest = Math.max(...offers.map((o) => Number(o.id.slice(3))));
+  const today: Offer[] = [];
+  TODAY.forEach((x, i) => {
+    const gender = xrng.chance(0.5) ? "male" : "female";
+    const first = gender === "male" ? xrng.pick(FIRST_M) : xrng.pick(FIRST_F);
+    const last = xrng.pick(LAST);
+    const from = xrng.pick(CITIES);
+    const to = xrng.chance(0.5) ? from : xrng.pick(CITIES);
+    const lead = xrng.int(12, 45);
+    today.push({
+      id: `KO-${newest + TODAY.length - i}`,
+      serviceId: x.service,
+      gender,
+      firstName: first,
+      lastName: last,
+      email: `${first.toLowerCase()}.${last.toLowerCase().replace(/ü/g, "ue")}@${xrng.pick(["gmail.com", "bluewin.ch", "outlook.com", "gmx.ch"])}`,
+      phone: phone2(xrng),
+      lang: xrng.pick(["de", "de", "fr", "it", "en"] as const),
+      ip: `${xrng.int(31, 213)}.${xrng.int(0, 255)}.${xrng.int(0, 255)}.${xrng.int(1, 254)}`,
+      device: xrng.pick(["desktop", "mobile", "mobile"] as const),
+      from: { street: `${xrng.pick(STREETS)} ${xrng.int(1, 99)}`, city: from.city, zip: from.zip, country: "CH", rooms: xrng.pick(["2", "2.5", "3.5", "4.5"]), floor: String(xrng.int(0, 5)), elevator: xrng.chance(0.6) },
+      to: { street: `${xrng.pick(STREETS)} ${xrng.int(1, 99)}`, city: to.city, zip: to.zip, country: "CH", rooms: xrng.pick(["2", "3", "3.5", "4.5"]), floor: String(xrng.int(0, 5)), elevator: xrng.chance(0.6) },
+      executionDate: daysAhead(lead),
+      deadline: daysAhead(lead - 5),
+      offersWanted: xrng.int(2, 5),
+      details: xrng.pick(DETAILS),
+      active: true,
+      status: x.status,
+      flags: x.flags,
+      booking: "personal",
+      source: i === 4 ? "admin" : "website",
+      ...(i === 4 ? { verifiedAt: daysAgo(0, -1) } : {}),
+      createdAt: daysAgo(0, -(i + 1) * 0.75),
+    });
+  });
+  // newest first, like the rest of the list
+  offers.unshift(...today);
+}
+
+/* ---------- the questions each service asks ---------- */
+// Cleaning, storage and disposal happen at one address; piano and storage don't need rooms.
+{
+  const jrng = createRng(20261027);
+  for (const o of offers) {
+    const kind = jobKind(services.find((x) => x.id === o.serviceId));
+    const form = JOB_FORMS[kind];
+    const job: JobDetails = {};
+    if (!form.to) delete o.to;
+    if (!form.rooms && !form.property) {
+      o.from.rooms = "";
+      if (o.to) o.to.rooms = "";
+    }
+    if (form.flexible && jrng.chance(0.3)) job.flexibleDate = true;
+    if (form.cleaningDate) job.cleaningDate = new Date(Date.parse(o.executionDate) + jrng.int(0, 2) * DAY).toISOString();
+    if (form.property) {
+      job.propertyType = jrng.pick(["flat", "flat", "flat", "house", "office"] as const);
+      if (jrng.chance(0.6)) job.areaM2 = jrng.int(45, 160);
+    }
+    if (form.cleaningType) job.cleaningType = jrng.pick(["endOfTenancy", "endOfTenancy", "deepClean", "regular"] as const);
+    if (form.instrument) job.instrument = jrng.pick(["upright", "upright", "grand", "digital"] as const);
+    if (form.amounts) job.amount = jrng.pick(form.amounts);
+    if (form.duration) job.duration = jrng.pick(DURATIONS);
+    if (form.items) job.items = jrng.sample(DISPOSAL_ITEMS, jrng.int(1, 3));
+    if (form.extras.length) job.extras = jrng.sample(form.extras, jrng.int(0, Math.min(2, form.extras.length)));
+    o.job = job;
+  }
+}
+
+/* ---------- who booked, and which company did the job (from the review survey) ---------- */
 const brng = createRng(20261025);
 for (const o of offers) {
   // about one request in six is filled in by another person (a son for his mother, a social worker…)
@@ -332,35 +416,13 @@ for (const o of offers) {
       address: `${brng.pick(STREETS)} ${brng.int(1, 80)}, ${city.zip} ${city.city}`,
     };
   }
-  // the company that did the job is the one the customer chose
+  // the customer named the company that did the job in the review survey
   const done = orders.find((x) => x.offerId === o.id && x.executed);
-  if (done) {
+  // only once the survey went out: the day after the move date
+  if (done && Date.parse(o.executionDate) + DAY <= NOW) {
     o.chosenPartnerId = done.partnerId;
     o.chosenAt = new Date(Date.parse(done.createdAt) + brng.int(24, 96) * 3_600_000).toISOString();
   }
-}
-// two customers reported that the company they chose did not come: one open, one solved with a replacement
-{
-  const candidates = offers.filter((o) => o.status === "in_progress" && orders.filter((x) => x.offerId === o.id).length >= 2);
-  candidates.slice(0, 2).forEach((o, i) => {
-    const [chosen, other] = orders.filter((x) => x.offerId === o.id);
-    // once a replacement confirms, it becomes the company doing the job
-    o.chosenPartnerId = i === 0 ? chosen.partnerId : other.partnerId;
-    o.chosenAt = daysAgo(4 + i);
-    o.noShow =
-      i === 0
-        ? { partnerId: chosen.partnerId, note: "Nobody came at 8:00 and the phone goes to voicemail.", reportedAt: daysAgo(0, -3), status: "open" }
-        : {
-            partnerId: chosen.partnerId,
-            note: "The team did not arrive on the agreed morning.",
-            reportedAt: daysAgo(3),
-            status: "resolved",
-            replacementPartnerId: other.partnerId,
-            companyReason: "Our truck broke down and we failed to call the customer.",
-            action: "warning",
-            resolvedAt: daysAgo(2),
-          };
-  });
 }
 
 export const fakeReports: FakeReport[] = rng.sample(orders, 9).map((o, i) => ({
@@ -472,7 +534,7 @@ export const reviews: Review[] = [
   const used = new Set<string>();
   for (const r of reviews) {
     if (r.target === "kompass") continue;
-    const o = offers.find((x) => x.status === "completed" && !x.noShow && x.chosenPartnerId === r.target && !used.has(x.id));
+    const o = offers.find((x) => x.status === "completed" && x.chosenPartnerId === r.target && !used.has(x.id));
     if (o) {
       used.add(o.id);
       r.offerId = o.id;

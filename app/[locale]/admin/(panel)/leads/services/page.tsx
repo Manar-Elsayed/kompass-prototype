@@ -6,6 +6,7 @@ import { FileEdit, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { LANGS, type L10n, type Service } from "@/lib/types";
+import { JOB_KINDS, type JobKind } from "@/lib/jobs";
 import { formatCHF, l10n, slugify, withFallback } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang } from "@/lib/mock/hooks";
@@ -19,7 +20,7 @@ import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { PageHeader } from "@/components/admin/ui";
 
 type Visibility = "live" | "soon" | "hidden";
-type Draft = { id?: string; name: L10n; icon: string; leadPrice: string; estFrom: string; estTo: string; visibility: Visibility };
+type Draft = { id?: string; name: L10n; icon: string; kind: JobKind; leadPrice: string; estFrom: string; estTo: string; visibility: Visibility };
 
 const visibilityOf = (s: Pick<Service, "active" | "comingSoon">): Visibility => (!s.active ? "hidden" : s.comingSoon ? "soon" : "live");
 const fromVisibility = (v: Visibility) => ({ active: v !== "hidden", comingSoon: v === "soon" });
@@ -42,7 +43,7 @@ export default function ServicesAdmin() {
     const to = Math.max(from, Number(draft.estTo) || 0);
     if (draft.id) {
       const s = services.find((x) => x.id === draft.id)!;
-      patch("services", draft.id, { name: withFallback(draft.name), icon: draft.icon, leadPrice: price, estimate: { ...s.estimate, from, to }, ...fromVisibility(draft.visibility), short: s.short });
+      patch("services", draft.id, { name: withFallback(draft.name), icon: draft.icon, leadPrice: price, kind: draft.kind, estimate: { ...s.estimate, from, to }, ...fromVisibility(draft.visibility), short: s.short });
     } else {
       const svc: Service = {
         id: `svc-${slugify(draft.name.en)}`,
@@ -55,6 +56,7 @@ export default function ServicesAdmin() {
         features: [],
         tips: [],
         leadPrice: price,
+        kind: draft.kind,
         estimate: { from, to, basis: l10n() },
         ...fromVisibility(draft.visibility),
         order: services.length + 1,
@@ -87,8 +89,8 @@ export default function ServicesAdmin() {
       accessorFn: (s) => s.estimate.from,
       cell: ({ row: { original: s } }) => <span className="whitespace-nowrap tabular-nums">{formatCHF(s.estimate.from, lang)} – {formatCHF(s.estimate.to, lang)}</span>,
     },
-    { id: "leads", header: t("admin.services.leads"), accessorFn: (s) => offers.filter((o) => o.serviceId === s.id).length },
-    { id: "partners", header: t("admin.services.partners"), accessorFn: (s) => partners.filter((p) => p.status === "approved" && p.serviceIds.includes(s.id)).length },
+    { id: "leads", meta: { className: "hidden 2xl:table-cell" }, header: t("admin.services.leads"), accessorFn: (s) => offers.filter((o) => o.serviceId === s.id).length },
+    { id: "partners", meta: { className: "hidden 2xl:table-cell" }, header: t("admin.services.partners"), accessorFn: (s) => partners.filter((p) => p.status === "approved" && p.serviceIds.includes(s.id)).length },
     {
       id: "active",
       header: t("admin.services.visible"),
@@ -96,7 +98,7 @@ export default function ServicesAdmin() {
       cell: ({ row: { original: s } }) => (
         <Select
           size="sm"
-          className="w-40"
+          className="w-36"
           value={visibilityOf(s)}
           onValueChange={(v) => {
             patch("services", s.id, fromVisibility(v as Visibility));
@@ -112,7 +114,7 @@ export default function ServicesAdmin() {
       enableSorting: false,
       cell: ({ row: { original: s } }) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="icon-sm" aria-label={t("common.actions.edit")} onClick={() => setDraft({ id: s.id, name: { ...s.name }, icon: s.icon, leadPrice: String(s.leadPrice), estFrom: String(s.estimate.from), estTo: String(s.estimate.to), visibility: visibilityOf(s) })}>
+          <Button variant="ghost" size="icon-sm" aria-label={t("common.actions.edit")} onClick={() => setDraft({ id: s.id, name: { ...s.name }, icon: s.icon, kind: s.kind, leadPrice: String(s.leadPrice), estFrom: String(s.estimate.from), estTo: String(s.estimate.to), visibility: visibilityOf(s) })}>
             <Pencil />
           </Button>
           <Button asChild variant="ghost" size="sm">
@@ -131,7 +133,7 @@ export default function ServicesAdmin() {
         title={t("admin.services.title")}
         subtitle={t("admin.services.subtitle")}
         actions={
-          <Button onClick={() => setDraft({ name: l10n(), icon: "Truck", leadPrice: "30", estFrom: "", estTo: "", visibility: "soon" })}>
+          <Button onClick={() => setDraft({ name: l10n(), icon: "Truck", kind: "move", leadPrice: "30", estFrom: "", estTo: "", visibility: "soon" })}>
             <Plus /> {t("admin.services.add")}
           </Button>
         }
@@ -140,7 +142,7 @@ export default function ServicesAdmin() {
         data={[...services].sort((a, b) => a.order - b.order)}
         columns={columns}
         search={(s) => `${LANGS.map((l) => s.name[l]).join(" ")} ${s.slug}`}
-        onRowClick={(s) => setDraft({ id: s.id, name: { ...s.name }, icon: s.icon, leadPrice: String(s.leadPrice), estFrom: String(s.estimate.from), estTo: String(s.estimate.to), visibility: visibilityOf(s) })}
+        onRowClick={(s) => setDraft({ id: s.id, name: { ...s.name }, icon: s.icon, kind: s.kind, leadPrice: String(s.leadPrice), estFrom: String(s.estimate.from), estTo: String(s.estimate.to), visibility: visibilityOf(s) })}
       />
 
       <Dialog open={!!draft} onOpenChange={(v) => !v && setDraft(null)}>
@@ -164,6 +166,9 @@ export default function ServicesAdmin() {
                     onValueChange={(v) => setDraft({ ...draft, icon: v })}
                     options={ICON_NAMES.map((n) => ({ value: n, label: <span className="flex items-center gap-2"><Icon name={n} className="size-4" />{n}</span> }))}
                   />
+                </Field>
+                <Field label={t("admin.services.kind")} hint={t("admin.services.kindHint")} className="sm:col-span-2">
+                  <Select value={draft.kind} onValueChange={(v) => setDraft({ ...draft, kind: v as JobKind })} options={JOB_KINDS.map((k) => ({ value: k, label: t(`admin.services.kinds.${k}`) }))} />
                 </Field>
                 <Field label={`${t("admin.services.leadPrice")} (CHF)`}>
                   <Input type="number" value={draft.leadPrice} onChange={(e) => setDraft({ ...draft, leadPrice: e.target.value })} dir="ltr" />

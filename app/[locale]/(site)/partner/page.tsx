@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/shared/icon";
 import { CtaBand, SectionHeading } from "@/components/site/sections";
+import { routeFull } from "@/lib/jobs";
 
 export default function PartnerLanding() {
   const t = useTranslations("site.partner");
@@ -60,7 +61,7 @@ export default function PartnerLanding() {
                 </div>
               </div>
               <div className="mt-5 space-y-3 rounded-2xl bg-surface-2 p-4 text-sm">
-                <p className="flex items-center gap-2"><MapPin className="size-4 text-accent" /> {sample.from.zip} {sample.from.city} → {sample.to.zip} {sample.to.city}</p>
+                <p className="flex items-center gap-2"><MapPin className="size-4 text-accent" /> {routeFull(sample)}</p>
                 <p className="flex items-center gap-2"><Home className="size-4 text-accent" /> {tf("floor")} {sample.from.floor} · {tf("elevator")}: {sample.from.elevator ? "✓" : "✗"}</p>
                 <p className="flex items-center gap-2"><Calendar className="size-4 text-accent" /> {new Date(sample.executionDate).toLocaleDateString(intlLocale(lang))}</p>
               </div>

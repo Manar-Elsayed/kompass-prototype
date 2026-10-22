@@ -5,9 +5,10 @@ import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, ExternalLink, Lock, MapPin, Flag, User, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, ExternalLink, Headset, Lock, MapPin, Flag, User, Users } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import type { BookingType, Offer } from "@/lib/types";
+import { CLEANING_TYPES, DISPOSAL_ITEMS, DURATIONS, INSTRUMENTS, JOB_FORMS, PROPERTY_TYPES, jobKind, type JobDetails, type JobKind } from "@/lib/jobs";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang } from "@/lib/mock/hooks";
@@ -25,56 +26,103 @@ const ROOMS = ["1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.5", "6", 
 const FLOORS = ["0", "1", "2", "3", "4", "5", "6", "7+"];
 
 const address = z.object({
-  zip: z.string().regex(/^\d{4}$/, "zip"),
-  city: z.string().min(1, "required"),
-  street: z.string().min(1, "required"),
-  rooms: z.string().min(1, "required"),
-  floor: z.string().min(1, "required"),
+  zip: z.string(),
+  city: z.string(),
+  street: z.string(),
+  rooms: z.string(),
+  floor: z.string(),
   elevator: z.boolean(),
 });
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE = /^[+\d][\d\s]{7,}$/;
 
+// Fields are lenient on their own; the rules below depend on the service (which questions it asks)
+// and on who the request is for, so they all live in one place.
 const schema = z
   .object({
-    serviceId: z.string().min(1, "required"),
+    serviceId: z.string(),
+    kind: z.string(),
     from: address,
     to: address,
-    executionDate: z.string().min(1, "required"),
+    executionDate: z.string(),
+    cleaningDate: z.string(),
+    flexibleDate: z.boolean(),
+    propertyType: z.string(),
+    areaM2: z.string(),
+    cleaningType: z.string(),
+    instrument: z.string(),
+    amount: z.string(),
+    duration: z.string(),
+    items: z.array(z.string()),
+    extras: z.array(z.string()),
     offersWanted: z.string(),
     details: z.string(),
     booking: z.enum(["personal", "other"]),
     // the person moving — the one companies serve and call
-    gender: z.enum(["male", "female"], { message: "required" }),
-    firstName: z.string().min(1, "required"),
-    lastName: z.string().min(1, "required"),
+    gender: z.string(),
+    firstName: z.string(),
+    lastName: z.string(),
     email: z.string(),
-    phone: z.string().regex(PHONE, "phone"),
+    phone: z.string(),
     // the other person, when the request is for someone else: whoever fills in the form
     reqFirstName: z.string(),
     reqLastName: z.string(),
     reqEmail: z.string(),
     reqPhone: z.string(),
     reqAddress: z.string(),
-    privacy: z.literal(true, { message: "required" }),
+    privacy: z.boolean().optional(),
   })
   .superRefine((v, ctx) => {
-    const need = (path: string, ok: boolean, message = "required") => {
-      if (!ok) ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
+    const need = (path: (string | number)[], ok: boolean, message = "required") => {
+      if (!ok) ctx.addIssue({ code: z.ZodIssueCode.custom, path, message });
     };
+    const filled = (x: string) => x.trim().length > 0;
+    /* step 1: the job */
+    need(["serviceId"], filled(v.serviceId));
+    if (v.serviceId) {
+      const form = JOB_FORMS[(v.kind || "move") as JobKind];
+      const place = (key: "from" | "to") => {
+        const p = v[key];
+        need([key, "zip"], /^\d{4}$/.test(p.zip), "zip");
+        need([key, "city"], filled(p.city));
+        need([key, "street"], filled(p.street));
+        need([key, "floor"], filled(p.floor));
+        if (form.rooms) need([key, "rooms"], filled(p.rooms));
+      };
+      place("from");
+      if (form.to) place("to");
+      need(["executionDate"], filled(v.executionDate));
+      if (form.cleaningDate) need(["cleaningDate"], filled(v.cleaningDate));
+      if (form.property) {
+        need(["propertyType"], filled(v.propertyType));
+        need(["from", "rooms"], filled(v.from.rooms));
+      }
+      if (form.cleaningType) need(["cleaningType"], filled(v.cleaningType));
+      if (form.instrument) need(["instrument"], filled(v.instrument));
+      if (form.amounts) need(["amount"], filled(v.amount));
+      if (form.duration) need(["duration"], filled(v.duration));
+      if (form.items) need(["items"], v.items.length > 0);
+    }
+    /* step 2: the people */
+    need(["gender"], v.gender === "male" || v.gender === "female");
+    need(["firstName"], filled(v.firstName));
+    need(["lastName"], filled(v.lastName));
+    need(["phone"], PHONE.test(v.phone), "phone");
     // booking for someone else: the person moving may have no email; companies then call them
-    if (v.booking === "personal" || v.email.trim()) need("email", EMAIL.test(v.email), "email");
-    if (v.booking === "personal") return;
-    need("reqFirstName", !!v.reqFirstName.trim());
-    need("reqLastName", !!v.reqLastName.trim());
-    need("reqEmail", EMAIL.test(v.reqEmail), "email");
-    need("reqPhone", PHONE.test(v.reqPhone), "phone");
-    need("reqAddress", !!v.reqAddress.trim());
+    if (v.booking === "personal" || filled(v.email)) need(["email"], EMAIL.test(v.email), "email");
+    if (v.booking === "other") {
+      need(["reqFirstName"], filled(v.reqFirstName));
+      need(["reqLastName"], filled(v.reqLastName));
+      need(["reqEmail"], EMAIL.test(v.reqEmail), "email");
+      need(["reqPhone"], PHONE.test(v.reqPhone), "phone");
+      need(["reqAddress"], filled(v.reqAddress));
+    }
+    need(["privacy"], v.privacy === true);
   });
 type FormValues = z.infer<typeof schema>;
 
-const STEP1: (keyof FormValues)[] = ["serviceId", "from", "to", "executionDate", "offersWanted", "details"];
+const STEP1: (keyof FormValues)[] = ["serviceId", "from", "to", "executionDate", "cleaningDate", "propertyType", "cleaningType", "instrument", "amount", "duration", "items"];
 
 export function OfferForm({
   defaultServiceId,
@@ -112,9 +160,21 @@ export function OfferForm({
     mode: "onTouched",
     defaultValues: {
       serviceId: defaultServiceId ?? "",
+      kind: jobKind(services.find((x) => x.id === defaultServiceId)),
       from: { ...emptyAddr, zip: defaultZip ?? "", city: zipCity },
       to: emptyAddr,
       executionDate: "",
+      cleaningDate: "",
+      flexibleDate: false,
+      propertyType: "",
+      areaM2: "",
+      cleaningType: "",
+      instrument: "",
+      amount: "",
+      duration: "",
+      items: [],
+      extras: [],
+      gender: "",
       offersWanted: "3",
       details: "",
       booking: "personal",
@@ -155,6 +215,10 @@ export function OfferForm({
     track({ step: "contact", name: `${v.firstName} ${v.lastName}`.trim() || undefined, email: v.email || undefined, phone: v.phone || undefined, serviceId: v.serviceId || undefined });
   };
   const errors = formState.errors;
+  const serviceIdNow = watch("serviceId");
+  useEffect(() => {
+    setValue("kind", jobKind(services.find((x) => x.id === serviceIdNow)));
+  }, [serviceIdNow, services, setValue]);
   const err = (msg?: string) => (msg ? t(`common.form.${msg}` as "common.form.required") : undefined);
 
   const next = async () => {
@@ -167,7 +231,19 @@ export function OfferForm({
   };
 
   const onSubmit = handleSubmit(async (v) => {
-    const toAddr = (a: FormValues["from"]) => ({ ...a, country: "CH" });
+    const form = JOB_FORMS[(v.kind || "move") as JobKind];
+    const toAddr = (a: FormValues["from"], rooms: boolean) => ({ ...a, rooms: rooms ? a.rooms : "", country: "CH" });
+    const job: JobDetails = {
+      ...(form.flexible && v.flexibleDate ? { flexibleDate: true } : {}),
+      ...(form.cleaningDate ? { cleaningDate: new Date(v.cleaningDate).toISOString() } : {}),
+      ...(form.property ? { propertyType: v.propertyType as JobDetails["propertyType"], ...(Number(v.areaM2) > 0 ? { areaM2: Number(v.areaM2) } : {}) } : {}),
+      ...(form.cleaningType ? { cleaningType: v.cleaningType as JobDetails["cleaningType"] } : {}),
+      ...(form.instrument ? { instrument: v.instrument as JobDetails["instrument"] } : {}),
+      ...(form.amounts ? { amount: v.amount as JobDetails["amount"] } : {}),
+      ...(form.duration ? { duration: v.duration as JobDetails["duration"] } : {}),
+      ...(form.items ? { items: v.items as JobDetails["items"] } : {}),
+      extras: v.extras.filter((x) => (form.extras as string[]).includes(x)) as JobDetails["extras"],
+    };
     const booking = v.booking as BookingType;
     const requester =
       booking === "personal"
@@ -177,7 +253,7 @@ export function OfferForm({
       () =>
         submitOffer({
           serviceId: v.serviceId,
-          gender: v.gender,
+          gender: v.gender as Offer["gender"],
           firstName: v.firstName,
           lastName: v.lastName,
           // without an email for the person moving, companies write to whoever booked
@@ -186,8 +262,9 @@ export function OfferForm({
           booking,
           requester,
           lang,
-          from: toAddr(v.from),
-          to: toAddr(v.to),
+          from: toAddr(v.from, form.rooms || !!form.property),
+          to: form.to ? toAddr(v.to, form.rooms) : undefined,
+          job,
           executionDate: new Date(v.executionDate).toISOString(),
           deadline: new Date(new Date(v.executionDate).getTime() - 5 * 86_400_000).toISOString(),
           offersWanted: Number(v.offersWanted),
@@ -222,7 +299,7 @@ export function OfferForm({
     );
   };
 
-  const addressBlock = (prefix: "from" | "to", title: string, icon: React.ReactNode) => (
+  const addressBlock = (prefix: "from" | "to", title: string, icon: React.ReactNode, withRooms: boolean) => (
     <fieldset className="rounded-xl border border-border bg-surface-2/40 p-4 sm:p-5">
       <legend className="flex items-center gap-2 px-1 text-sm font-bold text-ink">
         {icon}
@@ -238,16 +315,18 @@ export function OfferForm({
         <Field label={t("common.fields.street")} error={err(errors[prefix]?.street?.message)} className="sm:col-span-6" required>
           <Input {...register(`${prefix}.street`)} aria-invalid={!!errors[prefix]?.street} />
         </Field>
-        <Field label={t("common.fields.rooms")} error={err(errors[prefix]?.rooms?.message)} className="sm:col-span-2" required>
-          <Controller
-            control={control}
-            name={`${prefix}.rooms`}
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange} invalid={!!errors[prefix]?.rooms} placeholder="–" options={ROOMS.map((r) => ({ value: r, label: r }))} />
-            )}
-          />
-        </Field>
-        <Field label={t("common.fields.floor")} error={err(errors[prefix]?.floor?.message)} className="sm:col-span-2" required>
+        {withRooms && (
+          <Field label={t("common.fields.rooms")} error={err(errors[prefix]?.rooms?.message)} className="sm:col-span-2" required>
+            <Controller
+              control={control}
+              name={`${prefix}.rooms`}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} invalid={!!errors[prefix]?.rooms} placeholder="–" options={ROOMS.map((r) => ({ value: r, label: r }))} />
+              )}
+            />
+          </Field>
+        )}
+        <Field label={t("common.fields.floor")} error={err(errors[prefix]?.floor?.message)} className={withRooms ? "sm:col-span-2" : "sm:col-span-3"} required>
           <Controller
             control={control}
             name={`${prefix}.floor`}
@@ -256,7 +335,7 @@ export function OfferForm({
             )}
           />
         </Field>
-        <Field label={t("common.fields.elevator")} className="sm:col-span-2">
+        <Field label={t("common.fields.elevator")} className={withRooms ? "sm:col-span-2" : "sm:col-span-3"}>
           <Controller
             control={control}
             name={`${prefix}.elevator`}
@@ -281,10 +360,72 @@ export function OfferForm({
 
   const values = watch();
   const svc = services.find((s) => s.id === values.serviceId);
+  const kind = jobKind(svc);
+  const jobForm = JOB_FORMS[kind];
+  const jt = (key: string, v?: Record<string, string | number>) => t(`site.job.${key}` as "site.job.title", v);
+  // small helpers for the service-specific questions
+  const choice = (name: "propertyType" | "cleaningType" | "instrument" | "amount", options: readonly string[], cols: string) => (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <RadioCards className={cols} value={field.value} onValueChange={field.onChange} options={options.map((o) => ({ value: o, label: jt(`${name}.${o}`) }))} />
+      )}
+    />
+  );
+  const multi = (name: "items" | "extras", options: readonly string[]) => (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {options.map((o) => {
+            const on = field.value.includes(o);
+            // one toggle per option (a <label> around the checkbox would toggle it twice)
+            return (
+              <button
+                key={o}
+                type="button"
+                role="checkbox"
+                aria-checked={on}
+                onClick={() => field.onChange(on ? field.value.filter((x: string) => x !== o) : [...field.value, o])}
+                className={cn("flex items-center gap-3 rounded-lg border px-3 py-2.5 text-start text-sm transition", on ? "border-primary bg-primary-soft/60" : "border-input bg-surface hover:border-primary/40")}
+              >
+                <span aria-hidden className={cn("flex size-4 shrink-0 items-center justify-center rounded-[5px] border shadow-xs", on ? "border-primary bg-primary text-white" : "border-input bg-surface")}>
+                  {on && <Check className="size-3" strokeWidth={3} />}
+                </span>
+                {jt(`${name}.${o}`)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    />
+  );
   const booking = values.booking as BookingType;
   const forOther = booking !== "personal";
   // admin enters the request for a customer, so the labels talk about the customer, not "you"
+  const isAdmin = source === "admin";
   const bk = (key: string) => t(`site.booking.${key}${source === "admin" ? "Admin" : ""}` as "site.booking.who");
+  const whoField = (
+    <Field label={t("site.booking.who")} hint={bk(`${booking}Hint`)} required>
+      <Controller
+        control={control}
+        name="booking"
+        render={({ field }) => (
+          <RadioCards
+            className="grid-cols-1 sm:grid-cols-2"
+            value={field.value}
+            onValueChange={field.onChange}
+            options={[
+              { value: "personal", label: t("site.booking.personal"), icon: <User className="size-4" /> },
+              { value: "other", label: t("site.booking.other"), icon: <Users className="size-4" /> },
+            ]}
+          />
+        )}
+      />
+    </Field>
+  );
 
   if (done) {
     return shell(
@@ -324,12 +465,6 @@ export function OfferForm({
           >
             {t("site.offerForm.newRequest")}
           </Button>
-          <Button asChild>
-            <Link href={`/requests/${done.id}`}>
-              {t("site.offerForm.openRequest")}
-              <ArrowRight />
-            </Link>
-          </Button>
           <Button asChild variant="secondary">
             <Link href={`/admin/leads/${done.id}`}>
               <ExternalLink />
@@ -354,11 +489,11 @@ export function OfferForm({
       {/* header + steps */}
       <div className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-ink">{L(content.title)}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{L(content.subtitle)}</p>
+          <h3 className="text-2xl font-bold text-ink">{isAdmin ? t("admin.leads.form.title") : L(content.title)}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{isAdmin ? t("admin.leads.form.subtitle") : L(content.subtitle)}</p>
         </div>
         <ol className="flex items-center gap-2" aria-label={t("site.offerForm.stepOf", { step, total: 2 })}>
-          {[L(content.step1), L(content.step2)].map((label, i) => {
+          {(isAdmin ? [t("admin.leads.form.step1"), t("admin.leads.form.step2")] : [L(content.step1), L(content.step2)]).map((label, i) => {
             const n = i + 1;
             const state = step > n ? "done" : step === n ? "current" : "todo";
             return (
@@ -393,6 +528,8 @@ export function OfferForm({
 
       {step === 1 ? (
         <div className="grid gap-5">
+          {/* on Add lead the team first settles who is calling: it decides which contact sections step 2 asks for */}
+          {isAdmin && whoField}
           <Field label={t("site.offerForm.serviceLabel")} error={err(errors.serviceId?.message)} required>
             <Controller
               control={control}
@@ -439,30 +576,126 @@ export function OfferForm({
 
           {svc && <PriceEstimate service={svc} />}
 
-          <div className="grid gap-5 lg:grid-cols-2">
-            {addressBlock("from", t("site.offerForm.movingFrom"), <MapPin className="size-4 text-accent" />)}
-            {addressBlock("to", t("site.offerForm.movingTo"), <Flag className="size-4 text-primary" />)}
-          </div>
+          {!svc ? (
+            <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">{jt("pickService")}</p>
+          ) : (
+            <>
+              {/* Add lead: what to ask the customer on the phone for this service */}
+              {isAdmin && (
+                <p className="flex items-start gap-2 rounded-xl border border-info/30 bg-info-soft/40 p-3 text-sm text-ink">
+                  <Headset className="mt-0.5 size-4 shrink-0 text-info" />
+                  <span><strong>{jt("askTitle")}</strong> {jt(`ask.${kind}`)}</span>
+                </p>
+              )}
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label={t("site.offerForm.date")} error={err(errors.executionDate?.message)} required>
-              <Input type="date" min="2026-10-19" {...register("executionDate")} aria-invalid={!!errors.executionDate} />
-            </Field>
-            <Field label={t("site.offerForm.offersCount")} hint={t("site.offerForm.quotaHint", { count: Number(values.offersWanted) })}>
-              <Controller
-                control={control}
-                name="offersWanted"
-                render={({ field }) => (
-                  <RadioCards
-                    className="grid-cols-5"
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    options={Array.from({ length: maxOffers }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))}
-                  />
-                )}
-              />
-            </Field>
-          </div>
+              <div className={cn("grid gap-5", jobForm.to && "lg:grid-cols-2")}>
+                {addressBlock("from", jt(`from.${kind}`), <MapPin className="size-4 text-accent" />, jobForm.rooms)}
+                {jobForm.to && addressBlock("to", jt(`to.${kind}`), <Flag className="size-4 text-primary" />, jobForm.rooms)}
+              </div>
+
+              {/* the questions only this service asks */}
+              {(jobForm.property || jobForm.cleaningType || jobForm.instrument || jobForm.amounts || jobForm.duration || jobForm.items) && (
+                <fieldset className="grid gap-5 rounded-xl border border-border p-4 sm:p-5">
+                  <legend className="px-1 text-sm font-bold text-ink">{jt(`about.${kind}`)}</legend>
+                  {jobForm.property && (
+                    <div className="grid gap-4 sm:grid-cols-6">
+                      <Field label={jt("propertyTypeLabel")} error={err(errors.propertyType?.message)} className="sm:col-span-6" required>
+                        {choice("propertyType", PROPERTY_TYPES, "grid-cols-3")}
+                      </Field>
+                      <Field label={t("common.fields.rooms")} error={err(errors.from?.rooms?.message)} className="sm:col-span-3" required>
+                        <Controller
+                          control={control}
+                          name="from.rooms"
+                          render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange} invalid={!!errors.from?.rooms} placeholder="–" options={ROOMS.map((r) => ({ value: r, label: r }))} />
+                          )}
+                        />
+                      </Field>
+                      <Field label={jt("areaLabel")} hint={t("common.form.optional")} className="sm:col-span-3">
+                        <Input type="number" inputMode="numeric" min={10} dir="ltr" placeholder="80" {...register("areaM2")} />
+                      </Field>
+                    </div>
+                  )}
+                  {jobForm.cleaningType && (
+                    <Field label={jt("cleaningTypeLabel")} error={err(errors.cleaningType?.message)} required>
+                      {choice("cleaningType", CLEANING_TYPES, "grid-cols-1 sm:grid-cols-3")}
+                    </Field>
+                  )}
+                  {jobForm.instrument && (
+                    <Field label={jt("instrumentLabel")} error={err(errors.instrument?.message)} required>
+                      {choice("instrument", INSTRUMENTS, "grid-cols-3")}
+                    </Field>
+                  )}
+                  {jobForm.items && (
+                    <Field label={jt("itemsLabel")} error={err(errors.items?.message)} required>
+                      {multi("items", DISPOSAL_ITEMS)}
+                    </Field>
+                  )}
+                  {jobForm.amounts && (
+                    <Field label={jt(`amountLabel.${kind}`)} error={err(errors.amount?.message)} required>
+                      {choice("amount", jobForm.amounts, "grid-cols-2 sm:grid-cols-4")}
+                    </Field>
+                  )}
+                  {jobForm.duration && (
+                    <Field label={jt("durationLabel")} error={err(errors.duration?.message)} required>
+                      <Controller
+                        control={control}
+                        name="duration"
+                        render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange} invalid={!!errors.duration} placeholder="–" options={DURATIONS.map((d) => ({ value: d, label: jt(`duration.${d}`) }))} />
+                        )}
+                      />
+                    </Field>
+                  )}
+                </fieldset>
+              )}
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label={jt(`date.${kind}`)} error={err(errors.executionDate?.message)} required>
+                  <Input type="date" min="2026-10-19" {...register("executionDate")} aria-invalid={!!errors.executionDate} />
+                </Field>
+                {jobForm.cleaningDate ? (
+                  <Field label={jt("cleaningDateLabel")} hint={jt("cleaningDateHint")} error={err(errors.cleaningDate?.message)} required>
+                    <Input type="date" min={values.executionDate || "2026-10-19"} {...register("cleaningDate")} aria-invalid={!!errors.cleaningDate} />
+                  </Field>
+                ) : jobForm.flexible ? (
+                  <Field label={jt("flexibleLabel")}>
+                    <Controller
+                      control={control}
+                      name="flexibleDate"
+                      render={({ field }) => (
+                        <label className="flex h-10 items-center gap-3 rounded-lg border border-input bg-surface px-3 text-sm">
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          {jt("flexibleHint")}
+                        </label>
+                      )}
+                    />
+                  </Field>
+                ) : null}
+              </div>
+
+              {jobForm.extras.length > 0 && (
+                <Field label={jt("extrasLabel")} hint={t("common.form.optional")}>
+                  {multi("extras", jobForm.extras)}
+                </Field>
+              )}
+
+              <Field label={t("site.offerForm.offersCount")} hint={t("site.offerForm.quotaHint", { count: Number(values.offersWanted) })}>
+                <Controller
+                  control={control}
+                  name="offersWanted"
+                  render={({ field }) => (
+                    <RadioCards
+                      className="max-w-md grid-cols-5"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      options={Array.from({ length: maxOffers }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))}
+                    />
+                  )}
+                />
+              </Field>
+            </>
+          )}
 
           <Field label={t("site.offerForm.details")} hint={t("common.form.optional")}>
             <Textarea {...register("details")} placeholder={t("site.offerForm.detailsPh")} rows={3} />
@@ -481,23 +714,18 @@ export function OfferForm({
       ) : (
         <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           <div className="grid gap-5">
-            <Field label={t("site.booking.who")} hint={bk(`${booking}Hint`)} required>
-              <Controller
-                control={control}
-                name="booking"
-                render={({ field }) => (
-                  <RadioCards
-                    className="grid-cols-1 sm:grid-cols-2"
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    options={[
-                      { value: "personal", label: t("site.booking.personal"), icon: <User className="size-4" /> },
-                      { value: "other", label: t("site.booking.other"), icon: <Users className="size-4" /> },
-                    ]}
-                  />
-                )}
-              />
-            </Field>
+            {isAdmin ? (
+              <p className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-2/70 px-4 py-3 text-sm">
+                {forOther ? <Users className="size-4 text-primary" /> : <User className="size-4 text-primary" />}
+                <span className="text-muted-foreground">{t("site.booking.who")}</span>
+                <span className="font-semibold text-ink">{t(`site.booking.${booking}`)}</span>
+                <button type="button" onClick={() => setStep(1)} className="ms-auto font-semibold text-primary hover:underline">
+                  {t("common.actions.edit")}
+                </button>
+              </p>
+            ) : (
+              whoField
+            )}
 
             <p className="-mb-2 text-sm font-bold text-ink">{forOther ? t("site.booking.movingPerson") : bk("yourDetails")}</p>
             <Field label={t("common.fields.salutation")} error={err(errors.gender?.message)} required>
@@ -559,7 +787,7 @@ export function OfferForm({
             )}
             <div className="rounded-xl border border-primary/20 bg-primary-soft/50 p-4 text-sm">
               <p className="flex items-center gap-2 font-bold text-ink">
-                <Lock className="size-4 text-primary" /> {t("site.booking.privacyTitle")}
+                <Lock className="size-4 text-primary" /> {bk("privacyTitle")}
               </p>
               <ul className="mt-2 list-disc space-y-1 ps-6 text-foreground/85">
                 <li>{t("site.booking.privacy1")}</li>
@@ -574,7 +802,7 @@ export function OfferForm({
                 <label className="flex items-start gap-3 text-sm">
                   <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(v === true ? true : undefined)} className="mt-0.5" aria-invalid={!!errors.privacy} />
                   <span className={cn(errors.privacy && "text-danger")}>
-                    {t("site.offerForm.privacyAgree")}{" "}
+                    {isAdmin ? t("site.booking.privacyAgreeAdmin") : t("site.offerForm.privacyAgree")}{" "}
                     <Link href="/privacy" className="font-semibold text-primary underline-offset-2 hover:underline" target="_blank">
                       ↗
                     </Link>
@@ -593,15 +821,17 @@ export function OfferForm({
                 <dd className="text-end font-semibold">{svc ? L(svc.name) : "–"}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">{t("site.offerForm.movingFrom")}</dt>
+                <dt className="text-muted-foreground">{jt(`from.${kind}`)}</dt>
                 <dd className="text-end font-semibold">{values.from.zip} {values.from.city}</dd>
               </div>
+              {jobForm.to && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">{jt(`to.${kind}`)}</dt>
+                  <dd className="text-end font-semibold">{values.to.zip} {values.to.city}</dd>
+                </div>
+              )}
               <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">{t("site.offerForm.movingTo")}</dt>
-                <dd className="text-end font-semibold">{values.to.zip} {values.to.city}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">{t("site.offerForm.date")}</dt>
+                <dt className="text-muted-foreground">{jt(`date.${kind}`)}</dt>
                 <dd className="text-end font-semibold" dir="ltr">{values.executionDate || "–"}</dd>
               </div>
               <div className="flex justify-between gap-3">
@@ -628,7 +858,7 @@ export function OfferForm({
               {t("common.actions.back")}
             </Button>
             <Button type="submit" variant="accent" size="lg" loading={formState.isSubmitting}>
-              {formState.isSubmitting ? t("site.offerForm.sending") : t("site.offerForm.submit")}
+              {formState.isSubmitting ? t("site.offerForm.sending") : isAdmin ? t("admin.leads.form.submit") : t("site.offerForm.submit")}
             </Button>
           </div>
         </div>

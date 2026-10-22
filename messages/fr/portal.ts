@@ -151,11 +151,10 @@ export const portal: Built<typeof Def> = {
       pending: "Pas encore décidé",
     },
     choiceHint: {
-      you: "Le client a indiqué à Kompass qu’il vous a réservé. Tenez la date et confirmez les détails.",
-      other: "Le client a réservé une autre entreprise pour ce travail.",
-      pending: "Le client ne nous a pas encore dit quelle entreprise il a réservée.",
+      you: "Dans le questionnaire d’avis, le client a indiqué que vous avez fait le travail.",
+      other: "Dans le questionnaire d’avis, le client a indiqué une autre entreprise.",
+      pending: "Le client n’a pas encore répondu au questionnaire d’avis.",
     },
-    noShowAgainst: "Le client a signalé que vous ne vous êtes pas présenté. Kompass vous contactera.",
     bookedBy: "Réservé par {name}",
     outcome: {
       active: "Ouvert",
@@ -189,6 +188,7 @@ export const portal: Built<typeof Def> = {
     reportRejectedTitle: "Votre signalement de faux lead n’a pas été confirmé",
     reportRejectedBody: "Kompass a vérifié les coordonnées du client et la demande est réelle, il n’y a donc pas de remboursement.",
     reportSteps: "Suivi du signalement",
+    boughtOn: "Acheté le {date}",
   },
   payments: {
     topUpOnline: "Recharger en ligne",

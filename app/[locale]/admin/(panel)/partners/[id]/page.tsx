@@ -32,6 +32,7 @@ import { CompanyDocuments, ContactCompanyDialog } from "@/components/admin/compa
 import { FileManager } from "@/components/admin/file-manager";
 import { PayoutDecisionDialog } from "@/components/admin/payout-actions";
 import { MessageCenter } from "@/components/shared/message-thread";
+import { routeText } from "@/lib/jobs";
 
 const TABS = ["overview", "documents", "bookings", "wallet", "reviews", "files", "messages"] as const;
 
@@ -163,7 +164,7 @@ function PartnerDetail() {
                 <tr key={o.id} className="border-t">
                   <td className="px-4 py-2.5"><Mono>{o.id}</Mono></td>
                   <td className="px-4 py-2.5"><Link href={`/admin/leads/${o.offerId}`} className="font-mono text-[13px] font-semibold text-primary hover:underline">{o.offerId}</Link></td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{offer?.from.city} → {offer?.to.city}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{offer ? routeText(offer) : "–"}</td>
                   <td className="px-4 py-2.5">{t(`admin.shop.${o.channel}`)}</td>
                   <td className="px-4 py-2.5 font-semibold">{formatCHF(o.price, lang)}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{formatDate(o.createdAt, lang)}</td>
@@ -186,7 +187,7 @@ function PartnerDetail() {
                       viewHref={`/admin/leads/${o.offerId}`}
                       actions={[
                         { label: t(o.executed ? "admin.rows.markNotDone" : "admin.rows.markDone"), icon: o.executed ? <RotateCcw /> : <CheckCircle2 />, onSelect: () => setExecuted(o, !o.executed) },
-                        { label: t("admin.leads.detail.customerPage"), icon: <ExternalLink />, href: `/requests/${o.offerId}` },
+                        { label: t("admin.leads.survey.openSurvey"), icon: <ExternalLink />, href: `/requests/${o.offerId}` },
                       ]}
                     />
                   </td>

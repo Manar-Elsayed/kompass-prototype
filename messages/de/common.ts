@@ -44,6 +44,11 @@ export const common: Built<typeof Def> = {
     perPage: "Zeilen pro Seite",
     all: "Alle",
     selected: "{count} ausgewählt",
+    exportPick: "Zeilen für den Export wählen",
+    selectAll: "Alle {count} wählen",
+    exportSelected: "{count, plural, =0 {Exportieren} one {# Zeile exportieren} other {# Zeilen exportieren}}",
+    exported: "{count, plural, one {# Zeile exportiert} other {# Zeilen exportiert}}",
+    selectRow: "Zeile wählen",
   },
   status: {
     new: "Neu",

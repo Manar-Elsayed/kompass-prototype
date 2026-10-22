@@ -22,6 +22,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
+import { JobFacts, JobPlaces } from "@/components/shared/job-details";
+import { routeFull, routeText } from "@/lib/jobs";
 
 const REASONS = ["phone", "never", "duplicate", "unreachable"] as const;
 const GROUPS: LeadGroup[] = ["open", "executed", "reported", "cancelled"];
@@ -104,14 +106,22 @@ function MyLeads() {
     });
 
   const columns: ColumnDef<Order, unknown>[] = [
+    // the reference with the day it was bought (sorting by it = newest purchases first)
     {
-      id: "lead",
+      id: "bought",
       header: tf("reference"),
-      accessorFn: (o) => o.offerId,
+      accessorFn: (o) => o.createdAt,
       cell: ({ row: { original: o } }) => (
-        <span className="flex flex-col items-start gap-1">
-          <Mono>{o.offerId}</Mono>
-          {o.channel === "manual" && <Badge tone="accent"><Headset /> {t("assigned")}</Badge>}
+        <span className="flex flex-col items-start gap-0.5 whitespace-nowrap">
+          <span className="flex items-center gap-1.5">
+            <Mono>{o.offerId}</Mono>
+            {o.channel === "manual" && (
+              <Badge tone="accent" className="px-1.5" title={t("assigned")}>
+                <Headset aria-label={t("assigned")} />
+              </Badge>
+            )}
+          </span>
+          <span className="text-xs text-muted-foreground">{t("boughtOn", { date: formatDate(o.createdAt, lang) })}</span>
         </span>
       ),
     },
@@ -122,19 +132,45 @@ function MyLeads() {
       cell: ({ row: { original: o } }) => {
         const x = offerMap[o.offerId];
         return (
-          <div>
-            <p className="font-semibold text-ink">{x?.firstName} {x?.lastName}</p>
-            <p className="text-xs text-muted-foreground" dir="ltr">{x?.phone}</p>
+          <div className="w-32 min-w-0 2xl:w-44">
+            <p className="truncate font-semibold text-ink">{x?.firstName} {x?.lastName}</p>
+            <p className="truncate text-xs text-muted-foreground" dir="ltr">{x?.phone}</p>
           </div>
         );
       },
     },
-    { id: "svc", header: tf("service"), accessorFn: (o) => L(serviceMap[offerMap[o.offerId]?.serviceId ?? ""]?.name) },
-    { id: "route", header: tl("route"), accessorFn: (o) => `${offerMap[o.offerId]?.from.city} → ${offerMap[o.offerId]?.to.city}`, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{c.getValue() as string}</span> },
+    {
+      id: "svc",
+      header: tf("service"),
+      accessorFn: (o) => L(serviceMap[offerMap[o.offerId]?.serviceId ?? ""]?.name),
+      cell: (c) => <p className="w-20 font-medium leading-snug text-ink 2xl:w-32">{c.getValue() as string}</p>,
+    },
+    {
+      id: "route",
+      header: tl("route"),
+      accessorFn: (o) => (offerMap[o.offerId] ? routeText(offerMap[o.offerId]) : ""),
+      cell: ({ row: { original: o } }) => {
+        const x = offerMap[o.offerId];
+        return (
+          <p className="w-28 truncate text-muted-foreground 2xl:w-48" title={x ? routeFull(x) : undefined}>
+            {x ? routeText(x) : "–"}
+          </p>
+        );
+      },
+    },
     { id: "exec", header: tl("execution"), accessorFn: (o) => offerMap[o.offerId]?.executionDate ?? "", cell: (c) => <span className="whitespace-nowrap">{c.getValue() ? formatDate(c.getValue() as string, lang) : "–"}</span> },
-    { id: "paid", header: t("paid"), accessorFn: (o) => o.price, cell: ({ row: { original: o } }) => <span className="font-semibold">{formatCHF(o.price, lang)}{o.couponCode && <span className="ms-1 text-xs font-normal text-success" dir="ltr">({o.couponCode})</span>}</span> },
-    { id: "bought", header: t("bought"), accessorFn: (o) => o.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
-    { id: "choice", header: t("choiceCol"), accessorFn: (o) => choiceOf(o), cell: ({ row: { original: o } }) => choice(o) },
+    {
+      id: "paid",
+      header: t("paid"),
+      accessorFn: (o) => o.price,
+      cell: ({ row: { original: o } }) => (
+        <div className="whitespace-nowrap">
+          <p className="font-semibold">{formatCHF(o.price, lang)}</p>
+          {o.couponCode && <p className="font-mono text-xs text-success" dir="ltr">{o.couponCode}</p>}
+        </div>
+      ),
+    },
+    { id: "choice", meta: { className: "hidden 2xl:table-cell" }, header: t("choiceCol"), accessorFn: (o) => choiceOf(o), cell: ({ row: { original: o } }) => choice(o) },
     { id: "status", header: tf("status"), accessorFn: (o) => outcomeOf(o).status, cell: ({ row: { original: o } }) => status(o) },
   ];
 
@@ -176,7 +212,6 @@ function MyLeads() {
                   <div className={cn("rounded-xl border p-3 text-sm", choiceOf(open) === "you" ? "border-success/30 bg-success-soft/40" : "bg-surface-2/60")}>
                     <p className="font-semibold text-ink">{choice(open)}</p>
                     <p className="mt-1 text-muted-foreground">{t(`choiceHint.${choiceOf(open)}`)}</p>
-                    {lead.noShow?.partnerId === partner.id && <p className="mt-2 font-semibold text-danger">{t("noShowAgainst")}</p>}
                   </div>
                 )}
                 <Card className="bg-primary-soft/40 p-4 shadow-none">
@@ -194,19 +229,8 @@ function MyLeads() {
                   </div>
                   <p className="mt-3 text-sm" dir="ltr">{lead.phone} · {lead.email}</p>
                 </Card>
-                {(["from", "to"] as const).map((k) => (
-                  <section key={k} className="rounded-xl border p-4">
-                    <p className="mb-3 text-sm font-bold text-ink">{tof(k === "from" ? "movingFrom" : "movingTo")}</p>
-                    <DL
-                      items={[
-                        { label: tf("street"), value: lead[k].street },
-                        { label: tf("city"), value: `${lead[k].zip} ${lead[k].city}` },
-                        { label: tf("rooms"), value: lead[k].rooms },
-                        { label: tf("floor"), value: `${lead[k].floor} · ${tf("elevator")} ${lead[k].elevator ? "✓" : "✗"}` },
-                      ]}
-                    />
-                  </section>
-                ))}
+                <JobPlaces offer={lead} />
+                <JobFacts offer={lead} cols={1} />
                 <DL items={[{ label: tl("execution"), value: formatDate(lead.executionDate, lang) }, { label: t("paid"), value: formatCHF(open.price, lang) }]} />
                 {lead.details && <p className="rounded-xl border border-dashed p-4 text-sm">“{lead.details}”</p>}
               </div>

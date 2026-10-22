@@ -35,7 +35,7 @@ export default function LeadShop() {
   const cantons = [...new Set(all.map((x) => cantonOf(x.offer.from.zip)).filter(Boolean))].sort();
   // "my area" = the cantons the company set in its profile (moves starting or ending there)
   const area = partnerCantons(partner);
-  const inArea = (x: (typeof all)[number]) => area.includes(cantonOf(x.offer.from.zip)) || area.includes(cantonOf(x.offer.to.zip));
+  const inArea = (x: (typeof all)[number]) => area.includes(cantonOf(x.offer.from.zip)) || (!!x.offer.to && area.includes(cantonOf(x.offer.to.zip)));
   // start on "my area" when it has leads, otherwise show everything rather than an empty shop
   const canton = pickedCanton ?? (all.some(inArea) ? "mine" : "all");
 

@@ -151,11 +151,10 @@ export const portal: Built<typeof Def> = {
       pending: "Noch nicht entschieden",
     },
     choiceHint: {
-      you: "Der Kunde hat Kompass mitgeteilt, dass er Sie gebucht hat. Halten Sie den Termin ein und bestätigen Sie die Details.",
-      other: "Der Kunde hat für diesen Auftrag eine andere Firma gebucht.",
-      pending: "Der Kunde hat uns noch nicht mitgeteilt, welche Firma er gebucht hat.",
+      you: "In der Bewertungsumfrage hat der Kunde angegeben, dass Sie den Auftrag ausgeführt haben.",
+      other: "In der Bewertungsumfrage hat der Kunde eine andere Firma angegeben.",
+      pending: "Der Kunde hat die Bewertungsumfrage noch nicht beantwortet.",
     },
-    noShowAgainst: "Der Kunde hat gemeldet, dass Sie nicht erschienen sind. Kompass wird Sie kontaktieren.",
     bookedBy: "Gebucht von {name}",
     outcome: {
       active: "Offen",
@@ -189,6 +188,7 @@ export const portal: Built<typeof Def> = {
     reportRejectedTitle: "Ihre Fake-Lead-Meldung wurde nicht bestätigt",
     reportRejectedBody: "Kompass hat die Angaben des Kunden geprüft und die Anfrage als echt eingestuft. Es gibt daher keine Rückerstattung.",
     reportSteps: "Stand der Meldung",
+    boughtOn: "Gekauft am {date}",
   },
   payments: {
     topUpOnline: "Online aufladen",

@@ -47,7 +47,7 @@ export default function PartnersPage() {
       ),
     },
     {
-      id: "services",
+      id: "services", meta: { className: "hidden 2xl:table-cell" },
       header: t("common.fields.services"),
       accessorFn: (p) => p.serviceIds.map((id) => L(serviceMap[id]?.name)).join(", "),
       enableSorting: false,

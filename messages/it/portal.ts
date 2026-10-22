@@ -151,11 +151,10 @@ export const portal: Built<typeof Def> = {
       pending: "Non ancora deciso",
     },
     choiceHint: {
-      you: "Il cliente ha comunicato a Kompass di avervi prenotato. Rispettate la data e confermate i dettagli.",
-      other: "Il cliente ha prenotato un’altra ditta per questo lavoro.",
-      pending: "Il cliente non ci ha ancora detto quale ditta ha prenotato.",
+      you: "Nel questionario di valutazione il cliente ha indicato che avete svolto il lavoro.",
+      other: "Nel questionario di valutazione il cliente ha indicato un’altra ditta.",
+      pending: "Il cliente non ha ancora risposto al questionario di valutazione.",
     },
-    noShowAgainst: "Il cliente ha segnalato che non vi siete presentati. Kompass vi contatterà.",
     bookedBy: "Prenotato da {name}",
     outcome: {
       active: "Aperto",
@@ -189,6 +188,7 @@ export const portal: Built<typeof Def> = {
     reportRejectedTitle: "La Sua segnalazione di lead falso non è stata confermata",
     reportRejectedBody: "Kompass ha verificato i dati del cliente e ha ritenuto la richiesta reale: non è previsto alcun rimborso.",
     reportSteps: "Stato della segnalazione",
+    boughtOn: "Acquistato il {date}",
   },
   payments: {
     topUpOnline: "Ricarica online",

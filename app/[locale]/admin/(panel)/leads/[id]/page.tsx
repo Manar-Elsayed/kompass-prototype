@@ -28,7 +28,7 @@ import type { CancelReason, Offer, Order } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { CITIES } from "@/lib/mock/seed";
-import { canBuyLeads, companyScore, daysLeft, isExpiringSoon } from "@/lib/mock/selectors";
+import { canBuyLeads, companyScore, daysLeft, isExpiringSoon, surveyDate, surveySent } from "@/lib/mock/selectors";
 import { useL, useLang, usePartnerMap, useServiceMap } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { Icon } from "@/components/shared/icon";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
-import { NoShowPanel } from "@/components/admin/no-show-panel";
+import { SurveyEmail } from "@/components/site/request-bits";
+import { JobFacts, JobPlaces } from "@/components/shared/job-details";
 
 const cantonOf = (city: string) => CITIES.find((c) => c.city === city)?.canton;
 
@@ -106,21 +107,6 @@ export default function LeadDetail() {
     toast.success(tl("reposted", { id: offer.id, count: matching }));
   };
 
-  const addr = (a: Offer["from"], icon: React.ReactNode, title: string) => (
-    <div className="rounded-xl bg-surface-2/70 p-4">
-      <p className="mb-3 flex items-center gap-2 text-sm font-bold text-ink">{icon}{title}</p>
-      <DL
-        items={[
-          { label: t("common.fields.street"), value: a.street },
-          { label: t("common.fields.city"), value: `${a.zip} ${a.city}` },
-          { label: t("common.fields.rooms"), value: a.rooms },
-          { label: t("common.fields.floor"), value: a.floor },
-          { label: t("common.fields.elevator"), value: a.elevator ? t("common.form.yes") : t("common.form.no") },
-          { label: t("common.fields.country"), value: a.country },
-        ]}
-      />
-    </div>
-  );
 
   const timeline = [
     { at: offer.createdAt, text: t("admin.leads.detail.submitted"), icon: <Flag className="size-3.5" /> },
@@ -132,9 +118,8 @@ export default function LeadDetail() {
     })),
     offer.status === "completed" && orders.length && { at: orders[orders.length - 1].createdAt, text: tl("evCompleted"), icon: <CheckCircle2 className="size-3.5" /> },
     offer.repostedAt && { at: offer.repostedAt, text: tl("evReposted"), icon: <RotateCcw className="size-3.5" /> },
-    offer.chosenAt && { at: offer.chosenAt, text: tl("evChosen", { name: partnerMap[offer.noShow?.partnerId ?? offer.chosenPartnerId ?? ""]?.name ?? "?" }), icon: <Hand className="size-3.5" /> },
-    offer.noShow && { at: offer.noShow.reportedAt, text: tl("evNoShow", { name: partnerMap[offer.noShow.partnerId]?.name ?? "?" }), icon: <AlertTriangle className="size-3.5" /> },
-    offer.noShow?.resolvedAt && { at: offer.noShow.resolvedAt, text: tl("evNoShowResolved"), icon: <CheckCircle2 className="size-3.5" /> },
+    surveySent(offer) && { at: surveyDate(offer), text: tl("evSurveySent"), icon: <Mail className="size-3.5" /> },
+    offer.chosenAt && { at: offer.chosenAt, text: tl("evChosen", { name: partnerMap[offer.chosenPartnerId ?? ""]?.name ?? "?" }), icon: <Hand className="size-3.5" /> },
     offer.buyersNotifiedAt && { at: offer.buyersNotifiedAt, text: tl("evNotified"), icon: <Mail className="size-3.5" /> },
     offer.status === "expired" && { at: offer.deadline, text: tl("evExpired"), icon: <Clock className="size-3.5" /> },
     offer.cancelledAt && {
@@ -195,7 +180,6 @@ export default function LeadDetail() {
 
       <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
         <div className="space-y-4">
-          {offer.noShow && <NoShowPanel offer={offer} orders={orders} />}
           {/* state panel: what needs attention right now */}
           {offer.status === "cancelled" ? (
             <Card className="flex items-start gap-3 border-danger/20 bg-danger-soft/40 p-4">
@@ -277,9 +261,9 @@ export default function LeadDetail() {
                   <p className="text-sm text-muted-foreground">{t("admin.leads.execution")}: {formatDate(offer.executionDate, lang)} · {t("admin.leads.deadline")}: {formatDate(offer.deadline, lang)}</p>
                 </div>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                {addr(offer.from, <MapPin className="size-4 text-accent" />, t("site.offerForm.movingFrom"))}
-                {addr(offer.to, <Flag className="size-4 text-primary" />, t("site.offerForm.movingTo"))}
+              <JobPlaces offer={offer} />
+              <div className="mt-4">
+                <JobFacts offer={offer} />
               </div>
               {offer.details && (
                 <div className="mt-4 rounded-xl border border-dashed p-4">
@@ -318,7 +302,6 @@ export default function LeadDetail() {
                           {o.note && <p className="mt-0.5 text-xs text-ink">{o.note}</p>}
                         </div>
                         {o.partnerId === offer.chosenPartnerId && <Badge tone="primary"><Hand /> {tl("chosen")}</Badge>}
-                        {o.partnerId === offer.noShow?.partnerId && <Badge tone="danger"><AlertTriangle /> {tl("noShowBadge")}</Badge>}
                         {o.executed && <Badge tone="success">{t("admin.shop.executed")}</Badge>}
                         <span className="font-semibold">{formatCHF(o.price, lang)}</span>
                       </li>
@@ -344,36 +327,47 @@ export default function LeadDetail() {
 
         <div className="space-y-4">
           <Card>
-            <CardHeader title={t("admin.leads.customer")} />
+            <CardHeader title={t("admin.leads.customer")} action={<Badge tone={offer.booking === "personal" ? "neutral" : "info"}>{t(`site.booking.${offer.booking}`)}</Badge>} />
             <CardBody className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Avatar name={`${offer.firstName} ${offer.lastName}`} className="size-11" />
-                <div>
-                  <p className="font-bold text-ink">{t(offer.gender === "male" ? "common.form.mr" : "common.form.ms")} {offer.firstName} {offer.lastName}</p>
-                  <p className="text-xs text-muted-foreground">{t(`common.lang.${offer.lang}`)}</p>
+              {/* the person the companies serve and call */}
+              <section className={cn("space-y-3", offer.requester && "rounded-xl border p-3")}>
+                {offer.requester && <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tl("receivesService")}</p>}
+                <div className="flex items-center gap-3">
+                  <Avatar name={`${offer.firstName} ${offer.lastName}`} className="size-11" />
+                  <div>
+                    <p className="font-bold text-ink">{t(offer.gender === "male" ? "common.form.mr" : "common.form.ms")} {offer.firstName} {offer.lastName}</p>
+                    <p className="text-xs text-muted-foreground">{t(`common.lang.${offer.lang}`)}</p>
+                  </div>
                 </div>
-              </div>
-              <Badge tone={offer.booking === "personal" ? "neutral" : "info"}>{t(`site.booking.${offer.booking}`)}</Badge>
-              <div className="space-y-2 text-sm">
-                <a href={`mailto:${offer.email}`} className="flex items-center gap-2 hover:text-primary"><Mail className="size-4 text-muted-foreground" />{offer.email}</a>
-                <a href={`tel:${offer.phone}`} className="flex items-center gap-2 hover:text-primary"><Phone className="size-4 text-muted-foreground" />{offer.phone}</a>
-              </div>
+                <div className="space-y-2 text-sm">
+                  {offer.requester && offer.email === offer.requester.email ? (
+                    <p className="flex items-center gap-2 text-muted-foreground"><Mail className="size-4" />{tl("noOwnEmail")}</p>
+                  ) : (
+                    <a href={`mailto:${offer.email}`} className="flex items-center gap-2 hover:text-primary" dir="ltr"><Mail className="size-4 text-muted-foreground" />{offer.email}</a>
+                  )}
+                  <a href={`tel:${offer.phone}`} className="flex items-center gap-2 hover:text-primary" dir="ltr"><Phone className="size-4 text-muted-foreground" />{offer.phone}</a>
+                </div>
+              </section>
+              {/* whoever filled in the request for them: gets the confirmation and the survey */}
               {offer.requester && (
-                <div className="rounded-xl bg-surface-2/70 p-3 text-sm">
-                  <p className="mb-1 text-xs font-semibold text-muted-foreground">{tl("bookedBy")}</p>
-                  <p className="font-semibold text-ink">{offer.requester.firstName} {offer.requester.lastName}</p>
-                  <a href={`mailto:${offer.requester.email}`} className="block text-muted-foreground hover:text-primary" dir="ltr">{offer.requester.email}</a>
-                  <a href={`tel:${offer.requester.phone}`} className="block text-muted-foreground hover:text-primary" dir="ltr">{offer.requester.phone}</a>
-                  {offer.requester.address && <p className="text-muted-foreground">{offer.requester.address}</p>}
-                </div>
+                <section className="space-y-3 rounded-xl border bg-surface-2/60 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tl("filledInBy")}</p>
+                  <div className="flex items-center gap-3">
+                    <Avatar name={`${offer.requester.firstName} ${offer.requester.lastName}`} className="size-11" />
+                    <p className="font-bold text-ink">{offer.requester.firstName} {offer.requester.lastName}</p>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <a href={`mailto:${offer.requester.email}`} className="flex items-center gap-2 hover:text-primary" dir="ltr"><Mail className="size-4 text-muted-foreground" />{offer.requester.email}</a>
+                    <a href={`tel:${offer.requester.phone}`} className="flex items-center gap-2 hover:text-primary" dir="ltr"><Phone className="size-4 text-muted-foreground" />{offer.requester.phone}</a>
+                    {offer.requester.address && <p className="flex items-start gap-2"><MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />{offer.requester.address}</p>}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{tl("filledInByHint")}</p>
+                </section>
               )}
-              <Button asChild size="sm" variant="ghost" className="w-full justify-start">
-                <Link href={`/requests/${offer.id}`} target="_blank">
-                  <ArrowRight /> {tl("customerPage")}
-                </Link>
-              </Button>
             </CardBody>
           </Card>
+
+          <SurveyCard offer={offer} orders={orders} />
 
           <Card>
             <CardHeader title={tl("timeline")} />
@@ -608,5 +602,70 @@ function NotifyDialog({ offer, orders, onClose }: { offer: Offer; orders: Order[
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Customers have no account: the day after the move date they get one review-survey email (which
+ * company did the job, how it went, how Kompass did). This shows when it goes out and the answer.
+ */
+function SurveyCard({ offer, orders }: { offer: Offer; orders: Order[] }) {
+  const t = useTranslations("admin.leads.survey");
+  const lang = useLang();
+  const reviews = useStore((s) => s.reviews);
+  const partnerMap = usePartnerMap();
+  const [preview, setPreview] = useState(false);
+  const answers = reviews.filter((r) => r.offerId === offer.id);
+  const companyReview = answers.find((r) => r.target !== "kompass");
+  const kompassReview = answers.find((r) => r.target === "kompass");
+  const sent = surveySent(offer);
+  const cancelled = offer.status === "cancelled";
+  const noBuyers = orders.length === 0;
+
+  return (
+    <Card>
+      <CardHeader title={t("title")} />
+      <CardBody className="space-y-3 text-sm">
+        <p className="flex items-center gap-2">
+          <Mail className="size-4 shrink-0 text-muted-foreground" />
+          {cancelled || noBuyers ? (
+            <span className="text-muted-foreground">{t(cancelled ? "notSentCancelled" : "notSentNoBuyers")}</span>
+          ) : sent ? (
+            <span>{t("sentOn", { date: formatDate(surveyDate(offer), lang) })}</span>
+          ) : (
+            <span>{t("goesOut", { date: formatDate(surveyDate(offer), lang) })}</span>
+          )}
+        </p>
+        {answers.length > 0 ? (
+          <div className="rounded-xl bg-success-soft/40 p-3">
+            <p className="mb-1 flex items-center gap-1.5 font-semibold text-ink"><CheckCircle2 className="size-4 text-success" /> {t("answered")}</p>
+            <p className="text-muted-foreground">
+              {offer.chosenPartnerId ? t("didTheJob", { name: partnerMap[offer.chosenPartnerId]?.name ?? "?" }) : t("noneOfThem")}
+            </p>
+            {companyReview && <p className="text-muted-foreground">{t("companyStars", { stars: companyReview.stars })}</p>}
+            {kompassReview && <p className="text-muted-foreground">{t("kompassStars", { stars: kompassReview.stars })}</p>}
+          </div>
+        ) : (
+          !cancelled && !noBuyers && <p className="text-muted-foreground">{t(sent ? "noAnswer" : "notYet")}</p>
+        )}
+        {!cancelled && !noBuyers && (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => setPreview(true)}><Mail /> {t("previewEmail")}</Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link href={`/requests/${offer.id}`} target="_blank"><ArrowRight /> {t("openSurvey")}</Link>
+            </Button>
+          </div>
+        )}
+      </CardBody>
+      <Dialog open={preview} onOpenChange={setPreview}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("previewEmail")}</DialogTitle>
+            <DialogDescription>{t("previewHint")}</DialogDescription>
+          </DialogHeader>
+          <SurveyEmail offer={offer} />
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 }

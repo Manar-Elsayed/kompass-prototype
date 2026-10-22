@@ -15,6 +15,7 @@ import {
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsUpDown, Columns3, Download, Search, SearchX, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/controls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -78,6 +79,9 @@ export function DataTable<T>({
   const [sorting, setSorting] = React.useState<SortingState>(initialSort ?? []);
   const [visibility, setVisibility] = React.useState<VisibilityState>({});
   const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize });
+  // export works on chosen rows: the download button first switches to choosing them
+  const [selecting, setSelecting] = React.useState(false);
+  const [picked, setPicked] = React.useState<Set<T>>(() => new Set());
 
   const rows = React.useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -112,10 +116,26 @@ export function DataTable<T>({
   const hasFilters = q || Object.values(active).some((v) => v && v !== "__all");
   const pages = table.getPageCount() || 1;
 
+  const togglePick = (r: T) =>
+    setPicked((p) => {
+      const next = new Set(p);
+      if (next.has(r)) next.delete(r);
+      else next.add(r);
+      return next;
+    });
+  const allPicked = rows.length > 0 && rows.every((r) => picked.has(r));
+  const stopSelecting = () => {
+    setSelecting(false);
+    setPicked(new Set());
+  };
+
   const exportCsv = () => {
+    // in the table's current sort order, only the chosen rows
+    const out = table.getSortedRowModel().rows.map((r) => r.original).filter((r) => picked.has(r));
+    if (!out.length) return;
     const cols = table.getVisibleLeafColumns().filter((c) => c.id !== "actions");
     const header = cols.map((c) => (typeof c.columnDef.header === "string" ? c.columnDef.header : c.id));
-    const lines = rows.map((r) =>
+    const lines = out.map((r) =>
       cols
         .map((c) => {
           const v = (c.columnDef as { accessorFn?: (r: T, i: number) => unknown }).accessorFn?.(r, 0) ?? "";
@@ -128,7 +148,8 @@ export function DataTable<T>({
     a.href = URL.createObjectURL(blob);
     a.download = "kompass-export.csv";
     a.click();
-    toast.success(`${rows.length} rows exported`);
+    toast.success(t("table.exported", { count: out.length }));
+    stopSelecting();
   };
 
   return (
@@ -186,11 +207,36 @@ export function DataTable<T>({
                 ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm" className="h-9" onClick={exportCsv} aria-label={t("actions.export")}>
+          <Button
+            variant={selecting ? "secondary" : "outline"}
+            size="sm"
+            className="h-9"
+            onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+            aria-label={t("actions.export")}
+            aria-pressed={selecting}
+            title={t("actions.export")}
+          >
             <Download />
           </Button>
         </div>
       </div>
+
+      {/* choosing rows to export */}
+      {selecting && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b bg-primary-soft/50 px-4 py-2.5 text-sm" role="region" aria-label={t("table.exportPick")}>
+          <p className="font-semibold text-ink">{t("table.exportPick")}</p>
+          <span className="text-muted-foreground">{t("table.selected", { count: picked.size })}</span>
+          <button type="button" className="font-semibold text-primary hover:underline" onClick={() => setPicked(allPicked ? new Set() : new Set(rows))}>
+            {allPicked ? t("actions.clear") : t("table.selectAll", { count: rows.length })}
+          </button>
+          <div className="ms-auto flex gap-2">
+            <Button variant="ghost" size="sm" onClick={stopSelecting}>{t("actions.cancel")}</Button>
+            <Button size="sm" onClick={exportCsv} disabled={!picked.size}>
+              <Download /> {t("table.exportSelected", { count: picked.size })}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* table */}
       <div className="overflow-x-auto">
@@ -198,14 +244,19 @@ export function DataTable<T>({
           <thead className="bg-surface-2/60">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
-                {hg.headers.map((h) => {
+                {selecting && (
+                  <th className="w-px py-2.5 ps-4 pe-1">
+                    <Checkbox checked={allPicked} onCheckedChange={() => setPicked(allPicked ? new Set() : new Set(rows))} aria-label={t("table.selectAll", { count: rows.length })} />
+                  </th>
+                )}
+                {hg.headers.filter((h) => !(selecting && h.column.id === "actions")).map((h) => {
                   const sortable = h.column.getCanSort();
                   const dir = h.column.getIsSorted();
                   return (
                     <th
                       key={h.id}
                       className={cn(
-                        "whitespace-nowrap px-4 py-2.5 text-start text-xs font-semibold text-muted-foreground",
+                        "whitespace-nowrap px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground first:ps-4 last:pe-4",
                         (h.column.columnDef.meta as { className?: string } | undefined)?.className,
                       )}
                     >
@@ -227,23 +278,30 @@ export function DataTable<T>({
             {table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                onClick={onRowClick ? (e) => {
+                onClick={selecting || onRowClick ? (e) => {
                   // clicks inside menus, selects and dialogs opened from a cell bubble here through their portal
                   if (!e.currentTarget.contains(e.target as Node)) return;
                   if ((e.target as HTMLElement).closest("button,a,[role=switch],[role=combobox],input,label")) return;
-                  onRowClick(row.original);
+                  if (selecting) togglePick(row.original);
+                  else onRowClick?.(row.original);
                 } : undefined}
                 className={cn(
                   "border-t transition-colors",
-                  onRowClick && "cursor-pointer hover:bg-surface-2/70",
+                  (selecting || onRowClick) && "cursor-pointer hover:bg-surface-2/70",
+                  selecting && picked.has(row.original) && "bg-primary-soft/40 hover:bg-primary-soft/60",
                   rowClassName?.(row.original),
                 )}
               >
-                {row.getVisibleCells().map((cell) => (
+                {selecting && (
+                  <td className={cn("w-px ps-4 pe-1 align-middle", dense ? "py-2" : "py-3")}>
+                    <Checkbox checked={picked.has(row.original)} onCheckedChange={() => togglePick(row.original)} aria-label={t("table.selectRow")} />
+                  </td>
+                )}
+                {row.getVisibleCells().filter((cell) => !(selecting && cell.column.id === "actions")).map((cell) => (
                   <td
                     key={cell.id}
                     className={cn(
-                      "px-4 align-middle",
+                      "px-3 align-middle first:ps-4 last:pe-4",
                       dense ? "py-2" : "py-3",
                       (cell.column.columnDef.meta as { className?: string } | undefined)?.className,
                     )}

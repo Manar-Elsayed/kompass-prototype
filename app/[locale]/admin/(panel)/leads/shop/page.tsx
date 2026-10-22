@@ -38,21 +38,43 @@ export default function ShopPage() {
   const dynRev = orders.filter((o) => o.channel === "dynamic").reduce((a, o) => a + o.price, 0);
 
   const columns: ColumnDef<Order, unknown>[] = [
-    { id: "order", header: t("admin.shop.order"), accessorFn: (o) => o.id, cell: (c) => <Mono>{c.getValue() as string}</Mono> },
-    { id: "lead", header: t("admin.leads.id"), accessorFn: (o) => o.offerId, cell: (c) => <Link href={`/admin/leads/${c.getValue()}`} className="font-mono text-[13px] font-semibold text-primary hover:underline" dir="ltr">{c.getValue() as string}</Link> },
-    { id: "customer", header: t("admin.shop.customer"), accessorFn: (o) => { const x = offerMap[o.offerId]; return x ? `${x.firstName} ${x.lastName}` : "–"; } },
+    {
+      id: "order",
+      header: t("admin.shop.order"),
+      accessorFn: (o) => o.createdAt,
+      cell: ({ row: { original: o } }) => (
+        <div className="whitespace-nowrap">
+          <Mono>{o.id}</Mono>
+          <p className="text-xs text-muted-foreground">{formatDateTime(o.createdAt, lang)}</p>
+        </div>
+      ),
+    },
+    {
+      id: "lead",
+      header: t("admin.leads.id"),
+      accessorFn: (o) => o.offerId,
+      cell: ({ row: { original: o } }) => {
+        const x = offerMap[o.offerId];
+        return (
+          <div className="w-36 min-w-0">
+            <Link href={`/admin/leads/${o.offerId}`} className="font-mono text-[13px] font-semibold text-primary hover:underline" dir="ltr">{o.offerId}</Link>
+            <p className="truncate text-xs text-muted-foreground">{x ? `${x.firstName} ${x.lastName}` : "–"}</p>
+          </div>
+        );
+      },
+    },
     {
       id: "company",
       header: t("admin.shop.company"),
       accessorFn: (o) => partnerMap[o.partnerId]?.name ?? "–",
       cell: (c) => (
-        <span className="flex items-center gap-2 font-semibold text-ink">
-          <Avatar name={c.getValue() as string} square className="size-7 text-[10px]" />
-          {c.getValue() as string}
+        <span className="flex w-44 min-w-0 items-center gap-2 font-semibold text-ink">
+          <Avatar name={c.getValue() as string} square className="size-7 shrink-0 text-[10px]" />
+          <span className="truncate">{c.getValue() as string}</span>
         </span>
       ),
     },
-    { id: "service", header: t("common.fields.service"), accessorFn: (o) => L(serviceMap[offerMap[o.offerId]?.serviceId]?.name) },
+    { id: "service", meta: { className: "hidden 2xl:table-cell" }, header: t("common.fields.service"), accessorFn: (o) => L(serviceMap[offerMap[o.offerId]?.serviceId]?.name) },
     {
       id: "channel",
       header: t("admin.shop.channel"),
@@ -66,9 +88,17 @@ export default function ShopPage() {
           <Badge tone="accent"><Zap /> {t("admin.shop.dynamic")}</Badge>
         ),
     },
-    { id: "price", header: t("common.fields.price"), accessorFn: (o) => o.price, cell: (c) => <span className="font-semibold">{formatCHF(c.getValue() as number, lang)}</span> },
-    { id: "coupon", header: t("admin.shop.coupon"), accessorFn: (o) => o.couponCode ?? "", cell: (c) => (c.getValue() ? <Mono>{c.getValue() as string}</Mono> : <span className="text-muted-foreground">–</span>) },
-    { id: "date", header: t("common.fields.date"), accessorFn: (o) => o.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDateTime(c.getValue() as string, lang)}</span> },
+    {
+      id: "price",
+      header: t("common.fields.price"),
+      accessorFn: (o) => o.price,
+      cell: ({ row: { original: o } }) => (
+        <div className="whitespace-nowrap">
+          <p className="font-semibold">{formatCHF(o.price, lang)}</p>
+          {o.couponCode && <p className="font-mono text-xs text-success" dir="ltr">{o.couponCode}</p>}
+        </div>
+      ),
+    },
     {
       id: "done",
       header: t("common.fields.status"),
@@ -103,7 +133,7 @@ export default function ShopPage() {
         columns={columns}
         search={(x) => `${x.id} ${x.offerId} ${partnerMap[x.partnerId]?.name}`}
         onRowClick={(x) => setOpenId(x.id)}
-        initialSort={[{ id: "date", desc: true }]}
+        initialSort={[{ id: "order", desc: true }]}
         filters={[
           { id: "channel", label: t("admin.shop.channel"), options: (["shop", "dynamic", "manual"] as const).map((c) => ({ value: c, label: t(`admin.shop.${c}`) })), get: (x) => x.channel },
           { id: "done", label: t("common.fields.status"), options: [{ value: "yes", label: t("admin.shop.executed") }, { value: "no", label: t("admin.shop.notExecuted") }], get: (x) => (x.executed ? "yes" : "no") },
@@ -153,7 +183,7 @@ export default function ShopPage() {
                       { label: t("common.fields.email"), value: o.email, ltr: true },
                       { label: t("common.fields.service"), value: L(serviceMap[o.serviceId]?.name) },
                       { label: t("site.offerForm.movingFrom"), value: `${o.from.zip} ${o.from.city}` },
-                      { label: t("site.offerForm.movingTo"), value: `${o.to.zip} ${o.to.city}` },
+                      ...(o.to ? [{ label: t("site.offerForm.movingTo"), value: `${o.to.zip} ${o.to.city}` }] : []),
                     ]}
                   />
                   <Link href={`/admin/leads/${o.id}`} className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">
