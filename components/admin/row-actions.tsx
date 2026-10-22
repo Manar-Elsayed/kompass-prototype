@@ -77,7 +77,7 @@ export function RowActions({ onView, viewHref, actions = [] }: { onView?: () => 
 
 /** Column definition for {@link RowActions}, so every table puts it last with the same width. */
 export function actionsColumn<T>(render: (row: T) => React.ReactNode): ColumnDef<T, unknown> {
-  return { id: "actions", header: "", enableSorting: false, enableHiding: false, meta: { className: "w-px" }, cell: ({ row }) => render(row.original) };
+  return { id: "actions", header: "", enableSorting: false, enableHiding: false, meta: { className: "w-px ps-1" }, cell: ({ row }) => render(row.original) };
 }
 
 /**

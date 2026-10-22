@@ -210,7 +210,6 @@ function MyLeads() {
                   <div className={cn("rounded-xl border p-3 text-sm", choiceOf(open) === "you" ? "border-success/30 bg-success-soft/40" : "bg-surface-2/60")}>
                     <p className="font-semibold text-ink">{choice(open)}</p>
                     <p className="mt-1 text-muted-foreground">{t(`choiceHint.${choiceOf(open)}`)}</p>
-                    {lead.noShow?.partnerId === partner.id && <p className="mt-2 font-semibold text-danger">{t("noShowAgainst")}</p>}
                   </div>
                 )}
                 <Card className="bg-primary-soft/40 p-4 shadow-none">

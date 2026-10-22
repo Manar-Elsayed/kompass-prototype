@@ -62,25 +62,18 @@ function Leads() {
       },
     });
 
+  // dates in the current year without the year (the full date shows on hover)
+  const thisYear = new Date().getFullYear();
+  const shortDate = (iso: string) => formatDate(iso, lang, new Date(iso).getFullYear() === thisYear ? { day: "2-digit", month: "short" } : undefined);
+
   const columns: ColumnDef<Offer, unknown>[] = [
-    // the lead number with the day it came in (sorting by number = sorting by age)
-    {
-      id: "id",
-      header: t("admin.leads.id"),
-      accessorFn: (o) => o.id,
-      cell: ({ row: { original: o } }) => (
-        <div className="whitespace-nowrap">
-          <Mono>{o.id}</Mono>
-          <p className="text-xs text-muted-foreground">{formatDate(o.createdAt, lang)}</p>
-        </div>
-      ),
-    },
+    { id: "id", header: t("admin.leads.id"), accessorFn: (o) => o.id, cell: ({ row }) => <Mono className="whitespace-nowrap">{row.original.id}</Mono> },
     {
       id: "customer",
       header: t("admin.leads.customer"),
       accessorFn: (o) => `${o.firstName} ${o.lastName}`,
       cell: ({ row: { original: o } }) => (
-        <div className="w-32 min-w-0 2xl:w-48">
+        <div className="w-28 min-w-0 2xl:w-48">
           <p className="truncate font-semibold text-ink">{o.firstName} {o.lastName}</p>
           <p className="truncate text-xs text-muted-foreground" dir="ltr" title={o.email}>{o.email}</p>
         </div>
@@ -98,19 +91,25 @@ function Leads() {
       header: t("admin.leads.route"),
       accessorFn: (o) => `${o.from.city} → ${o.to.city}`,
       cell: ({ row: { original: o } }) => (
-        <p className="w-32 truncate text-muted-foreground 2xl:w-48" title={`${o.from.zip} ${o.from.city} → ${o.to.zip} ${o.to.city}`}>
+        <p className="w-24 truncate text-muted-foreground 2xl:w-48" title={`${o.from.zip} ${o.from.city} → ${o.to.zip} ${o.to.city}`}>
           {o.from.city === o.to.city ? t("admin.leads.localMove", { city: o.from.city }) : <>{o.from.city} <span className="text-foreground/40">→</span> {o.to.city}</>}
         </p>
       ),
     },
-    // the job date with how long the offer stays on sale
+    // received and job dates side by side; the job date also says how long the offer stays on sale
+    {
+      id: "created",
+      header: t("common.fields.created"),
+      accessorFn: (o) => o.createdAt,
+      cell: (c) => <span className="whitespace-nowrap text-muted-foreground" title={formatDate(c.getValue() as string, lang)}>{shortDate(c.getValue() as string)}</span>,
+    },
     {
       id: "execution",
       header: t("admin.leads.execution"),
       accessorFn: (o) => o.executionDate,
       cell: ({ row: { original: o } }) => (
         <div className="whitespace-nowrap">
-          <p>{formatDate(o.executionDate, lang)}</p>
+          <p title={formatDate(o.executionDate, lang)}>{shortDate(o.executionDate)}</p>
           {(o.status === "in_progress" || o.status === "new") && (
             <p className={cn("text-xs", isExpiringSoon(o) ? "font-semibold text-warning" : "text-muted-foreground")}>
               {t("admin.leads.expiresIn", { days: Math.max(0, daysLeft(o.deadline)) })}
@@ -134,7 +133,6 @@ function Leads() {
           <span className={cn("text-xs", (sold[o.id] ?? 0) >= o.offersWanted ? "font-semibold text-success" : (sold[o.id] ?? 0) ? "text-ink" : "text-muted-foreground")}>
             {t("admin.leads.soldShort", { sold: sold[o.id] ?? 0, wanted: o.offersWanted })}
           </span>
-          {o.noShow && o.noShow.status !== "resolved" && <Badge tone="danger">{t("admin.leads.noShowOpen")}</Badge>}
         </div>
       ),
     },
@@ -182,7 +180,7 @@ function Leads() {
               },
             },
             { label: t("admin.rows.assignCompany"), icon: <UserPlus />, href: `/admin/leads/${o.id}#assign`, hidden: !open || full },
-            { label: t("admin.leads.detail.customerPage"), icon: <ExternalLink />, href: `/requests/${o.id}` },
+            { label: t("admin.leads.survey.openSurvey"), icon: <ExternalLink />, href: `/requests/${o.id}` },
             { label: t("admin.leads.detail.cancel"), icon: <Ban />, tone: "danger", href: `/admin/leads/${o.id}#cancel`, hidden: o.status === "cancelled", separated: true },
           ]}
         />
@@ -216,11 +214,10 @@ function Leads() {
             id: "attention",
             label: t("admin.leads.attention"),
             options: [
-              { value: "noshow", label: t("admin.leads.noShowOpen") },
               { value: "review", label: t("admin.leads.needsReview") },
               { value: "expiring", label: t("admin.leads.expiringSoon") },
             ],
-            get: (o) => (o.noShow && o.noShow.status !== "resolved" ? "noshow" : o.status === "new" ? "review" : isExpiringSoon(o) ? "expiring" : ""),
+            get: (o) => (o.status === "new" ? "review" : isExpiringSoon(o) ? "expiring" : ""),
           },
           { id: "service", label: t("common.fields.service"), options: services.map((s) => ({ value: s.id, label: L(s.name) })), get: (o) => o.serviceId },
           { id: "lang", label: t("common.fields.language"), options: ["de", "en", "fr", "it"].map((l) => ({ value: l, label: t(`common.lang.${l}`) })), get: (o) => o.lang },

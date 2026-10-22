@@ -68,5 +68,5 @@ flowchart LR
 
 ## Out of scope (decided 22 Oct 2026)
 
-- The no-show response flow (the company writes its explanation) and public replies to reviews.
+- Public replies to reviews.
 - Real authentication, real email sending and real payment providers. Everything is simulated through `lib/mock`.

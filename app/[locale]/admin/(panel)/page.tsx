@@ -13,7 +13,6 @@ import {
   FileX2,
   MessageSquareReply,
   ShieldAlert,
-  UserX,
   Star,
   Trophy,
   UserPlus,
@@ -61,7 +60,6 @@ export default function Dashboard() {
   // what needs a human now, most urgent first; empty items are hidden
   const todo = [
     { icon: MessageSquareReply, n: db.contacts.filter(needsFollowUp).length, label: "todoFollowUp", href: "/admin/inbox", urgent: true },
-    { icon: UserX, n: db.offers.filter((o) => o.noShow && o.noShow.status !== "resolved").length, label: "todoNoShow", href: "/admin/leads?attention=noshow", urgent: true },
     { icon: ShieldAlert, n: db.offers.filter((o) => o.status === "new").length, label: "todoReview", href: "/admin/leads?attention=review", urgent: true },
     { icon: Clock, n: db.offers.filter(isExpiringSoon).length, label: "todoExpiring", href: "/admin/leads?attention=expiring" },
     { icon: FileX2, n: db.partners.filter((p) => p.status === "approved" && !p.banned && !canBuyLeads(p)).length, label: "todoDocs", href: "/admin/partners" },

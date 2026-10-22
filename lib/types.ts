@@ -67,21 +67,6 @@ export interface Person {
   address?: string;
 }
 
-/** A customer reports that the chosen company did not show up; Kompass follows it up. */
-export type NoShowStatus = "open" | "replacement" | "resolved";
-export type NoShowAction = "none" | "warning" | "suspended" | "removed";
-export interface NoShowCase {
-  partnerId: ID;
-  note: string;
-  reportedAt: string;
-  status: NoShowStatus;
-  /** Another company that bought the offer and confirmed it can do the job. */
-  replacementPartnerId?: ID;
-  companyReason?: string;
-  action?: NoShowAction;
-  resolvedAt?: string;
-}
-
 export interface Offer {
   id: ID; // e.g. "KO-10234"
   serviceId: ID;
@@ -105,10 +90,9 @@ export interface Offer {
   booking: BookingType;
   /** The other person (who filled in the form) when the request is for someone else. */
   requester?: Person;
-  /** The company the customer chose to do the job (selling the details doesn't mean it was booked). */
+  /** The company that did the job, as the customer answered in the review survey sent after the move date. */
   chosenPartnerId?: ID;
   chosenAt?: string;
-  noShow?: NoShowCase;
   cancelReason?: CancelReason;
   cancelledAt?: string;
   verifiedAt?: string;

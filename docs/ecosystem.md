@@ -58,5 +58,5 @@ flowchart LR
 
 ## Next phase
 
-- **Partner portal** is now in the prototype (`/portal`). It covers onboarding with contract signing, lead shop by service area, lead outcomes and refunds, wallet with invoices, payouts and a CSV statement, two-way messages with Kompass, a notification bell and to-do list, and a profile with logo, photos, service area and email preferences. See [partner-portal.md](partner-portal.md). Still open: public replies to reviews and the company's side of a no-show case.
+- **Partner portal** is now in the prototype (`/portal`). It covers onboarding with contract signing, lead shop by service area, lead outcomes and refunds, wallet with invoices, payouts and a CSV statement, two-way messages with Kompass, a notification bell and to-do list, and a profile with logo, photos, service area and email preferences. See [partner-portal.md](partner-portal.md). Still open: public replies to reviews.
 - Replace `lib/mock/api.ts` with real endpoints. Screens call store actions and do not depend on transport.

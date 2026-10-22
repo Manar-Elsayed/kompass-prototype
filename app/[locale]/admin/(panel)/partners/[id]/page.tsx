@@ -186,7 +186,7 @@ function PartnerDetail() {
                       viewHref={`/admin/leads/${o.offerId}`}
                       actions={[
                         { label: t(o.executed ? "admin.rows.markNotDone" : "admin.rows.markDone"), icon: o.executed ? <RotateCcw /> : <CheckCircle2 />, onSelect: () => setExecuted(o, !o.executed) },
-                        { label: t("admin.leads.detail.customerPage"), icon: <ExternalLink />, href: `/requests/${o.offerId}` },
+                        { label: t("admin.leads.survey.openSurvey"), icon: <ExternalLink />, href: `/requests/${o.offerId}` },
                       ]}
                     />
                   </td>

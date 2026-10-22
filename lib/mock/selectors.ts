@@ -101,6 +101,14 @@ export function finance(db: LedgerDB) {
 /** Whole days until the customer's deadline (negative once it has passed). */
 export const daysLeft = (iso: string) => Math.ceil((Date.parse(iso) - refNow()) / DAY);
 
+/**
+ * Customers have no account. The day after the move date Kompass emails them a short review survey:
+ * which company did the job, how it went, and how Kompass did.
+ */
+export const SURVEY_DELAY_DAYS = 1;
+export const surveyDate = (o: Pick<Offer, "executionDate">) => new Date(Date.parse(o.executionDate) + SURVEY_DELAY_DAYS * DAY).toISOString();
+export const surveySent = (o: Pick<Offer, "executionDate" | "status">) => o.status !== "cancelled" && Date.parse(surveyDate(o)) <= refNow();
+
 /** On sale, inside the deadline window where admin should repost it (2-3 days, per the brief). */
 export const EXPIRING_DAYS = 3;
 export const isExpiringSoon = (o: Pick<Offer, "status" | "deadline">) => {

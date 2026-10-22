@@ -148,11 +148,10 @@ export const portal = {
       pending: "Not decided yet",
     },
     choiceHint: {
-      you: "The customer told Kompass they booked you. Keep the date and confirm the details.",
-      other: "The customer booked another company for this job.",
-      pending: "The customer hasn’t told us yet which company they booked.",
+      you: "In the review survey, the customer said you did the job.",
+      other: "In the review survey, the customer said another company did the job.",
+      pending: "The customer hasn’t answered the review survey yet.",
     },
-    noShowAgainst: "The customer reported that you did not show up. Kompass will contact you.",
     bookedBy: "Booked by {name}",
     outcome: {
       active: "Open",

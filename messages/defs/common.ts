@@ -41,6 +41,11 @@ export const common = {
     perPage: "Rows per page",
     all: "All",
     selected: "{count} selected",
+    exportPick: "Choose the rows to export",
+    selectAll: "Select all {count}",
+    exportSelected: "{count, plural, =0 {Export} one {Export # row} other {Export # rows}}",
+    exported: "{count, plural, one {# row exported} other {# rows exported}}",
+    selectRow: "Select row",
   },
   status: {
     new: "New",

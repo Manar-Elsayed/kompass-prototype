@@ -344,12 +344,6 @@ export function OfferForm({
           >
             {t("site.offerForm.newRequest")}
           </Button>
-          <Button asChild>
-            <Link href={`/requests/${done.id}`}>
-              {t("site.offerForm.openRequest")}
-              <ArrowRight />
-            </Link>
-          </Button>
           <Button asChild variant="secondary">
             <Link href={`/admin/leads/${done.id}`}>
               <ExternalLink />
