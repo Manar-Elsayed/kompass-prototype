@@ -111,9 +111,15 @@ function MyLeads() {
       accessorFn: (o) => o.createdAt,
       cell: ({ row: { original: o } }) => (
         <span className="flex flex-col items-start gap-0.5 whitespace-nowrap">
-          <Mono>{o.offerId}</Mono>
+          <span className="flex items-center gap-1.5">
+            <Mono>{o.offerId}</Mono>
+            {o.channel === "manual" && (
+              <Badge tone="accent" className="px-1.5" title={t("assigned")}>
+                <Headset aria-label={t("assigned")} />
+              </Badge>
+            )}
+          </span>
           <span className="text-xs text-muted-foreground">{t("boughtOn", { date: formatDate(o.createdAt, lang) })}</span>
-          {o.channel === "manual" && <Badge tone="accent"><Headset /> {t("assigned")}</Badge>}
         </span>
       ),
     },
@@ -124,7 +130,7 @@ function MyLeads() {
       cell: ({ row: { original: o } }) => {
         const x = offerMap[o.offerId];
         return (
-          <div className="w-36 min-w-0">
+          <div className="w-32 min-w-0 2xl:w-44">
             <p className="truncate font-semibold text-ink">{x?.firstName} {x?.lastName}</p>
             <p className="truncate text-xs text-muted-foreground" dir="ltr">{x?.phone}</p>
           </div>
@@ -133,17 +139,20 @@ function MyLeads() {
     },
     {
       id: "svc",
-      header: tl("serviceRoute"),
+      header: tf("service"),
       accessorFn: (o) => L(serviceMap[offerMap[o.offerId]?.serviceId ?? ""]?.name),
+      cell: (c) => <p className="w-20 font-medium leading-snug text-ink 2xl:w-32">{c.getValue() as string}</p>,
+    },
+    {
+      id: "route",
+      header: tl("route"),
+      accessorFn: (o) => `${offerMap[o.offerId]?.from.city} → ${offerMap[o.offerId]?.to.city}`,
       cell: ({ row: { original: o } }) => {
         const x = offerMap[o.offerId];
         return (
-          <div className="w-40 min-w-0">
-            <p className="truncate font-medium text-ink">{L(serviceMap[x?.serviceId ?? ""]?.name)}</p>
-            <p className="truncate text-xs text-muted-foreground" title={x ? `${x.from.zip} ${x.from.city} → ${x.to.zip} ${x.to.city}` : undefined}>
-              {x?.from.city} <span className="text-foreground/40">→</span> {x?.to.city}
-            </p>
-          </div>
+          <p className="w-28 truncate text-muted-foreground 2xl:w-48" title={x ? `${x.from.zip} ${x.from.city} → ${x.to.zip} ${x.to.city}` : undefined}>
+            {x?.from.city} <span className="text-foreground/40">→</span> {x?.to.city}
+          </p>
         );
       },
     },

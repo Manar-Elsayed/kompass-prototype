@@ -86,22 +86,22 @@ function Leads() {
         </div>
       ),
     },
-    // what and where in one cell; the route has a fixed width and shows the full addresses on hover
     {
       id: "service",
-      header: t("admin.leads.serviceRoute"),
+      header: t("common.fields.service"),
       accessorFn: (o) => L(serviceMap[o.serviceId]?.name),
-      cell: ({ row: { original: o } }) => {
-        const local = o.from.city === o.to.city;
-        return (
-          <div className="w-36 min-w-0 2xl:w-52">
-            <p className="truncate font-medium text-ink">{L(serviceMap[o.serviceId]?.name)}</p>
-            <p className="truncate text-xs text-muted-foreground" title={`${o.from.zip} ${o.from.city} → ${o.to.zip} ${o.to.city}`}>
-              {local ? t("admin.leads.localMove", { city: o.from.city }) : <>{o.from.city} <span className="text-foreground/40">→</span> {o.to.city}</>}
-            </p>
-          </div>
-        );
-      },
+      cell: (c) => <p className="w-20 font-medium leading-snug text-ink 2xl:w-32">{c.getValue() as string}</p>,
+    },
+    // fixed width; the full addresses show on hover
+    {
+      id: "route",
+      header: t("admin.leads.route"),
+      accessorFn: (o) => `${o.from.city} → ${o.to.city}`,
+      cell: ({ row: { original: o } }) => (
+        <p className="w-32 truncate text-muted-foreground 2xl:w-48" title={`${o.from.zip} ${o.from.city} → ${o.to.zip} ${o.to.city}`}>
+          {o.from.city === o.to.city ? t("admin.leads.localMove", { city: o.from.city }) : <>{o.from.city} <span className="text-foreground/40">→</span> {o.to.city}</>}
+        </p>
+      ),
     },
     // the job date with how long the offer stays on sale
     {
@@ -120,19 +120,6 @@ function Leads() {
       ),
     },
     {
-      id: "sold",
-      header: t("admin.leads.sold"),
-      accessorFn: (o) => sold[o.id] ?? 0,
-      cell: ({ row: { original: o } }) => {
-        const n = sold[o.id] ?? 0;
-        return (
-          <span className={n >= o.offersWanted ? "font-bold text-success" : n ? "font-semibold text-ink" : "text-muted-foreground"}>
-            {n}/{o.offersWanted}
-          </span>
-        );
-      },
-    },
-    {
       id: "status",
       header: t("common.fields.status"),
       accessorFn: (o) => o.status,
@@ -143,6 +130,9 @@ function Leads() {
             {o.status === "new" && o.flags.length > 0 && (
               <span title={t("admin.leads.flagged")} className="text-warning"><AlertTriangle className="size-4" aria-label={t("admin.leads.flagged")} /></span>
             )}
+          </span>
+          <span className={cn("text-xs", (sold[o.id] ?? 0) >= o.offersWanted ? "font-semibold text-success" : (sold[o.id] ?? 0) ? "text-ink" : "text-muted-foreground")}>
+            {t("admin.leads.soldShort", { sold: sold[o.id] ?? 0, wanted: o.offersWanted })}
           </span>
           {o.noShow && o.noShow.status !== "resolved" && <Badge tone="danger">{t("admin.leads.noShowOpen")}</Badge>}
         </div>

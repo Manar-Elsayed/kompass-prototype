@@ -317,6 +317,7 @@ export const admin: Built<typeof Def> = {
     serviceRoute: "Service et trajet",
     localMove: "{city} · local",
     visibility: "Visibilité",
+    soldShort: "{sold}/{wanted} vendus",
   },
   services: {
     title: "Prestations et tarifs",

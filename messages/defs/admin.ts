@@ -314,6 +314,7 @@ export const admin = {
     serviceRoute: "Service & route",
     localMove: "{city} · local",
     visibility: "Visibility",
+    soldShort: "{sold}/{wanted} sold",
   },
   services: {
     title: "Services & pricing",
