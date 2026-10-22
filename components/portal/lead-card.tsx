@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Icon } from "@/components/shared/icon";
+import { routeText } from "@/lib/jobs";
 
 /**
  * Shop card. Before purchase a company sees only what it needs to judge the job (service, area,
@@ -54,8 +55,8 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
       </div>
 
       <div className="mt-4 space-y-2 rounded-xl bg-surface-2/70 p-3 text-sm">
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5"><MapPin className="size-4 shrink-0 text-accent" />{offer.from.zip} {offer.from.city} <ArrowRight className="size-3.5 text-muted-foreground" /> {offer.to.zip} {offer.to.city}</p>
-        <p className="flex items-center gap-2"><Building className="size-4 shrink-0 text-accent" />{tf("floor")} {offer.from.floor} → {offer.to.floor} · {tf("elevator")}: {offer.from.elevator ? "✓" : "✗"} / {offer.to.elevator ? "✓" : "✗"}</p>
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5"><MapPin className="size-4 shrink-0 text-accent" />{offer.from.zip} {offer.from.city}{offer.to && <><ArrowRight className="size-3.5 text-muted-foreground" /> {offer.to.zip} {offer.to.city}</>}</p>
+        <p className="flex items-center gap-2"><Building className="size-4 shrink-0 text-accent" />{offer.to ? <>{tf("floor")} {offer.from.floor} → {offer.to.floor} · {tf("elevator")}: {offer.from.elevator ? "✓" : "✗"} / {offer.to.elevator ? "✓" : "✗"}</> : <>{tf("floor")} {offer.from.floor} · {tf("elevator")}: {offer.from.elevator ? "✓" : "✗"}</>}</p>
         <p className="flex items-center gap-2"><Calendar className="size-4 shrink-0 text-accent" />{formatDate(offer.executionDate, lang)}</p>
         {!compact && offer.details && <p className="line-clamp-2 border-t pt-2 text-muted-foreground">“{offer.details}”</p>}
       </div>
@@ -122,7 +123,7 @@ function CheckoutDialog({ offer, onClose }: { offer: Offer; onClose: () => void 
           <>
             <DialogHeader>
               <DialogTitle>{t("checkout")}</DialogTitle>
-              <DialogDescription>{L(svc?.name)} · {offer.from.city} → {offer.to.city} · <span dir="ltr">{offer.id}</span></DialogDescription>
+              <DialogDescription>{L(svc?.name)} · {routeText(offer)} · <span dir="ltr">{offer.id}</span></DialogDescription>
             </DialogHeader>
 
             <div>

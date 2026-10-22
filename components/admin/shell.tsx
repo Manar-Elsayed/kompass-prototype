@@ -34,6 +34,7 @@ import { Logo, EmptyState } from "@/components/shared/bits";
 import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 import { PrototypeDock } from "@/components/shared/prototype-dock";
 import { NAV, matchNav } from "./nav";
+import { routeText } from "@/lib/jobs";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const hydrated = useHydrated();
@@ -302,7 +303,7 @@ function GlobalSearch() {
     const ls = offers
       .filter((o) => o.id.toLowerCase().includes(term) || `${o.firstName} ${o.lastName}`.toLowerCase().includes(term) || o.email.toLowerCase().includes(term))
       .slice(0, 5)
-      .map((o) => ({ href: `/admin/leads/${o.id}`, title: `${o.id} · ${o.firstName} ${o.lastName}`, sub: `${o.from.city} → ${o.to.city}`, kind: t("leads.id") }));
+      .map((o) => ({ href: `/admin/leads/${o.id}`, title: `${o.id} · ${o.firstName} ${o.lastName}`, sub: routeText(o), kind: t("leads.id") }));
     const ps = partners
       .filter((p) => p.name.toLowerCase().includes(term) || p.city.toLowerCase().includes(term))
       .slice(0, 5)

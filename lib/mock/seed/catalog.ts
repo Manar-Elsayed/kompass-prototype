@@ -70,6 +70,7 @@ export const services: Service[] = [
     leadPrice: 35,
     estimate: { from: 900, to: 2400, basis: l("3.5-room flat, same region", "3,5-Zimmer-Wohnung, gleiche Region", "Appartement de 3,5 pièces, même région", "Appartamento di 3,5 locali, stessa regione") },
     active: true,
+    kind: "move",
     order: 1,
   },
   {
@@ -95,6 +96,7 @@ export const services: Service[] = [
     leadPrice: 25,
     estimate: { from: 600, to: 1200, basis: l("end-of-tenancy cleaning, 3.5 rooms, with handover guarantee", "Endreinigung 3,5 Zimmer mit Abnahmegarantie", "nettoyage de fin de bail, 3,5 pièces, avec garantie de restitution", "pulizia di fine locazione, 3,5 locali, con garanzia di riconsegna") },
     active: true,
+    kind: "cleaning",
     order: 2,
   },
   {
@@ -123,6 +125,7 @@ export const services: Service[] = [
     leadPrice: 45,
     estimate: { from: 1500, to: 3300, basis: l("3.5-room flat: move plus handover cleaning", "3,5-Zimmer-Wohnung: Umzug plus Endreinigung", "appartement de 3,5 pièces : déménagement et nettoyage de remise", "appartamento di 3,5 locali: trasloco e pulizia di riconsegna") },
     active: true,
+    kind: "moveClean",
     order: 3,
   },
   {
@@ -148,6 +151,7 @@ export const services: Service[] = [
     leadPrice: 30,
     estimate: { from: 350, to: 900, basis: l("upright piano, up to 2 floors", "Klavier, bis 2 Stockwerke", "piano droit, jusqu'à 2 étages", "pianoforte verticale, fino a 2 piani") },
     active: true,
+    kind: "piano",
     order: 4,
   },
   {
@@ -173,6 +177,7 @@ export const services: Service[] = [
     leadPrice: 18,
     estimate: { from: 90, to: 250, basis: l("per month for about 10 m²", "pro Monat für ca. 10 m²", "par mois pour environ 10 m²", "al mese per circa 10 m²") },
     active: true,
+    kind: "storage",
     order: 5,
   },
   {
@@ -198,6 +203,7 @@ export const services: Service[] = [
     leadPrice: 20,
     estimate: { from: 300, to: 900, basis: l("1 to 2 rooms of furniture and items", "Möbel und Gegenstände aus 1 bis 2 Zimmern", "meubles et objets de 1 à 2 pièces", "mobili e oggetti di 1-2 locali") },
     active: true,
+    kind: "disposal",
     order: 6,
   },
 ];

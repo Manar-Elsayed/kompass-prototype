@@ -191,7 +191,7 @@ export const admin: Built<typeof Def> = {
     flagged: "Signalé",
     detail: {
       overview: "Vue d’ensemble",
-      move: "Détails du déménagement",
+      move: "Détails de la prestation",
       buyers: "Partenaires ayant acheté ce lead",
       noBuyers: "Aucun partenaire n’a encore acheté ce lead.",
       timeline: "Historique",
@@ -281,9 +281,10 @@ export const admin: Built<typeof Def> = {
     created: "Lead {id} créé",
     form: {
       title: "Nouvelle demande",
-      subtitle: "Choisissez qui appelle, puis saisissez le déménagement et les coordonnées.",
-      step1: "Déménagement",
+      subtitle: "Choisissez qui appelle et le service, puis répondez à ses questions et ajoutez les coordonnées.",
+      step1: "Prestation",
       step2: "Contacts",
+      submit: "Créer le lead",
     },
     serviceRoute: "Service et trajet",
     localMove: "{city} · local",
@@ -330,6 +331,16 @@ export const admin: Built<typeof Def> = {
       live: "Visible sur le site et réservable.",
       soon: "Visible sur le site comme « Bientôt », pas encore réservable.",
       hidden: "Non visible sur le site.",
+    },
+    kind: "Formulaire de demande",
+    kindHint: "Les questions que pose le formulaire pour ce service.",
+    kinds: {
+      move: "Déménagement",
+      moveClean: "Déménagement & nettoyage",
+      cleaning: "Nettoyage",
+      piano: "Transport de piano",
+      storage: "Garde-meubles",
+      disposal: "Débarras",
     },
   },
   shop: {

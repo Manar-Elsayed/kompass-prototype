@@ -191,7 +191,7 @@ export const admin: Built<typeof Def> = {
     flagged: "Segnalato",
     detail: {
       overview: "Panoramica",
-      move: "Dettagli del trasloco",
+      move: "Dettagli del lavoro",
       buyers: "Partner che hanno acquistato questo lead",
       noBuyers: "Nessun partner ha ancora acquistato questo lead.",
       timeline: "Cronologia",
@@ -281,9 +281,10 @@ export const admin: Built<typeof Def> = {
     created: "Lead {id} creato",
     form: {
       title: "Nuova richiesta",
-      subtitle: "Scelga chi chiama, poi inserisca il trasloco e i dati di contatto.",
-      step1: "Trasloco",
+      subtitle: "Scelga chi chiama e il servizio, poi risponda alle sue domande e aggiunga i dati di contatto.",
+      step1: "Lavoro",
       step2: "Contatti",
+      submit: "Crea lead",
     },
     serviceRoute: "Servizio e percorso",
     localMove: "{city} · locale",
@@ -330,6 +331,16 @@ export const admin: Built<typeof Def> = {
       live: "Visibile sul sito e prenotabile.",
       soon: "Visibile sul sito come «Prossimamente», non ancora prenotabile.",
       hidden: "Non visibile sul sito.",
+    },
+    kind: "Modulo di richiesta",
+    kindHint: "Quali domande pone il modulo di richiesta per questo servizio.",
+    kinds: {
+      move: "Trasloco",
+      moveClean: "Trasloco e pulizia",
+      cleaning: "Pulizia",
+      piano: "Trasporto pianoforte",
+      storage: "Deposito",
+      disposal: "Sgombero",
     },
   },
   shop: {

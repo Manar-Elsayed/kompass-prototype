@@ -1,3 +1,5 @@
+import type { JobDetails, JobKind } from "./jobs";
+
 /**
  * Domain model for the Kompass ecosystem.
  * Shapes are derived from the legacy front `types/*.ts` and the admin
@@ -27,6 +29,8 @@ export interface Service {
   active: boolean;
   /** Shown on the website as "Coming soon" but not bookable yet. */
   comingSoon?: boolean;
+  /** Which questions the request form asks (see lib/jobs.ts). */
+  kind: JobKind;
   order: number;
 }
 
@@ -79,7 +83,10 @@ export interface Offer {
   ip: string;
   device: "desktop" | "mobile" | "tablet";
   from: Address;
-  to: Address;
+  /** Only for jobs between two places (moving, moving & cleaning, piano). */
+  to?: Address;
+  /** The answers specific to the service (property, amount, extras…). */
+  job?: JobDetails;
   executionDate: string;
   deadline: string; // last date for submitting offers
   offersWanted: number; // 1-5

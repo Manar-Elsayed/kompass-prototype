@@ -191,7 +191,7 @@ export const admin: Built<typeof Def> = {
     flagged: "Markiert",
     detail: {
       overview: "Übersicht",
-      move: "Umzugsdetails",
+      move: "Auftragsdetails",
       buyers: "Partner, die diesen Lead gekauft haben",
       noBuyers: "Noch kein Partner hat diesen Lead gekauft.",
       timeline: "Verlauf",
@@ -281,9 +281,10 @@ export const admin: Built<typeof Def> = {
     created: "Lead {id} erstellt",
     form: {
       title: "Neue Anfrage",
-      subtitle: "Wählen Sie, wer anruft, und erfassen Sie dann den Umzug und die Kontaktdaten.",
-      step1: "Umzug",
+      subtitle: "Wählen Sie, wer anruft, und die Leistung; beantworten Sie dann deren Fragen und erfassen Sie die Kontaktdaten.",
+      step1: "Auftrag",
       step2: "Kontakte",
+      submit: "Lead erstellen",
     },
     serviceRoute: "Leistung & Strecke",
     localMove: "{city} · lokal",
@@ -330,6 +331,16 @@ export const admin: Built<typeof Def> = {
       live: "Auf der Website sichtbar und buchbar.",
       soon: "Auf der Website als «Demnächst» sichtbar, noch nicht buchbar.",
       hidden: "Nicht auf der Website sichtbar.",
+    },
+    kind: "Anfrageformular",
+    kindHint: "Welche Fragen das Anfrageformular für diese Leistung stellt.",
+    kinds: {
+      move: "Umzug",
+      moveClean: "Umzug & Reinigung",
+      cleaning: "Reinigung",
+      piano: "Klaviertransport",
+      storage: "Einlagerung",
+      disposal: "Entsorgung",
     },
   },
   shop: {

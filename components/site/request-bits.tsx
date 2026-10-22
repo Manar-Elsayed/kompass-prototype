@@ -7,6 +7,7 @@ import type { Offer, Service } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang } from "@/lib/mock/hooks";
+import { routeFull } from "@/lib/jobs";
 
 /** "CHF 900 – 2,400", the typical range customers see before they get real offers. */
 export function priceRange(svc: Pick<Service, "estimate">, lang: string) {
@@ -69,7 +70,7 @@ export function ConfirmationEmail({ offer }: { offer: Offer }) {
   const forOther = offer.booking !== "personal";
   const rows: [string, string][] = [
     [t("service"), svc ? L(svc.name) : "–"],
-    [t("route"), `${offer.from.zip} ${offer.from.city} → ${offer.to.zip} ${offer.to.city}`],
+    [t("route"), routeFull(offer)],
     [t("date"), formatDate(offer.executionDate, lang)],
     [t("companies"), t("companiesValue", { count: offer.offersWanted })],
   ];

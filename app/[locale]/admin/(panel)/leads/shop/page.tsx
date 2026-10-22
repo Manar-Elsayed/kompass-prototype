@@ -183,7 +183,7 @@ export default function ShopPage() {
                       { label: t("common.fields.email"), value: o.email, ltr: true },
                       { label: t("common.fields.service"), value: L(serviceMap[o.serviceId]?.name) },
                       { label: t("site.offerForm.movingFrom"), value: `${o.from.zip} ${o.from.city}` },
-                      { label: t("site.offerForm.movingTo"), value: `${o.to.zip} ${o.to.city}` },
+                      ...(o.to ? [{ label: t("site.offerForm.movingTo"), value: `${o.to.zip} ${o.to.city}` }] : []),
                     ]}
                   />
                   <Link href={`/admin/leads/${o.id}`} className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">

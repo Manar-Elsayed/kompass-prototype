@@ -28,6 +28,7 @@ import type {
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { services } from "./catalog";
+import { DISPOSAL_ITEMS, DURATIONS, JOB_FORMS, jobKind, type JobDetails } from "@/lib/jobs";
 import { DAY, NOW, createRng, daysAgo, daysAhead } from "./rng";
 
 const rng = createRng();
@@ -367,6 +368,35 @@ for (const o of offers) {
   });
   // newest first, like the rest of the list
   offers.unshift(...today);
+}
+
+/* ---------- the questions each service asks ---------- */
+// Cleaning, storage and disposal happen at one address; piano and storage don't need rooms.
+{
+  const jrng = createRng(20261027);
+  for (const o of offers) {
+    const kind = jobKind(services.find((x) => x.id === o.serviceId));
+    const form = JOB_FORMS[kind];
+    const job: JobDetails = {};
+    if (!form.to) delete o.to;
+    if (!form.rooms && !form.property) {
+      o.from.rooms = "";
+      if (o.to) o.to.rooms = "";
+    }
+    if (form.flexible && jrng.chance(0.3)) job.flexibleDate = true;
+    if (form.cleaningDate) job.cleaningDate = new Date(Date.parse(o.executionDate) + jrng.int(0, 2) * DAY).toISOString();
+    if (form.property) {
+      job.propertyType = jrng.pick(["flat", "flat", "flat", "house", "office"] as const);
+      if (jrng.chance(0.6)) job.areaM2 = jrng.int(45, 160);
+    }
+    if (form.cleaningType) job.cleaningType = jrng.pick(["endOfTenancy", "endOfTenancy", "deepClean", "regular"] as const);
+    if (form.instrument) job.instrument = jrng.pick(["upright", "upright", "grand", "digital"] as const);
+    if (form.amounts) job.amount = jrng.pick(form.amounts);
+    if (form.duration) job.duration = jrng.pick(DURATIONS);
+    if (form.items) job.items = jrng.sample(DISPOSAL_ITEMS, jrng.int(1, 3));
+    if (form.extras.length) job.extras = jrng.sample(form.extras, jrng.int(0, Math.min(2, form.extras.length)));
+    o.job = job;
+  }
 }
 
 /* ---------- who booked, and which company did the job (from the review survey) ---------- */

@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, StarInput } from "@/components/shared/bits";
+import { routeText } from "@/lib/jobs";
 
 const NONE = "none";
 
@@ -95,7 +96,7 @@ export default function ReviewSurveyPage() {
       <p className="text-sm font-semibold text-primary">{t("eyebrow")}</p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">{t("title")}</h1>
       <p className="mt-2 text-muted-foreground">
-        {svc ? L(svc.name) : ""} · {offer.from.city} → {offer.to.city} · {formatDate(offer.executionDate, lang)}
+        {svc ? L(svc.name) : ""} · {routeText(offer)} · {formatDate(offer.executionDate, lang)}
         <span className="ms-2 font-mono text-xs" dir="ltr">{offer.id}</span>
       </p>
 

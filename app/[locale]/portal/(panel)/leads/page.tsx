@@ -22,6 +22,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
+import { JobFacts, JobPlaces } from "@/components/shared/job-details";
+import { routeFull, routeText } from "@/lib/jobs";
 
 const REASONS = ["phone", "never", "duplicate", "unreachable"] as const;
 const GROUPS: LeadGroup[] = ["open", "executed", "reported", "cancelled"];
@@ -146,12 +148,12 @@ function MyLeads() {
     {
       id: "route",
       header: tl("route"),
-      accessorFn: (o) => `${offerMap[o.offerId]?.from.city} → ${offerMap[o.offerId]?.to.city}`,
+      accessorFn: (o) => (offerMap[o.offerId] ? routeText(offerMap[o.offerId]) : ""),
       cell: ({ row: { original: o } }) => {
         const x = offerMap[o.offerId];
         return (
-          <p className="w-28 truncate text-muted-foreground 2xl:w-48" title={x ? `${x.from.zip} ${x.from.city} → ${x.to.zip} ${x.to.city}` : undefined}>
-            {x?.from.city} <span className="text-foreground/40">→</span> {x?.to.city}
+          <p className="w-28 truncate text-muted-foreground 2xl:w-48" title={x ? routeFull(x) : undefined}>
+            {x ? routeText(x) : "–"}
           </p>
         );
       },
@@ -227,19 +229,8 @@ function MyLeads() {
                   </div>
                   <p className="mt-3 text-sm" dir="ltr">{lead.phone} · {lead.email}</p>
                 </Card>
-                {(["from", "to"] as const).map((k) => (
-                  <section key={k} className="rounded-xl border p-4">
-                    <p className="mb-3 text-sm font-bold text-ink">{tof(k === "from" ? "movingFrom" : "movingTo")}</p>
-                    <DL
-                      items={[
-                        { label: tf("street"), value: lead[k].street },
-                        { label: tf("city"), value: `${lead[k].zip} ${lead[k].city}` },
-                        { label: tf("rooms"), value: lead[k].rooms },
-                        { label: tf("floor"), value: `${lead[k].floor} · ${tf("elevator")} ${lead[k].elevator ? "✓" : "✗"}` },
-                      ]}
-                    />
-                  </section>
-                ))}
+                <JobPlaces offer={lead} />
+                <JobFacts offer={lead} cols={1} />
                 <DL items={[{ label: tl("execution"), value: formatDate(lead.executionDate, lang) }, { label: t("paid"), value: formatCHF(open.price, lang) }]} />
                 {lead.details && <p className="rounded-xl border border-dashed p-4 text-sm">“{lead.details}”</p>}
               </div>

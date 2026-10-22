@@ -739,11 +739,11 @@ export const useStore = create<Store>()(
       // offer-form sessions and contact follow-up; v8 the six services, booking types, chosen
       // companies and no-shows; v9 the partner portal flows (onboarding contract, message threads,
       // payouts, service areas); v10 two booking types (same / other person); v11 no-shows removed
-      // (customers only answer a review survey). Older saves start again from the current seed,
+      // (customers only answer a review survey); v12 service-specific request details. Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 11,
+      version: 12,
       migrate: (persisted, version) => {
-        if (version >= 11) return persisted as Store;
+        if (version >= 12) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

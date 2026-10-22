@@ -43,6 +43,7 @@ import { EmptyState, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { Icon } from "@/components/shared/icon";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
 import { SurveyEmail } from "@/components/site/request-bits";
+import { JobFacts, JobPlaces } from "@/components/shared/job-details";
 
 const cantonOf = (city: string) => CITIES.find((c) => c.city === city)?.canton;
 
@@ -106,21 +107,6 @@ export default function LeadDetail() {
     toast.success(tl("reposted", { id: offer.id, count: matching }));
   };
 
-  const addr = (a: Offer["from"], icon: React.ReactNode, title: string) => (
-    <div className="rounded-xl bg-surface-2/70 p-4">
-      <p className="mb-3 flex items-center gap-2 text-sm font-bold text-ink">{icon}{title}</p>
-      <DL
-        items={[
-          { label: t("common.fields.street"), value: a.street },
-          { label: t("common.fields.city"), value: `${a.zip} ${a.city}` },
-          { label: t("common.fields.rooms"), value: a.rooms },
-          { label: t("common.fields.floor"), value: a.floor },
-          { label: t("common.fields.elevator"), value: a.elevator ? t("common.form.yes") : t("common.form.no") },
-          { label: t("common.fields.country"), value: a.country },
-        ]}
-      />
-    </div>
-  );
 
   const timeline = [
     { at: offer.createdAt, text: t("admin.leads.detail.submitted"), icon: <Flag className="size-3.5" /> },
@@ -275,9 +261,9 @@ export default function LeadDetail() {
                   <p className="text-sm text-muted-foreground">{t("admin.leads.execution")}: {formatDate(offer.executionDate, lang)} · {t("admin.leads.deadline")}: {formatDate(offer.deadline, lang)}</p>
                 </div>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                {addr(offer.from, <MapPin className="size-4 text-accent" />, t("site.offerForm.movingFrom"))}
-                {addr(offer.to, <Flag className="size-4 text-primary" />, t("site.offerForm.movingTo"))}
+              <JobPlaces offer={offer} />
+              <div className="mt-4">
+                <JobFacts offer={offer} />
               </div>
               {offer.details && (
                 <div className="mt-4 rounded-xl border border-dashed p-4">

@@ -18,6 +18,7 @@ import { StatusBadge, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { Mono, PageHeader } from "@/components/admin/ui";
+import { routeFull, routeText } from "@/lib/jobs";
 
 const STATUSES = ["new", "in_progress", "completed", "expired", "cancelled"] as const;
 
@@ -89,10 +90,10 @@ function Leads() {
     {
       id: "route",
       header: t("admin.leads.route"),
-      accessorFn: (o) => `${o.from.city} → ${o.to.city}`,
+      accessorFn: (o) => routeText(o),
       cell: ({ row: { original: o } }) => (
-        <p className="w-24 truncate text-muted-foreground 2xl:w-48" title={`${o.from.zip} ${o.from.city} → ${o.to.zip} ${o.to.city}`}>
-          {o.from.city === o.to.city ? t("admin.leads.localMove", { city: o.from.city }) : <>{o.from.city} <span className="text-foreground/40">→</span> {o.to.city}</>}
+        <p className="w-24 truncate text-muted-foreground 2xl:w-48" title={routeFull(o)}>
+          {!o.to ? o.from.city : o.from.city === o.to.city ? t("admin.leads.localMove", { city: o.from.city }) : <>{o.from.city} <span className="text-foreground/40">→</span> {o.to.city}</>}
         </p>
       ),
     },
@@ -205,7 +206,7 @@ function Leads() {
         data={offers}
         initialFilters={attention ? { attention } : undefined}
         columns={columns}
-        search={(o) => `${o.id} ${o.firstName} ${o.lastName} ${o.email} ${o.from.city} ${o.to.city} ${o.from.zip} ${o.to.zip}`}
+        search={(o) => `${o.id} ${o.firstName} ${o.lastName} ${o.email} ${o.from.city} ${o.to?.city ?? ""} ${o.from.zip} ${o.to?.zip ?? ""}`}
         searchPlaceholder={t("admin.shell.search")}
         onRowClick={(o) => router.push(`/admin/leads/${o.id}`)}
         filters={[

@@ -188,7 +188,7 @@ export const admin = {
     flagged: "Flagged",
     detail: {
       overview: "Overview",
-      move: "Move details",
+      move: "Job details",
       buyers: "Partners who bought this lead",
       noBuyers: "No partner has bought this lead yet.",
       timeline: "Timeline",
@@ -278,9 +278,10 @@ export const admin = {
     created: "Lead {id} created",
     form: {
       title: "New request",
-      subtitle: "Choose who is calling, then enter the move and the contact details.",
-      step1: "Move",
+      subtitle: "Choose who is calling and the service, then answer its questions and add the contact details.",
+      step1: "Job",
       step2: "Contacts",
+      submit: "Create lead",
     },
     serviceRoute: "Service & route",
     localMove: "{city} · local",
@@ -327,6 +328,16 @@ export const admin = {
       live: "Shown on the website and bookable.",
       soon: "Shown on the website as “Coming soon”, not bookable yet.",
       hidden: "Not shown on the website.",
+    },
+    kind: "Request form",
+    kindHint: "Which questions the request form asks for this service.",
+    kinds: {
+      move: "Moving",
+      moveClean: "Moving & cleaning",
+      cleaning: "Cleaning",
+      piano: "Piano transport",
+      storage: "Storage",
+      disposal: "Disposal",
     },
   },
   shop: {
