@@ -308,6 +308,12 @@ export const admin: Built<typeof Def> = {
       resolvedTitle: "{name} nicht erschienen, Fall geschlossen",
       replacedBy: "ersetzt durch {name}",
     },
+    form: {
+      title: "Neue Anfrage",
+      subtitle: "Wählen Sie, wer anruft, und erfassen Sie dann den Umzug und die Kontaktdaten.",
+      step1: "Umzug",
+      step2: "Kontakte",
+    },
   },
   services: {
     title: "Dienstleistungen & Preise",

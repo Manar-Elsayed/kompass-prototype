@@ -308,6 +308,12 @@ export const admin: Built<typeof Def> = {
       resolvedTitle: "Absence de {name}, cas clos",
       replacedBy: "remplacé par {name}",
     },
+    form: {
+      title: "Nouvelle demande",
+      subtitle: "Choisissez qui appelle, puis saisissez le déménagement et les coordonnées.",
+      step1: "Déménagement",
+      step2: "Contacts",
+    },
   },
   services: {
     title: "Prestations et tarifs",

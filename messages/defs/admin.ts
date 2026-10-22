@@ -305,6 +305,12 @@ export const admin = {
       resolvedTitle: "No-show by {name}, case closed",
       replacedBy: "replaced by {name}",
     },
+    form: {
+      title: "New request",
+      subtitle: "Choose who is calling, then enter the move and the contact details.",
+      step1: "Move",
+      step2: "Contacts",
+    },
   },
   services: {
     title: "Services & pricing",

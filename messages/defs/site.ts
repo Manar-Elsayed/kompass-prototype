@@ -242,6 +242,8 @@ export const site = {
     yourDetailsAdmin: "Customer details",
     requesterTitleAdmin: "Other person (who is calling)",
     requesterHintAdmin: "The confirmation and the link to manage the request go to this person.",
+    privacyTitleAdmin: "Read this to the customer",
+    privacyAgreeAdmin: "The customer agreed to the privacy policy.",
   },
   request: {
     eyebrow: "Your request",

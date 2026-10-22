@@ -284,7 +284,27 @@ export function OfferForm({
   const booking = values.booking as BookingType;
   const forOther = booking !== "personal";
   // admin enters the request for a customer, so the labels talk about the customer, not "you"
+  const isAdmin = source === "admin";
   const bk = (key: string) => t(`site.booking.${key}${source === "admin" ? "Admin" : ""}` as "site.booking.who");
+  const whoField = (
+    <Field label={t("site.booking.who")} hint={bk(`${booking}Hint`)} required>
+      <Controller
+        control={control}
+        name="booking"
+        render={({ field }) => (
+          <RadioCards
+            className="grid-cols-1 sm:grid-cols-2"
+            value={field.value}
+            onValueChange={field.onChange}
+            options={[
+              { value: "personal", label: t("site.booking.personal"), icon: <User className="size-4" /> },
+              { value: "other", label: t("site.booking.other"), icon: <Users className="size-4" /> },
+            ]}
+          />
+        )}
+      />
+    </Field>
+  );
 
   if (done) {
     return shell(
@@ -354,11 +374,11 @@ export function OfferForm({
       {/* header + steps */}
       <div className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-ink">{L(content.title)}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{L(content.subtitle)}</p>
+          <h3 className="text-2xl font-bold text-ink">{isAdmin ? t("admin.leads.form.title") : L(content.title)}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{isAdmin ? t("admin.leads.form.subtitle") : L(content.subtitle)}</p>
         </div>
         <ol className="flex items-center gap-2" aria-label={t("site.offerForm.stepOf", { step, total: 2 })}>
-          {[L(content.step1), L(content.step2)].map((label, i) => {
+          {(isAdmin ? [t("admin.leads.form.step1"), t("admin.leads.form.step2")] : [L(content.step1), L(content.step2)]).map((label, i) => {
             const n = i + 1;
             const state = step > n ? "done" : step === n ? "current" : "todo";
             return (
@@ -393,6 +413,8 @@ export function OfferForm({
 
       {step === 1 ? (
         <div className="grid gap-5">
+          {/* on Add lead the team first settles who is calling: it decides which contact sections step 2 asks for */}
+          {isAdmin && whoField}
           <Field label={t("site.offerForm.serviceLabel")} error={err(errors.serviceId?.message)} required>
             <Controller
               control={control}
@@ -481,23 +503,18 @@ export function OfferForm({
       ) : (
         <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           <div className="grid gap-5">
-            <Field label={t("site.booking.who")} hint={bk(`${booking}Hint`)} required>
-              <Controller
-                control={control}
-                name="booking"
-                render={({ field }) => (
-                  <RadioCards
-                    className="grid-cols-1 sm:grid-cols-2"
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    options={[
-                      { value: "personal", label: t("site.booking.personal"), icon: <User className="size-4" /> },
-                      { value: "other", label: t("site.booking.other"), icon: <Users className="size-4" /> },
-                    ]}
-                  />
-                )}
-              />
-            </Field>
+            {isAdmin ? (
+              <p className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-2/70 px-4 py-3 text-sm">
+                {forOther ? <Users className="size-4 text-primary" /> : <User className="size-4 text-primary" />}
+                <span className="text-muted-foreground">{t("site.booking.who")}</span>
+                <span className="font-semibold text-ink">{t(`site.booking.${booking}`)}</span>
+                <button type="button" onClick={() => setStep(1)} className="ms-auto font-semibold text-primary hover:underline">
+                  {t("common.actions.edit")}
+                </button>
+              </p>
+            ) : (
+              whoField
+            )}
 
             <p className="-mb-2 text-sm font-bold text-ink">{forOther ? t("site.booking.movingPerson") : bk("yourDetails")}</p>
             <Field label={t("common.fields.salutation")} error={err(errors.gender?.message)} required>
@@ -559,7 +576,7 @@ export function OfferForm({
             )}
             <div className="rounded-xl border border-primary/20 bg-primary-soft/50 p-4 text-sm">
               <p className="flex items-center gap-2 font-bold text-ink">
-                <Lock className="size-4 text-primary" /> {t("site.booking.privacyTitle")}
+                <Lock className="size-4 text-primary" /> {bk("privacyTitle")}
               </p>
               <ul className="mt-2 list-disc space-y-1 ps-6 text-foreground/85">
                 <li>{t("site.booking.privacy1")}</li>
@@ -574,7 +591,7 @@ export function OfferForm({
                 <label className="flex items-start gap-3 text-sm">
                   <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(v === true ? true : undefined)} className="mt-0.5" aria-invalid={!!errors.privacy} />
                   <span className={cn(errors.privacy && "text-danger")}>
-                    {t("site.offerForm.privacyAgree")}{" "}
+                    {isAdmin ? t("site.booking.privacyAgreeAdmin") : t("site.offerForm.privacyAgree")}{" "}
                     <Link href="/privacy" className="font-semibold text-primary underline-offset-2 hover:underline" target="_blank">
                       ↗
                     </Link>

@@ -245,6 +245,8 @@ export const site: Built<typeof Def> = {
     yourDetailsAdmin: "Dati del cliente",
     requesterTitleAdmin: "Altra persona (che chiama)",
     requesterHintAdmin: "La conferma e il link per gestire la richiesta vanno a questa persona.",
+    privacyTitleAdmin: "Da leggere al cliente",
+    privacyAgreeAdmin: "Il cliente ha accettato l’informativa sulla privacy.",
   },
   request: {
     eyebrow: "La Sua richiesta",
