@@ -149,6 +149,12 @@ export const portal = {
     topup: "Top-up {ref}",
     refund: "Refund (fake lead)",
     quick: "Quick amounts",
+    amount: "Amount",
+    dueHint: {
+      pending: "Kompass checks the receipt within one business day. The amount is then added to your wallet.",
+      confirmed: "Confirmed: the amount was added to your wallet.",
+      canceled: "Not accepted. Contact Kompass if you think this is a mistake.",
+    },
   },
   reviews: {
     title: "Reviews",

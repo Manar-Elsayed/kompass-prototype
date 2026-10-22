@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, ArrowRight, Clock, HandHeart, Plus, RotateCcw, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, Building2, ClipboardList, Clock, HandHeart, Plus, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import type { Refund, RefundReason } from "@/lib/types";
-import { formatCHF, formatDate } from "@/lib/utils";
+import { formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang, usePartnerMap } from "@/lib/mock/hooks";
 import { inLastDays } from "@/lib/mock/selectors";
@@ -18,7 +18,8 @@ import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusBadge, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
-import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
+import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 
 const REASONS: RefundReason[] = ["fake_lead", "manual"];
 const NO_LEAD = "none";
@@ -39,6 +40,7 @@ export default function CompanyRefundsPage() {
   const partnerMap = usePartnerMap();
   const { confirm, dialog } = useConfirm();
   const [issuing, setIssuing] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const orderMap = Object.fromEntries(orders.map((o) => [o.id, o]));
   const offerMap = Object.fromEntries(offers.map((o) => [o.id, o]));
@@ -67,7 +69,7 @@ export default function CompanyRefundsPage() {
       header: t("common.fields.company"),
       accessorFn: (r) => partnerMap[r.partnerId]?.name ?? "–",
       cell: ({ row: { original: r } }) => (
-        <Link href={`/admin/partners/${r.partnerId}`} className="flex items-center gap-2 font-semibold text-ink hover:text-primary">
+        <Link href={`/admin/partners/${r.partnerId}`} className="flex w-fit items-center gap-2 font-semibold text-ink hover:text-primary">
           <Avatar name={partnerMap[r.partnerId]?.name ?? "?"} square className="size-7 text-[10px]" />
           {partnerMap[r.partnerId]?.name ?? "–"}
         </Link>
@@ -108,22 +110,34 @@ export default function CompanyRefundsPage() {
         const fake = offerId && offerMap[offerId]?.cancelReason === "fake";
         return (
           <div className="flex flex-wrap items-center gap-1.5">
+            <StatusBadge status={r.status} />
             {!fake && (
               <span className="flex items-center gap-1 text-xs font-medium text-warning" title={tr("confirmFirst")}>
                 <AlertTriangle className="size-3.5" /> {tr("notFakeYet")}
               </span>
             )}
-            {offerId && (
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/admin/leads/${offerId}`}>{tr("openLead")} <ArrowRight /></Link>
-              </Button>
-            )}
-            <Button size="icon-sm" variant="danger-soft" onClick={() => reject(r)} aria-label={t("common.actions.reject")}><X /></Button>
           </div>
         );
       },
     },
+    actionsColumn<Refund>((r) => {
+      const offerId = offerOf(r);
+      return (
+        <RowActions
+          onView={() => setOpenId(r.id)}
+          actions={[
+            { label: tr("openLead"), icon: <ClipboardList />, href: offerId ? `/admin/leads/${offerId}` : undefined, hidden: !offerId },
+            { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${r.partnerId}` },
+            { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => reject(r), hidden: r.status !== "pending", separated: true },
+          ]}
+        />
+      );
+    }),
   ];
+
+  const open = refunds.find((r) => r.id === openId);
+  const openOfferId = open && offerOf(open);
+  const openOffer = openOfferId ? offerMap[openOfferId] : undefined;
 
   return (
     <>
@@ -138,12 +152,59 @@ export default function CompanyRefundsPage() {
         columns={columns}
         search={(r) => `${r.id} ${partnerMap[r.partnerId]?.name ?? ""} ${r.note} ${offerOf(r) ?? ""}`}
         initialSort={[{ id: "status", desc: false }]}
+        onRowClick={(r) => setOpenId(r.id)}
         filters={[
           { id: "status", label: t("common.fields.status"), options: (["pending", "refunded", "rejected"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (r) => r.status },
           { id: "reason", label: tr("reason"), options: REASONS.map((x) => ({ value: x, label: tr(`reasons.${x}`) })), get: (r) => r.reason },
         ]}
         rowClassName={(r) => (r.status === "pending" ? "bg-warning-soft/25" : undefined)}
       />
+      <DetailSheet
+        open={!!open}
+        onOpenChange={(v) => !v && setOpenId(null)}
+        title={<Mono className="text-lg">{open?.id}</Mono>}
+        badge={open && <StatusBadge status={open.status} />}
+        subtitle={open && `${partnerMap[open.partnerId]?.name ?? "–"} · ${formatDateTime(open.createdAt, lang)}`}
+        footer={
+          open?.status === "pending" ? (
+            <>
+              <Button variant="danger-soft" onClick={() => { setOpenId(null); reject(open); }}><X /> {t("common.actions.reject")}</Button>
+              {openOfferId && (
+                <Button asChild className="flex-1">
+                  <Link href={`/admin/leads/${openOfferId}`}>{tr("openLead")} <ArrowRight /></Link>
+                </Button>
+              )}
+            </>
+          ) : undefined
+        }
+      >
+        {open && (
+          <>
+            <SheetSection>
+              <DL
+                items={[
+                  { label: t("common.fields.amount"), value: <span className="font-bold">{formatCHF(open.amount, lang)}</span> },
+                  { label: tr("reason"), value: tr(`reasons.${open.reason}`) },
+                  { label: t("common.fields.company"), value: <Link href={`/admin/partners/${open.partnerId}`} className="font-semibold text-primary hover:underline">{partnerMap[open.partnerId]?.name ?? "–"}</Link> },
+                  { label: tr("lead"), value: openOfferId ? <Link href={`/admin/leads/${openOfferId}`} className="font-mono font-semibold text-primary hover:underline">{openOfferId}</Link> : "–" },
+                  { label: t("admin.rows.decidedOn"), value: open.decidedAt ? formatDateTime(open.decidedAt, lang) : "–" },
+                  { label: t("admin.rows.offerStatus"), value: openOffer ? <StatusBadge status={openOffer.status} /> : "–" },
+                ]}
+              />
+            </SheetSection>
+            {open.note && (
+              <SheetSection title={tr("note")}>
+                <p className="text-sm text-foreground">“{open.note}”</p>
+              </SheetSection>
+            )}
+            {open.status === "pending" && openOffer?.cancelReason !== "fake" && (
+              <p className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft/40 p-3 text-sm text-ink">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" /> {tr("confirmFirst")}
+              </p>
+            )}
+          </>
+        )}
+      </DetailSheet>
       {issuing && <ManualRefundDialog onClose={() => setIssuing(false)} />}
       {dialog}
     </>

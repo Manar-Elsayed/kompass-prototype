@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -63,6 +63,14 @@ export default function LeadDetail() {
   const { confirm, dialog } = useConfirm();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
+  // row menus on the leads list link here with #cancel (open the dialog) or #assign (jump to the panel)
+  const hasOffer = !!offer;
+  useEffect(() => {
+    if (!hasOffer) return;
+    const hash = window.location.hash;
+    if (hash === "#cancel") setCancelOpen(true);
+    else if (hash === "#assign") document.getElementById("assign")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [hasOffer]);
 
   if (!offer) {
     return (
@@ -325,7 +333,11 @@ export default function LeadDetail() {
                   <Mail className="size-3.5" /> {tl("notifiedOn", { date: formatDateTime(offer.buyersNotifiedAt, lang) })}
                 </p>
               )}
-              {open && left > 0 && <AssignPanel offer={offer} orders={orders} />}
+              {open && left > 0 && (
+                <div id="assign" className="scroll-mt-24">
+                  <AssignPanel offer={offer} orders={orders} />
+                </div>
+              )}
             </CardBody>
           </Card>
         </div>

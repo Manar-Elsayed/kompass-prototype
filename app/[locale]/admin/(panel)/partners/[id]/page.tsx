@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, CheckCircle2, ExternalLink, HandCoins, Lock, LockOpen, Mail, MessageSquare, Phone, Plus, RotateCcw, Star, Store, Wallet, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardList, ExternalLink, EyeOff, HandCoins, Lock, LockOpen, Mail, MessageSquare, Phone, Plus, RotateCcw, Star, Store, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { Order } from "@/lib/types";
@@ -24,14 +24,28 @@ import { EmptyState, Stars, StatusBadge, useConfirm } from "@/components/shared/
 import { Icon } from "@/components/shared/icon";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
 import { MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
+import { RowActions } from "@/components/admin/row-actions";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 import { CreditDialog, TopUpDialog } from "@/components/admin/wallet-actions";
 import { DocStateBadge } from "@/components/admin/doc-state";
 import { CompanyDocuments, ContactCompanyDialog } from "@/components/admin/company-docs";
 import { FileManager } from "@/components/admin/file-manager";
 
-export default function PartnerDetail() {
+export default function PartnerDetailPage() {
+  return (
+    <Suspense>
+      <PartnerDetail />
+    </Suspense>
+  );
+}
+
+const TABS = ["overview", "documents", "bookings", "wallet", "reviews", "files", "messages"];
+
+function PartnerDetail() {
   const { id } = useParams<{ id: string }>();
+  // lists elsewhere link straight to a tab, e.g. ?tab=wallet
+  const tabParam = useSearchParams().get("tab");
+  const initialTab = tabParam && TABS.includes(tabParam) ? tabParam : "overview";
   const t = useTranslations();
   const tp = useTranslations("admin.partners");
   const tb = useTranslations("admin.partners.bookings");
@@ -40,6 +54,15 @@ export default function PartnerDetail() {
   const p = useStore((s) => s.partners.find((x) => x.id === id));
   const db = useStore();
   const patch = useStore((s) => s.patch);
+  const removeItem = useStore((s) => s.remove);
+  const setExecuted = (o: Order, executed: boolean) => {
+    patch("orders", o.id, { executed });
+    toast.success(t(executed ? "admin.rows.markedDone" : "admin.rows.markedNotDone", { id: o.offerId }));
+  };
+  const decideReview = (id: string, status: "approved" | "rejected") => {
+    patch("reviews", id, { status });
+    toast.success(t(`common.status.${status}`));
+  };
   const issueRefund = useStore((s) => s.issueRefund);
   const partnerLogin = useStore((s) => s.partnerLogin);
   const router = useRouter();
@@ -118,6 +141,7 @@ export default function PartnerDetail() {
               <th className="px-4 py-2.5 text-start">{t("common.fields.date")}</th>
               <th className="px-4 py-2.5 text-start">{t("common.fields.status")}</th>
               {fake && <th className="px-4 py-2.5 text-end">{tb("refundCol")}</th>}
+              <th className="w-px px-2 py-2.5" />
             </tr>
           </thead>
           <tbody>
@@ -147,6 +171,15 @@ export default function PartnerDetail() {
                       )}
                     </td>
                   )}
+                  <td className="px-2 py-2.5">
+                    <RowActions
+                      viewHref={`/admin/leads/${o.offerId}`}
+                      actions={[
+                        { label: t(o.executed ? "admin.rows.markNotDone" : "admin.rows.markDone"), icon: o.executed ? <RotateCcw /> : <CheckCircle2 />, onSelect: () => setExecuted(o, !o.executed) },
+                        { label: t("admin.leads.detail.customerPage"), icon: <ExternalLink />, href: `/requests/${o.offerId}` },
+                      ]}
+                    />
+                  </td>
                 </tr>
               );
             })}
@@ -206,7 +239,7 @@ export default function PartnerDetail() {
         <KpiCard label={tp("avgRating")} value={ratings[p.id]?.avg.toFixed(1) ?? "–"} icon={<Star />} tone="warning" footer={`${ratings[p.id]?.count ?? 0} ${tp("reviews")}`} />
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue={initialTab}>
         <UnderlineTabsList className="mb-4 overflow-x-auto">
           <UnderlineTabsTrigger value="overview">{tp("tabs.overview")}</UnderlineTabsTrigger>
           <UnderlineTabsTrigger value="documents">{tp("docs.title")} <DocStateBadge partner={p} /></UnderlineTabsTrigger>
@@ -369,9 +402,35 @@ export default function PartnerDetail() {
             {reviews.length ? (
               reviews.map((r) => (
                 <Card key={r.id} className="p-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <Stars value={r.stars} />
-                    <StatusBadge status={r.status} />
+                    <span className="flex items-center gap-1">
+                      <StatusBadge status={r.status} />
+                      <RowActions
+                        actions={[
+                          { label: t("common.actions.approve"), icon: <CheckCircle2 />, onSelect: () => decideReview(r.id, "approved"), hidden: r.status === "approved" },
+                          { label: t(r.status === "approved" ? "admin.rows.unpublish" : "common.actions.reject"), icon: <EyeOff />, onSelect: () => decideReview(r.id, "rejected"), hidden: r.status === "rejected" },
+                          { label: t("admin.rows.openBooking"), icon: <ClipboardList />, href: r.offerId ? `/admin/leads/${r.offerId}` : undefined, hidden: !r.offerId, separated: true },
+                          {
+                            label: t("common.actions.delete"),
+                            icon: <Trash2 />,
+                            tone: "danger",
+                            separated: true,
+                            onSelect: () =>
+                              confirm({
+                                title: t("common.confirm.title"),
+                                body: t("common.confirm.deleteBody"),
+                                tone: "danger",
+                                confirmLabel: t("common.actions.delete"),
+                                onConfirm: () => {
+                                  removeItem("reviews", r.id);
+                                  toast.success(t("common.toast.deleted"));
+                                },
+                              }),
+                          },
+                        ]}
+                      />
+                    </span>
                   </div>
                   <p className="mt-2 text-sm">“{r.comment}”</p>
                   <p className="mt-2 text-xs text-muted-foreground">{r.name} · {formatDate(r.createdAt, lang)}</p>

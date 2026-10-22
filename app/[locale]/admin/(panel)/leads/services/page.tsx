@@ -136,7 +136,12 @@ export default function ServicesAdmin() {
           </Button>
         }
       />
-      <DataTable data={[...services].sort((a, b) => a.order - b.order)} columns={columns} search={(s) => `${LANGS.map((l) => s.name[l]).join(" ")} ${s.slug}`} />
+      <DataTable
+        data={[...services].sort((a, b) => a.order - b.order)}
+        columns={columns}
+        search={(s) => `${LANGS.map((l) => s.name[l]).join(" ")} ${s.slug}`}
+        onRowClick={(s) => setDraft({ id: s.id, name: { ...s.name }, icon: s.icon, leadPrice: String(s.leadPrice), estFrom: String(s.estimate.from), estTo: String(s.estimate.to), visibility: visibilityOf(s) })}
+      />
 
       <Dialog open={!!draft} onOpenChange={(v) => !v && setDraft(null)}>
         <DialogContent>

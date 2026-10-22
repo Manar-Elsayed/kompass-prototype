@@ -34,6 +34,7 @@ export const common: Built<typeof Def> = {
     preview: "Aperçu",
     copy: "Copier",
     open: "Ouvrir",
+    more: "Plus d’actions",
   },
   table: {
     noResults: "Aucun résultat",

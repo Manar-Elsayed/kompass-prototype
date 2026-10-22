@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Banknote, Clock, Copy, CreditCard, ImageUp, Upload, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -17,7 +18,8 @@ import { Field } from "@/components/ui/label";
 import { RadioCards } from "@/components/ui/controls";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge } from "@/components/shared/bits";
-import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { DetailSheet, SheetSection } from "@/components/admin/row-actions";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
 import { KOMPASS_IBAN, MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
 
@@ -37,6 +39,8 @@ export default function PaymentsPage() {
   const [upload, setUpload] = useState(false);
   const [online, setOnline] = useState(false);
   const [doc, setDoc] = useState<MoneyDoc | null>(null);
+  const [dueId, setDueId] = useState<string | null>(null);
+  const due = dues.find((d) => d.id === dueId);
 
   const ledger = useMemo(() => walletLedger({ orders, dues, topups, refunds, invoices, partners }, partner.id), [orders, dues, topups, refunds, invoices, partners, partner.id]);
   const myDues = dues.filter((d) => d.partnerId === partner.id);
@@ -89,13 +93,13 @@ export default function PaymentsPage() {
             <div className="mt-4 divide-y border-t">
               {myDues.length ? (
                 myDues.map((d) => (
-                  <div key={d.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-sm">
+                  <button key={d.id} onClick={() => setDueId(d.id)} className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-start text-sm transition hover:bg-surface-2/60">
                     <Mono>{d.reference}</Mono>
                     <span className="flex-1 text-muted-foreground">{td(d.method)}</span>
                     <span className="font-bold">{formatCHF(d.amount, lang)}</span>
                     <StatusBadge status={d.status} />
                     <span className="w-24 text-end text-xs text-muted-foreground">{formatDate(d.createdAt, lang)}</span>
-                  </div>
+                  </button>
                 ))
               ) : (
                 <EmptyState title={tt("noResults")} />
@@ -112,6 +116,30 @@ export default function PaymentsPage() {
       {upload && <UploadDialog onClose={() => setUpload(false)} />}
       {online && <OnlineTopUpDialog onClose={() => setOnline(false)} onTransfer={() => { setOnline(false); setUpload(true); }} />}
       {doc && <MoneyDocDialog doc={doc} onClose={() => setDoc(null)} />}
+      <DetailSheet
+        open={!!due}
+        onOpenChange={(v) => !v && setDueId(null)}
+        title={<Mono className="text-lg">{due?.reference}</Mono>}
+        badge={due && <StatusBadge status={due.status} />}
+        subtitle={due && formatDate(due.createdAt, lang)}
+      >
+        {due && (
+          <>
+            <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-surface-2">
+              <Image src={due.receipt} alt={t("receipt")} fill className="object-contain" sizes="440px" />
+            </div>
+            <SheetSection>
+              <DL
+                items={[
+                  { label: t("amount"), value: <span className="font-bold">{formatCHF(due.amount, lang)}</span> },
+                  { label: td("method"), value: td(due.method) },
+                ]}
+              />
+            </SheetSection>
+            <p className="text-sm text-muted-foreground">{t(`dueHint.${due.status}`)}</p>
+          </>
+        )}
+      </DetailSheet>
     </>
   );
 }

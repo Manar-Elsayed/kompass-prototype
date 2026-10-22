@@ -152,6 +152,12 @@ export const portal: Built<typeof Def> = {
     topup: "Ricarica {ref}",
     refund: "Rimborso (lead falso)",
     quick: "Importi rapidi",
+    amount: "Importo",
+    dueHint: {
+      pending: "Kompass verifica la ricevuta entro un giorno lavorativo. L’importo viene poi accreditato sul Suo portafoglio.",
+      confirmed: "Confermato: l’importo è stato accreditato sul Suo portafoglio.",
+      canceled: "Non accettato. Contatti Kompass se pensa che si tratti di un errore.",
+    },
   },
   reviews: {
     title: "Recensioni",

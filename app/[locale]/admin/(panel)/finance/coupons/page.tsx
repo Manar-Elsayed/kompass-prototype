@@ -139,6 +139,7 @@ export default function CouponsPage() {
         data={coupons}
         columns={columns}
         search={(c) => c.code}
+        onRowClick={(c) => { setErr(""); setDraft(c); }}
         filters={[{ id: "st", label: t("common.fields.status"), options: (["active", "inactive", "expired"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: status }]}
       />
 
