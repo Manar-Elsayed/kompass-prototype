@@ -1,4 +1,4 @@
-import { DOC_KEYS, type DB, type DocKey, type Offer, type Partner, type VerificationFlag } from "@/lib/types";
+import { DOC_KEYS, type DB, type DocKey, type FakeReport, type Offer, type Order, type Partner, type Refund, type VerificationFlag } from "@/lib/types";
 import { NOW, DAY } from "./seed";
 
 /** Reference "now": the frozen seed date, or real time if later (for new entries). */
@@ -12,17 +12,18 @@ export function inLastDays(iso: string, days: number, offsetDays = 0) {
 
 /* ---------- wallet ledger ---------- */
 
-export type LedgerKind = "receipt" | "online" | "admin" | "credit" | "purchase" | "refund";
+export type LedgerKind = "receipt" | "online" | "admin" | "credit" | "purchase" | "refund" | "payout";
+export const LEDGER_KINDS: readonly LedgerKind[] = ["receipt", "online", "admin", "credit", "purchase", "refund", "payout"];
 export interface LedgerEntry {
-  id: string; // the source record (due, top-up, order or refund)
+  id: string; // the source record (due, top-up, order, refund or payout)
   at: string;
   kind: LedgerKind;
-  amount: number; // signed: money in > 0, purchases < 0
+  amount: number; // signed: money in > 0, purchases and payouts < 0
   reference: string; // receipt / payment reference, or the lead id for purchases
   payMethod?: string;
 }
 
-type LedgerDB = Pick<DB, "orders" | "dues" | "topups" | "refunds" | "invoices" | "partners">;
+type LedgerDB = Pick<DB, "orders" | "dues" | "topups" | "refunds" | "invoices" | "partners" | "payouts">;
 
 /** Overdue = an unpaid credit invoice past its due date. */
 export const isOverdue = (inv: { status: string; dueAt: string }) => inv.status === "due" && Date.parse(inv.dueAt) < refNow();
@@ -46,6 +47,9 @@ export function walletLedger(db: LedgerDB, partnerId: string) {
     ...db.refunds
       .filter((r) => r.partnerId === partnerId && r.status === "refunded")
       .map((r) => ({ id: r.id, at: r.decidedAt ?? r.createdAt, kind: "refund" as const, amount: r.amount, reference: r.orderId ?? r.id })),
+    ...db.payouts
+      .filter((x) => x.partnerId === partnerId && x.status === "paid")
+      .map((x) => ({ id: x.id, at: x.decidedAt ?? x.createdAt, kind: "payout" as const, amount: -x.amount, reference: x.reference ?? x.id, payMethod: "bank_transfer" })),
   ].sort((a, b) => b.at.localeCompare(a.at));
 
   const sum = (kinds: LedgerKind[]) => entries.filter((e) => kinds.includes(e.kind)).reduce((a, e) => a + e.amount, 0);
@@ -58,11 +62,26 @@ export function walletLedger(db: LedgerDB, partnerId: string) {
     credit: sum(["credit"]),
     spent: -sum(["purchase"]),
     refunded: sum(["refund"]),
+    paidOut: -sum(["payout"]),
     leads: entries.filter((e) => e.kind === "purchase").length,
     creditDue: due.reduce((a, i) => a + i.amount, 0),
     creditOverdue: due.filter(isOverdue).reduce((a, i) => a + i.amount, 0),
     lastAt: entries[0]?.at,
   };
+}
+
+/** Smallest payout a company can request, so bank fees stay proportionate. */
+export const MIN_PAYOUT = 50;
+
+/**
+ * How much of a wallet a company can have paid out: the balance minus payouts already requested and
+ * minus unpaid credit, because money Kompass advanced on credit must be repaid, not withdrawn.
+ */
+export function withdrawable(db: Pick<DB, "partners" | "payouts" | "invoices">, partnerId: string) {
+  const balance = db.partners.find((p) => p.id === partnerId)?.wallet ?? 0;
+  const requested = db.payouts.filter((x) => x.partnerId === partnerId && x.status === "requested").reduce((a, x) => a + x.amount, 0);
+  const creditDue = db.invoices.filter((i) => i.partnerId === partnerId && i.status === "due").reduce((a, i) => a + i.amount, 0);
+  return { balance, requested, creditDue, available: Math.max(0, balance - requested - creditDue) };
 }
 
 /** Platform money totals for the dashboard. */
@@ -189,6 +208,168 @@ export function companyScore(db: Pick<DB, "orders" | "reviews">, p: Pick<Partner
   const score = Math.round(bought90 * 10 + rating * 8 + Math.max(0, 14 - idleDays));
   return { bought90, rating, reviews: rated.length, idleDays: Math.round(idleDays), score };
 }
+
+/* ---------- partner portal ---------- */
+
+/** The 26 Swiss cantons (code → official name), for service areas. */
+export const CANTONS: Record<string, string> = {
+  AG: "Aargau", AI: "Appenzell Innerrhoden", AR: "Appenzell Ausserrhoden", BE: "Bern", BL: "Basel-Landschaft", BS: "Basel-Stadt",
+  FR: "Fribourg", GE: "Genève", GL: "Glarus", GR: "Graubünden", JU: "Jura", LU: "Luzern", NE: "Neuchâtel", NW: "Nidwalden",
+  OW: "Obwalden", SG: "St. Gallen", SH: "Schaffhausen", SO: "Solothurn", SZ: "Schwyz", TG: "Thurgau", TI: "Ticino", UR: "Uri",
+  VD: "Vaud", VS: "Valais", ZG: "Zug", ZH: "Zürich",
+};
+
+/** Cantons a company works in: the ones it chose, or its own canton. */
+export const partnerCantons = (p: Pick<Partner, "cantons" | "canton">) => (p.cantons?.length ? p.cantons : [p.canton]);
+
+/** Regions where admin nominated the company, with its position in that canton's priority list (1 = first). */
+export function partnerRegions(db: Pick<DB, "nominations">, partnerId: string) {
+  return db.nominations
+    .map((n) => ({ canton: n.canton, rank: n.partnerIds.indexOf(partnerId) + 1, of: n.partnerIds.length }))
+    .filter((n) => n.rank > 0)
+    .sort((a, b) => a.rank - b.rank || a.canton.localeCompare(b.canton));
+}
+
+/**
+ * What happened to a lead after the company bought it, most decisive fact first:
+ * cancelled (fake → refunded, customer → not refunded), reported as fake and being checked,
+ * executed, the customer chose this company / another one, or still open.
+ */
+export type LeadOutcome = "active" | "chosen" | "chosenOther" | "executed" | "reported" | "cancelledFake" | "cancelledCustomer";
+export type LeadGroup = "open" | "executed" | "reported" | "cancelled";
+export const LEAD_GROUP: Record<LeadOutcome, LeadGroup> = {
+  active: "open",
+  chosen: "open",
+  chosenOther: "open",
+  executed: "executed",
+  reported: "reported",
+  cancelledFake: "cancelled",
+  cancelledCustomer: "cancelled",
+};
+
+export function leadOutcome(db: Pick<DB, "offers" | "fakeReports" | "refunds">, order: Order) {
+  const offer = db.offers.find((o) => o.id === order.offerId);
+  const report: FakeReport | undefined = db.fakeReports.find((r) => r.orderId === order.id);
+  const refund: Refund | undefined = db.refunds.find((r) => r.orderId === order.id && r.status !== "rejected");
+  let status: LeadOutcome = "active";
+  if (offer?.status === "cancelled") status = offer.cancelReason === "fake" ? "cancelledFake" : "cancelledCustomer";
+  else if (report?.status === "confirmed") status = "cancelledFake";
+  else if (report && report.status !== "canceled") status = "reported";
+  else if (order.executed) status = "executed";
+  else if (offer?.chosenPartnerId === order.partnerId) status = "chosen";
+  else if (offer?.chosenPartnerId) status = "chosenOther";
+  return { status, group: LEAD_GROUP[status], offer, report, refund, assigned: order.channel === "manual" };
+}
+
+/**
+ * The company's notifications, derived from the data rather than stored, so every admin or
+ * customer action that concerns the company shows up without extra wiring. Newest first, 60 days.
+ * Text comes from `portal.feed.<kind>` with `values`; `href` is a portal route.
+ */
+export type FeedKind =
+  | "docApproved"
+  | "docRejected"
+  | "docExpiring"
+  | "docExpired"
+  | "receiptConfirmed"
+  | "receiptRejected"
+  | "topupAdmin"
+  | "credit"
+  | "invoiceOverdue"
+  | "refund"
+  | "refundRejected"
+  | "assigned"
+  | "cancelledFake"
+  | "cancelledCustomer"
+  | "chosen"
+  | "message"
+  | "payoutPaid"
+  | "payoutRejected"
+  | "review"
+  | "removalApproved"
+  | "removalRejected";
+export type FeedTone = "success" | "warning" | "danger" | "info";
+export interface FeedItem {
+  id: string;
+  at: string;
+  kind: FeedKind;
+  tone: FeedTone;
+  href: string;
+  values: Record<string, string | number>;
+}
+
+type FeedDB = Pick<DB, "partners" | "offers" | "orders" | "dues" | "topups" | "invoices" | "refunds" | "messages" | "payouts" | "reviews" | "removals">;
+
+export const FEED_DAYS = 60;
+
+export function partnerFeed(db: FeedDB, partnerId: string): FeedItem[] {
+  const p = db.partners.find((x) => x.id === partnerId);
+  if (!p) return [];
+  const now = refNow();
+  const items: FeedItem[] = [];
+  const push = (id: string, at: string | undefined, kind: FeedKind, tone: FeedTone, href: string, values: FeedItem["values"] = {}) => {
+    if (at && Date.parse(at) <= now) items.push({ id: `${kind}:${id}`, at, kind, tone, href, values });
+  };
+
+  for (const key of DOC_KEYS) {
+    const d = p.documents[key];
+    if (!d) continue;
+    if (d.status === "rejected") push(key, d.reviewedAt ?? d.uploadedAt, "docRejected", "danger", "/portal/profile?tab=documents", { doc: key });
+    else if (d.status === "valid" && d.reviewedAt) push(key, d.reviewedAt, "docApproved", "success", "/portal/profile?tab=documents", { doc: key });
+    if (d.expiresAt && d.status !== "rejected") {
+      const t = Date.parse(d.expiresAt);
+      if (t < now) push(`${key}-x`, d.expiresAt, "docExpired", "danger", "/portal/profile?tab=documents", { doc: key, date: d.expiresAt });
+      else if (t - now <= DOC_WARN_DAYS * DAY) push(`${key}-w`, new Date(t - DOC_WARN_DAYS * DAY).toISOString(), "docExpiring", "warning", "/portal/profile?tab=documents", { doc: key, date: d.expiresAt });
+    }
+  }
+
+  for (const d of db.dues.filter((x) => x.partnerId === partnerId && x.status !== "pending"))
+    push(d.id, d.decidedAt ?? d.createdAt, d.status === "confirmed" ? "receiptConfirmed" : "receiptRejected", d.status === "confirmed" ? "success" : "danger", "/portal/payments?tab=statement", { amount: d.amount, ref: d.reference });
+
+  for (const x of db.topups.filter((t) => t.partnerId === partnerId && t.method !== "online")) {
+    if (x.method === "admin") push(x.id, x.createdAt, "topupAdmin", "success", "/portal/payments?tab=statement", { amount: x.amount });
+    else push(x.id, x.createdAt, "credit", "info", "/portal/payments?tab=invoices", { amount: x.amount, invoice: x.invoiceId ?? "" });
+  }
+  for (const i of db.invoices.filter((x) => x.partnerId === partnerId && isOverdue(x)))
+    push(i.id, i.dueAt, "invoiceOverdue", "danger", "/portal/payments?tab=invoices", { amount: i.amount, invoice: i.id });
+
+  for (const r of db.refunds.filter((x) => x.partnerId === partnerId && x.status !== "pending")) {
+    const order = r.orderId ? db.orders.find((o) => o.id === r.orderId) : undefined;
+    const href = order ? `/portal/leads?open=${order.offerId}` : "/portal/payments?tab=statement";
+    push(r.id, r.decidedAt ?? r.createdAt, r.status === "refunded" ? "refund" : "refundRejected", r.status === "refunded" ? "success" : "warning", href, { amount: r.amount });
+  }
+
+  const mine = db.orders.filter((o) => o.partnerId === partnerId);
+  const offerById = new Map(db.offers.map((o) => [o.id, o]));
+  for (const o of mine) {
+    const offer = offerById.get(o.offerId);
+    const href = `/portal/leads?open=${o.offerId}`;
+    if (o.channel === "manual") push(o.id, o.createdAt, "assigned", "info", href, { lead: o.offerId, amount: o.price });
+    if (!offer) continue;
+    if (offer.status === "cancelled" && offer.cancelledAt && offer.cancelledAt > o.createdAt)
+      push(o.id, offer.cancelledAt, offer.cancelReason === "fake" ? "cancelledFake" : "cancelledCustomer", offer.cancelReason === "fake" ? "info" : "warning", href, { lead: o.offerId });
+    if (offer.chosenPartnerId === partnerId) push(o.id, offer.chosenAt, "chosen", "success", href, { lead: o.offerId, city: offer.from.city });
+  }
+
+  // one notification per conversation: its latest message from Kompass
+  const latestByThread = new Map<string, (typeof db.messages)[number]>();
+  for (const m of db.messages.filter((x) => x.partnerId === partnerId && x.from === "kompass"))
+    if (!latestByThread.has(m.threadId) || m.createdAt > latestByThread.get(m.threadId)!.createdAt) latestByThread.set(m.threadId, m);
+  for (const m of latestByThread.values()) push(m.id, m.createdAt, "message", "info", `/portal/messages?thread=${m.threadId}`, { subject: m.subject });
+
+  for (const x of db.payouts.filter((y) => y.partnerId === partnerId && y.status !== "requested"))
+    push(x.id, x.decidedAt ?? x.createdAt, x.status === "paid" ? "payoutPaid" : "payoutRejected", x.status === "paid" ? "success" : "warning", "/portal/payments?tab=payouts", { amount: x.amount });
+
+  for (const r of db.reviews.filter((x) => x.target === partnerId && x.status === "approved"))
+    push(r.id, r.createdAt, "review", r.stars >= 4 ? "success" : "warning", "/portal/reviews", { stars: r.stars, name: r.name });
+  for (const r of db.removals.filter((x) => x.partnerId === partnerId && x.status !== "pending"))
+    push(r.id, r.createdAt, r.status === "approved" ? "removalApproved" : "removalRejected", r.status === "approved" ? "success" : "warning", "/portal/reviews");
+
+  return items.filter((i) => now - Date.parse(i.at) <= FEED_DAYS * DAY).sort((a, b) => b.at.localeCompare(a.at));
+}
+
+/** Without a read marker, notifications from the last few days count as unread. */
+export const feedReadSince = (p: Pick<Partner, "feedReadAt">) => p.feedReadAt ?? new Date(refNow() - 5 * DAY).toISOString();
 
 /* ---------- dashboard periods & statistics ---------- */
 

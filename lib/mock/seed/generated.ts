@@ -18,6 +18,7 @@ import type {
   CompanyFile,
   CompanyMessage,
   Nomination,
+  Payout,
   Refund,
   WalletTopup,
   Invoice,
@@ -164,8 +165,21 @@ export const partners: Partner[] = rawPartners.map(({ expiresAt, documents: uplo
   const doc = (file: string | undefined, status: DocStatus, expires?: string): CompanyDoc | undefined =>
     file ? { file, uploadedAt: p.createdAt, status, ...(expires ? { expiresAt: expires } : {}) } : undefined;
   if (p.status !== "approved") {
-    // still applying: what they uploaded waits for Kompass to check it
-    return { ...p, documents: { insurance: doc(uploaded.insurance, "pending_review"), register: doc(uploaded.register, "pending_review") } };
+    // still applying: what they uploaded waits for Kompass to check it. Of the two with a contract,
+    // one has already signed it in the portal; the declined applicant is told why.
+    const signed = i === 22;
+    return {
+      ...p,
+      documents: {
+        contract: signed ? { file: "contract-signed.pdf", uploadedAt: daysAgo(1), status: "pending_review" } : undefined,
+        insurance: doc(uploaded.insurance, "pending_review"),
+        register: doc(uploaded.register, "pending_review"),
+      },
+      ...(signed ? { contractSignedAt: daysAgo(1), contractSignedBy: p.ownerName } : {}),
+      ...(p.status === "rejected"
+        ? { rejectionReason: "We could not verify your liability insurance and the commercial register extract does not list moving or cleaning services. You are welcome to apply again with both documents." }
+        : {}),
+    };
   }
   const demo = i === 0; // the demo portal account must be able to buy
   return {
@@ -812,18 +826,43 @@ for (const p of partners) {
 /* ---------- company files, messages, regional nominations ---------- */
 const frng = createRng(20261023);
 const PHOTOS = ["/images/hero.png", "/images/companies.png", "/images/start-now.png", "/images/about-hero.png"];
+// a simple monogram logo per company, so profiles don't all show the Kompass mark
+const LOGO_HUES = [212, 152, 12, 268, 32, 188, 336, 96];
+const monogram = (name: string, i: number) => {
+  const letters = name.replace(/[^A-Za-zÀ-ÿ ]/g, "").split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="hsl(${LOGO_HUES[i % LOGO_HUES.length]} 62% 38%)"/><path d="M18 70h60" stroke="#fff" stroke-opacity=".35" stroke-width="4" stroke-linecap="round"/><text x="48" y="58" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="700" fill="#fff" text-anchor="middle">${letters}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+};
 export const files: CompanyFile[] = approved.slice(0, 12).flatMap((p, i) => [
-  { id: `F-${pad(i * 3 + 1, 4)}`, partnerId: p.id, name: "logo.svg", category: "logo" as const, url: "/brand/icon.svg", size: frng.int(8, 40) * 1024, uploadedBy: "company" as const, uploadedAt: daysAgo(frng.int(30, 200)) },
+  { id: `F-${pad(i * 3 + 1, 4)}`, partnerId: p.id, name: "logo.svg", category: "logo" as const, url: monogram(p.name, i), size: frng.int(8, 40) * 1024, uploadedBy: "company" as const, uploadedAt: daysAgo(frng.int(30, 200)) },
   { id: `F-${pad(i * 3 + 2, 4)}`, partnerId: p.id, name: "team-truck.jpg", category: "photo" as const, url: frng.pick(PHOTOS), size: frng.int(300, 1400) * 1024, uploadedBy: "company" as const, uploadedAt: daysAgo(frng.int(10, 150)) },
   ...(i % 3 === 0
     ? [{ id: `F-${pad(i * 3 + 3, 4)}`, partnerId: p.id, name: "price-list-2026.pdf", category: "document" as const, url: "#", size: frng.int(80, 400) * 1024, uploadedBy: "admin" as const, uploadedAt: daysAgo(frng.int(5, 60)) }]
     : []),
 ]);
 
+// conversations: the first message of each thread is its root (threadId = id)
 export const messages: CompanyMessage[] = [
-  { id: "MSG-0001", partnerId: "p-001", subject: "Welcome to the new partner portal", body: "Your wallet, invoices and documents are now all in one place. Reply to this email if anything looks wrong.", channel: "email", byUserId: "u-1", createdAt: daysAgo(6) },
-  { id: "MSG-0002", partnerId: "p-001", subject: "Insurance renewal", body: "Your liability insurance runs out in a few months. Please upload the renewed certificate in your profile when you have it.", channel: "portal", byUserId: "u-3", createdAt: daysAgo(2) },
+  { id: "MSG-0001", threadId: "MSG-0001", from: "kompass", topic: "general", partnerId: "p-001", subject: "Welcome to the new partner portal", body: "Your wallet, invoices and documents are now all in one place. Reply here if anything looks wrong.", channel: "email", byUserId: "u-1", createdAt: daysAgo(6), readAt: daysAgo(5) },
+  { id: "MSG-0003", threadId: "MSG-0001", from: "company", topic: "general", partnerId: "p-001", subject: "Welcome to the new partner portal", body: "Thank you! Can we get leads from canton Zug as well? We often work there.", channel: "portal", createdAt: daysAgo(5, 2), readAt: daysAgo(5, 4) },
+  { id: "MSG-0004", threadId: "MSG-0001", from: "kompass", topic: "general", partnerId: "p-001", subject: "Welcome to the new partner portal", body: "Of course. Add Zug under Company profile › Service area and the shop will show its leads.", channel: "portal", byUserId: "u-1", createdAt: daysAgo(5, 5), readAt: daysAgo(4) },
+  { id: "MSG-0002", threadId: "MSG-0002", from: "kompass", topic: "documents", partnerId: "p-001", subject: "Insurance renewal", body: "Your liability insurance runs out in a few months. Please upload the renewed certificate in your profile when you have it.", channel: "portal", byUserId: "u-3", createdAt: daysAgo(2) },
+  { id: "MSG-0005", threadId: "MSG-0005", from: "company", topic: "billing", partnerId: "p-003", subject: "Payout of our balance", body: "We are pausing for the winter. Could you pay out what is left in our wallet?", channel: "portal", createdAt: daysAgo(1, 3) },
 ];
+
+/* ---------- payouts ---------- */
+export const payouts: Payout[] = [
+  { id: "PO-0001", partnerId: "p-001", amount: 200, iban: partners[0].bank.iban, status: "paid", reference: "UBS-7781-2209", byUserId: "u-1", createdAt: daysAgo(34), decidedAt: daysAgo(32) },
+  { id: "PO-0002", partnerId: "p-003", amount: Math.max(50, partners[2].wallet - (partners[2].wallet % 10)), iban: partners[2].bank.iban, status: "requested", createdAt: daysAgo(1, 3) },
+  { id: "PO-0003", partnerId: "p-006", amount: 150, iban: partners[5].bank.iban, status: "rejected", reference: "Open credit invoice must be paid first.", byUserId: "u-3", createdAt: daysAgo(12), decidedAt: daysAgo(11) },
+];
+
+// an urgent request admin assigned to the demo company by phone, with the agreed price and a note
+{
+  const offerById = new Map(offers.map((o) => [o.id, o]));
+  const urgent = orders.find((o) => o.partnerId === "p-001" && !o.executed && offerById.get(o.offerId)?.status === "in_progress" && !offerById.get(o.offerId)?.chosenPartnerId);
+  if (urgent) Object.assign(urgent, { channel: "manual", note: "Urgent: the customer needs a quote by Friday. Please call them today." });
+}
 
 // priority companies per canton chosen by admin (first one is offered new leads there first)
 export const nominations: Nomination[] = [

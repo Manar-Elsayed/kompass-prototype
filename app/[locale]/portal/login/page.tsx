@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { ArrowRight, FlaskConical, Search, ShieldOff, Star } from "lucide-react";
@@ -13,32 +14,48 @@ import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
-import { Avatar } from "@/components/ui/controls";
-import { Logo } from "@/components/shared/bits";
+import { CompanyLogo } from "@/components/shared/company-logo";
+import { Logo, StatusBadge } from "@/components/shared/bits";
+import type { Partner } from "@/lib/types";
 import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 
-export default function PortalLogin() {
+export default function PortalLoginPage() {
+  return (
+    <Suspense>
+      <PortalLogin />
+    </Suspense>
+  );
+}
+
+const APPLICANT_ORDER: Record<Partner["status"], number> = { contract_sent: 0, pending: 1, rejected: 2, approved: 3 };
+
+function PortalLogin() {
   const t = useTranslations("portal.login");
   const tf = useTranslations("common.fields");
   const ts = useTranslations("portal.shell");
   const lang = useLang();
   const router = useRouter();
   const hydrated = useHydrated();
-  const partners = useStore((s) => s.partners).filter((p) => p.status === "approved");
+  // companies sign in once approved; applicants sign in to follow their application (onboarding)
+  const all = useStore((s) => s.partners);
+  const partners = all.filter((p) => p.status === "approved");
+  const applicants = all.filter((p) => p.status !== "approved").sort((a, b) => APPLICANT_ORDER[a.status] - APPLICANT_ORDER[b.status]);
   const session = useStore((s) => s.partnerSession);
   const partnerLogin = useStore((s) => s.partnerLogin);
   const ratings = usePartnerRatings();
+  const as = useSearchParams().get("as");
   const [q, setQ] = useState("");
-  const [selected, setSelected] = useState(partners[0]?.id ?? "");
+  const [selected, setSelected] = useState(as ?? partners[0]?.id ?? "");
+  const [group, setGroup] = useState<"partners" | "applicants">(as && all.find((p) => p.id === as)?.status !== "approved" ? "applicants" : "partners");
   const [busy, setBusy] = useState(false);
-  const partner = partners.find((p) => p.id === selected);
+  const partner = all.find((p) => p.id === selected);
 
   useEffect(() => {
     if (hydrated && session) router.replace("/portal");
   }, [hydrated, session, router]);
 
   const term = q.trim().toLowerCase();
-  const list = partners.filter((p) => !term || p.name.toLowerCase().includes(term) || p.city.toLowerCase().includes(term));
+  const list = (group === "partners" ? partners : applicants).filter((p) => !term || p.name.toLowerCase().includes(term) || p.city.toLowerCase().includes(term));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +63,7 @@ export default function PortalLogin() {
     setBusy(true);
     await mock(() => partnerLogin(partner.id), 700);
     toast.success(partner.name);
-    router.replace("/portal");
+    router.replace(partner.status === "approved" ? "/portal" : "/portal/onboarding");
   };
 
   return (
@@ -78,7 +95,21 @@ export default function PortalLogin() {
               <FlaskConical className="size-4 text-accent" /> {t("pick")}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">{t("pickHint")}</p>
-            <div className="relative mt-3">
+            <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg bg-surface p-1 ring-1 ring-border" role="tablist">
+              {(["partners", "applicants"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  role="tab"
+                  aria-selected={group === g}
+                  onClick={() => setGroup(g)}
+                  className={cn("rounded-md px-2 py-1.5 text-xs font-semibold transition", group === g ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground")}
+                >
+                  {t(`groups.${g}`)} <span className="opacity-70">{g === "partners" ? partners.length : applicants.length}</span>
+                </button>
+              ))}
+            </div>
+            <div className="relative mt-2">
               <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("search")} className="h-9 ps-9" />
             </div>
@@ -93,17 +124,19 @@ export default function PortalLogin() {
                     selected === p.id ? "border-primary ring-1 ring-primary" : "border-transparent hover:border-border",
                   )}
                 >
-                  <Avatar name={p.name} square className="size-8" />
+                  <CompanyLogo partnerId={p.id} name={p.name} className="size-8" />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1.5 truncate text-sm font-semibold text-ink">
                       {p.name}
                       {p.banned && <ShieldOff className="size-3.5 shrink-0 text-danger" />}
                     </span>
                     <span className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                      {p.city} · {formatCHF(p.wallet, lang)}
+                      {p.city}
+                      {p.status === "approved" && <> · {formatCHF(p.wallet, lang)}</>}
                       {ratings[p.id] && <> · <Star className="size-3 fill-amber-400 text-amber-400" />{ratings[p.id].avg.toFixed(1)}</>}
                     </span>
                   </span>
+                  {p.status !== "approved" && <StatusBadge status={p.status} className="shrink-0" />}
                 </button>
               ))}
             </div>

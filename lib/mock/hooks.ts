@@ -80,6 +80,15 @@ export function useCurrentUser() {
   );
 }
 
+/** A company's logo (newest) and photos from its files, as shown on the public profile and in the portal. */
+export function useCompanyMedia(partnerId: string | undefined) {
+  const files = useStore((s) => s.files);
+  return useMemo(() => {
+    const own = files.filter((f) => f.partnerId === partnerId).sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+    return { logo: own.find((f) => f.category === "logo"), photos: own.filter((f) => f.category === "photo") };
+  }, [files, partnerId]);
+}
+
 /** The partner signed in to the portal (if any). */
 export function useCurrentPartner() {
   return useStore((s) => (s.partnerSession ? s.partners.find((p) => p.id === s.partnerSession!.partnerId) : undefined));

@@ -7,6 +7,8 @@ import { Link } from "@/i18n/navigation";
 import type { Blog, Partner, Review, Service } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { useL, useLang } from "@/lib/mock/hooks";
+import { documentState } from "@/lib/mock/selectors";
+import { CompanyLogo } from "@/components/shared/company-logo";
 import { KOMPASS_REVIEW_L10N } from "@/lib/mock/seed";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/controls";
@@ -132,11 +134,11 @@ export function CompanyCard({
   return (
     <article className="group flex flex-col rounded-2xl border border-border bg-surface p-5 transition hover:border-primary/30 hover:shadow-pop">
       <div className="flex items-start gap-4">
-        <Avatar name={partner.name} square className="size-14 rounded-xl text-base" />
+        <CompanyLogo partnerId={partner.id} name={partner.name} className="size-14 rounded-xl text-base" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <h3 className="truncate font-bold text-ink">{partner.name}</h3>
-            <BadgeCheck className="size-4 shrink-0 text-primary" aria-label={t("verified")} />
+            {documentState(partner).ok && <BadgeCheck className="size-4 shrink-0 text-primary" aria-label={t("verified")} />}
           </div>
           <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="size-3.5" /> {partner.city}, {partner.canton} · {t("since", { year: partner.foundedYear })}
