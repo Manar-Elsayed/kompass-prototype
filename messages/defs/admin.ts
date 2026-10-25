@@ -564,8 +564,9 @@ export const admin = {
     dormant: "Dormant",
   },
   dues: {
+    payment: "Payment",
     title: "Partner payments",
-    subtitle: "Top-ups and invoice payments uploaded by partners. Confirming credits the partner wallet.",
+    subtitle: "Payment receipts uploaded by companies. Confirming a top-up credits the wallet; confirming an invoice payment marks the invoice paid.",
     method: "Method",
     receipt: "Receipt",
     bank_transfer: "Bank transfer",
@@ -577,6 +578,12 @@ export const admin = {
     canceled: "Payment canceled",
     pendingTotal: "Pending",
     confirmedTotal: "Confirmed this month",
+    forLabel: "For",
+    forWallet: "Wallet top-up",
+    forInvoice: "Invoice {id}",
+    confirmInvoiceBody: "Invoice {id} is marked as paid. The wallet doesn’t change: the credit was added when the invoice was issued.",
+    confirmedInvoice: "Payment confirmed · invoice {id} paid",
+    walletUnchanged: "unchanged",
   },
   coupons: {
     title: "Coupons",
@@ -668,6 +675,8 @@ export const admin = {
       bank_transfer: "Bank transfer",
       cash: "Cash",
     },
+    openInvoicesHint: "{count, plural, one {This company has # open invoice.} other {This company has # open invoices.}} Paying an invoice? Mark it as paid on the invoice instead, so the wallet isn’t credited twice.",
+    openInvoicesLink: "Go to invoices",
   },
   invoices: {
     title: "Invoices",

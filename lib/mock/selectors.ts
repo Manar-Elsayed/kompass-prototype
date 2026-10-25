@@ -36,7 +36,8 @@ export const isOverdue = (inv: { status: string; dueAt: string }) => inv.status 
 export function walletLedger(db: LedgerDB, partnerId: string) {
   const entries: LedgerEntry[] = [
     ...db.dues
-      .filter((d) => d.partnerId === partnerId && d.status === "confirmed")
+      // invoice payments don't move the wallet (the credit was added when the invoice was issued)
+      .filter((d) => d.partnerId === partnerId && d.status === "confirmed" && !d.invoiceId)
       .map((d) => ({ id: d.id, at: d.createdAt, kind: "receipt" as const, amount: d.amount, reference: d.reference, payMethod: d.method })),
     ...db.topups
       .filter((x) => x.partnerId === partnerId)
@@ -122,8 +123,13 @@ export const isExpiringSoon = (o: Pick<Offer, "status" | "deadline">) => {
 export const isPurchasable = (o: Offer, sold: number) =>
   o.active && o.status === "in_progress" && Date.parse(o.deadline) >= refNow() && sold < o.offersWanted;
 
-/** Leads a partner can buy right now: purchasable, matching services, not already owned. Reposted ones first. */
-export function availableLeads(db: Pick<DB, "offers" | "orders">, partner: { id: string; serviceIds: string[] }) {
+/** The services a company currently takes offers for: the ones it offers, minus the paused ones. */
+export const offerServiceIds = (p: { serviceIds: string[]; pausedServiceIds?: string[] }) => p.serviceIds.filter((id) => !p.pausedServiceIds?.includes(id));
+/** The company takes new offers for this service (it offers it and hasn't paused it). */
+export const takesOffersFor = (p: { serviceIds: string[]; pausedServiceIds?: string[] }, serviceId: string) => offerServiceIds(p).includes(serviceId);
+
+/** Leads a partner can buy right now: purchasable, matching active services, not already owned. Reposted ones first. */
+export function availableLeads(db: Pick<DB, "offers" | "orders">, partner: { id: string; serviceIds: string[]; pausedServiceIds?: string[] }) {
   const sold: Record<string, number> = {};
   const mine = new Set<string>();
   for (const o of db.orders) {
@@ -131,7 +137,7 @@ export function availableLeads(db: Pick<DB, "offers" | "orders">, partner: { id:
     if (o.partnerId === partner.id) mine.add(o.offerId);
   }
   return db.offers
-    .filter((o) => isPurchasable(o, sold[o.id] ?? 0) && partner.serviceIds.includes(o.serviceId) && !mine.has(o.id))
+    .filter((o) => isPurchasable(o, sold[o.id] ?? 0) && takesOffersFor(partner, o.serviceId) && !mine.has(o.id))
     .map((o) => ({ offer: o, sold: sold[o.id] ?? 0 }))
     .sort((a, b) => (b.offer.repostedAt ?? "").localeCompare(a.offer.repostedAt ?? ""));
 }
@@ -282,6 +288,7 @@ export type FeedKind =
   | "docExpiring"
   | "docExpired"
   | "receiptConfirmed"
+  | "invoiceReceiptConfirmed"
   | "receiptRejected"
   | "topupAdmin"
   | "credit"
@@ -334,7 +341,14 @@ export function partnerFeed(db: FeedDB, partnerId: string): FeedItem[] {
   }
 
   for (const d of db.dues.filter((x) => x.partnerId === partnerId && x.status !== "pending"))
-    push(d.id, d.decidedAt ?? d.createdAt, d.status === "confirmed" ? "receiptConfirmed" : "receiptRejected", d.status === "confirmed" ? "success" : "danger", "/portal/payments?tab=statement", { amount: d.amount, ref: d.reference });
+    push(
+      d.id,
+      d.decidedAt ?? d.createdAt,
+      d.status !== "confirmed" ? "receiptRejected" : d.invoiceId ? "invoiceReceiptConfirmed" : "receiptConfirmed",
+      d.status === "confirmed" ? "success" : "danger",
+      d.invoiceId ? "/portal/payments?tab=invoices" : "/portal/payments?tab=statement",
+      { amount: d.amount, ref: d.reference, invoice: d.invoiceId ?? "" },
+    );
 
   for (const x of db.topups.filter((t) => t.partnerId === partnerId && t.method !== "online")) {
     if (x.method === "admin") push(x.id, x.createdAt, "topupAdmin", "success", "/portal/payments?tab=statement", { amount: x.amount });

@@ -567,8 +567,9 @@ export const admin: Built<typeof Def> = {
     dormant: "Inactif",
   },
   dues: {
+    payment: "Paiement",
     title: "Paiements partenaires",
-    subtitle: "Recharges et paiements de factures téléversés par les partenaires. La confirmation crédite le portefeuille du partenaire.",
+    subtitle: "Justificatifs de paiement téléversés par les entreprises. Confirmer une recharge crédite le portefeuille ; confirmer le paiement d’une facture la marque comme payée.",
     method: "Moyen",
     receipt: "Justificatif",
     bank_transfer: "Virement bancaire",
@@ -580,6 +581,12 @@ export const admin: Built<typeof Def> = {
     canceled: "Paiement annulé",
     pendingTotal: "En attente",
     confirmedTotal: "Confirmés ce mois-ci",
+    forLabel: "Pour",
+    forWallet: "Recharge du portefeuille",
+    forInvoice: "Facture {id}",
+    confirmInvoiceBody: "La facture {id} est marquée comme payée. Le portefeuille ne change pas : le crédit a été ajouté à l’émission de la facture.",
+    confirmedInvoice: "Paiement confirmé · facture {id} payée",
+    walletUnchanged: "inchangé",
   },
   coupons: {
     title: "Codes promo",
@@ -671,6 +678,8 @@ export const admin: Built<typeof Def> = {
       bank_transfer: "Virement bancaire",
       cash: "Espèces",
     },
+    openInvoicesHint: "{count, plural, one {Cette entreprise a # facture ouverte.} other {Cette entreprise a # factures ouvertes.}} Le paiement concerne une facture ? Marquez plutôt la facture comme payée, pour ne pas créditer le portefeuille deux fois.",
+    openInvoicesLink: "Voir les factures",
   },
   invoices: {
     title: "Factures",

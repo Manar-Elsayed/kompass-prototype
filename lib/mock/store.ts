@@ -113,7 +113,7 @@ interface Actions {
   /* partner portal flows */
   buyLead: (partnerId: string, offerId: string, couponCode?: string) => BuyResult;
   reportFakeLead: (orderId: string, reason: string) => void;
-  uploadPayment: (input: Pick<PartnerDue, "partnerId" | "amount" | "method" | "reference" | "receipt">) => PartnerDue;
+  uploadPayment: (input: Pick<PartnerDue, "partnerId" | "amount" | "method" | "reference" | "receipt" | "invoiceId">) => PartnerDue;
   requestReviewRemoval: (reviewId: string, partnerId: string, reason: string) => void;
 
   /* session */
@@ -484,8 +484,18 @@ export const useStore = create<Store>()(
         set((s) => {
           const due = s.dues.find((d) => d.id === id);
           if (!due || due.status !== "pending") return {};
+          const at = nowIso();
+          // paying a credit invoice: the money was already in the wallet, so only the invoice changes
+          if (due.invoiceId)
+            return {
+              dues: s.dues.map((d) => (d.id === id ? { ...d, status, decidedAt: at } : d)),
+              invoices:
+                status === "confirmed"
+                  ? s.invoices.map((i) => (i.id === due.invoiceId && i.status === "due" ? { ...i, status: "paid", paidAt: at, paidMethod: due.method, paidReference: due.reference } : i))
+                  : s.invoices,
+            };
           return {
-            dues: s.dues.map((d) => (d.id === id ? { ...d, status, decidedAt: nowIso() } : d)),
+            dues: s.dues.map((d) => (d.id === id ? { ...d, status, decidedAt: at } : d)),
             partners:
               status === "confirmed"
                 ? s.partners.map((p) => (p.id === due.partnerId ? { ...p, wallet: p.wallet + due.amount } : p))
@@ -714,7 +724,9 @@ export const useStore = create<Store>()(
           dues: [due, ...s.dues],
           notifications: notify(s, {
             kind: "due",
-            title: { en: `Payment receipt CHF ${input.amount} from ${partner?.name}`, de: `Zahlungsbeleg CHF ${input.amount} von ${partner?.name}`, fr: `Justificatif de paiement CHF ${input.amount} de ${partner?.name}`, it: `Ricevuta di pagamento CHF ${input.amount} da ${partner?.name}` },
+            title: input.invoiceId
+              ? { en: `Invoice ${input.invoiceId} paid by transfer · receipt from ${partner?.name}`, de: `Rechnung ${input.invoiceId} per Überweisung bezahlt · Beleg von ${partner?.name}`, fr: `Facture ${input.invoiceId} payée par virement · justificatif de ${partner?.name}`, it: `Fattura ${input.invoiceId} pagata con bonifico · ricevuta da ${partner?.name}` }
+              : { en: `Payment receipt CHF ${input.amount} from ${partner?.name}`, de: `Zahlungsbeleg CHF ${input.amount} von ${partner?.name}`, fr: `Justificatif de paiement CHF ${input.amount} de ${partner?.name}`, it: `Ricevuta di pagamento CHF ${input.amount} da ${partner?.name}` },
             href: "/admin/finance/partner-dues",
           }),
         });
@@ -745,11 +757,11 @@ export const useStore = create<Store>()(
       // companies and no-shows; v9 the partner portal flows (onboarding contract, message threads,
       // payouts, service areas); v10 two booking types (same / other person); v11 no-shows removed
       // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address; v14 fake-offer reports whose
-      // status matches the refunds. Older saves start again from the current seed,
+      // status matches the refunds; v15 paused company services. Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 14,
+      version: 15,
       migrate: (persisted, version) => {
-        if (version >= 14) return persisted as Store;
+        if (version >= 15) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

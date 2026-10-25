@@ -567,8 +567,9 @@ export const admin: Built<typeof Def> = {
     dormant: "Inaktiv",
   },
   dues: {
+    payment: "Zahlung",
     title: "Partnerzahlungen",
-    subtitle: "Von Partnern hochgeladene Aufladungen und Rechnungszahlungen. Mit der Bestätigung wird das Partner-Wallet gutgeschrieben.",
+    subtitle: "Von Firmen hochgeladene Zahlungsbelege. Eine bestätigte Aufladung wird dem Wallet gutgeschrieben, eine bestätigte Rechnungszahlung markiert die Rechnung als bezahlt.",
     method: "Zahlungsart",
     receipt: "Beleg",
     bank_transfer: "Banküberweisung",
@@ -580,6 +581,12 @@ export const admin: Built<typeof Def> = {
     canceled: "Zahlung storniert",
     pendingTotal: "Ausstehend",
     confirmedTotal: "Bestätigt diesen Monat",
+    forLabel: "Für",
+    forWallet: "Wallet-Aufladung",
+    forInvoice: "Rechnung {id}",
+    confirmInvoiceBody: "Rechnung {id} wird als bezahlt markiert. Das Wallet ändert sich nicht: Der Kredit wurde bei der Rechnungsstellung gutgeschrieben.",
+    confirmedInvoice: "Zahlung bestätigt · Rechnung {id} bezahlt",
+    walletUnchanged: "unverändert",
   },
   coupons: {
     title: "Gutscheine",
@@ -671,6 +678,8 @@ export const admin: Built<typeof Def> = {
       bank_transfer: "Banküberweisung",
       cash: "Bar",
     },
+    openInvoicesHint: "{count, plural, one {Diese Firma hat # offene Rechnung.} other {Diese Firma hat # offene Rechnungen.}} Wird eine Rechnung bezahlt? Markieren Sie stattdessen die Rechnung als bezahlt, damit das Wallet nicht doppelt gutgeschrieben wird.",
+    openInvoicesLink: "Zu den Rechnungen",
   },
   invoices: {
     title: "Rechnungen",

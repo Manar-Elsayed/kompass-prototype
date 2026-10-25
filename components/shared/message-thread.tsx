@@ -2,14 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Mail, Send } from "lucide-react";
+import { ArrowLeft, Mail, MessageSquarePlus, Send } from "lucide-react";
 import { toast } from "sonner";
-import type { CompanyMessage } from "@/lib/types";
+import type { CompanyMessage, MessageTopic } from "@/lib/types";
 import { cn, formatDateTime, timeAgo } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentUser, useLang } from "@/lib/mock/hooks";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/input";
+import { Input, Textarea } from "@/components/ui/input";
+import { Field } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { RadioCards } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/controls";
 import { EmptyState } from "@/components/shared/bits";
@@ -47,7 +50,9 @@ export function useThreads(partnerId: string, viewer: Viewer) {
 /**
  * Conversations between Kompass and one company: a list and the open thread with a reply box.
  * The same component serves the portal (viewer "company") and the admin company page (viewer "kompass").
- * On narrow screens the list and the thread take turns.
+ * On narrow screens the list and the thread take turns. With `canStart`, a "New conversation"
+ * button tops the list and the message is written in the right-hand pane; with `autoOpen`, wide
+ * screens open the latest conversation so its reply box is ready.
  */
 export function MessageCenter({
   partnerId,
@@ -56,6 +61,9 @@ export function MessageCenter({
   onSelect,
   empty,
   partnerName,
+  partnerEmail,
+  canStart,
+  autoOpen,
 }: {
   partnerId: string;
   viewer: Viewer;
@@ -63,44 +71,82 @@ export function MessageCenter({
   onSelect: (threadId: string | null) => void;
   empty?: React.ReactNode;
   partnerName: string;
+  partnerEmail?: string;
+  canStart?: boolean;
+  autoOpen?: boolean;
 }) {
   const t = useTranslations("portal.messages");
   const lang = useLang();
   const threads = useThreads(partnerId, viewer);
-  const open = threads.find((x) => x.id === selected);
+  const [composing, setComposing] = useState(false);
+  const open = composing ? undefined : threads.find((x) => x.id === selected);
+  const latest = threads[0]?.id;
+  // wide screens: show a conversation right away instead of an empty pane
+  useEffect(() => {
+    if (!autoOpen || composing || selected || !latest) return;
+    if (window.matchMedia("(min-width: 768px)").matches) onSelect(latest);
+  }, [autoOpen, composing, selected, latest, onSelect]);
+  const startNew = () => {
+    onSelect(null);
+    setComposing(true);
+  };
 
   return (
     <div className="grid min-h-[480px] overflow-hidden rounded-xl border bg-surface shadow-card md:grid-cols-[320px_1fr]">
-      <ul className={cn("divide-y overflow-y-auto border-e md:max-h-[640px]", open && "hidden md:block")}>
-        {threads.length ? (
-          threads.map((th) => (
-            <li key={th.id}>
-              <button
-                onClick={() => onSelect(th.id)}
-                className={cn("flex w-full flex-col gap-1 px-4 py-3 text-start transition hover:bg-surface-2/70", th.id === selected && "bg-primary-soft/50")}
-                aria-current={th.id === selected ? "true" : undefined}
-              >
-                <span className="flex items-center gap-2">
-                  <span className={cn("min-w-0 flex-1 truncate text-sm", th.unread ? "font-bold text-ink" : "font-semibold text-foreground")}>{th.subject}</span>
-                  {th.unread > 0 && <span className="size-2 shrink-0 rounded-full bg-accent" aria-label={t("unread")} />}
-                </span>
-                <span className="line-clamp-1 text-xs text-muted-foreground">
-                  {th.last.from === viewer ? `${t("you")}: ` : ""}
-                  {th.last.body}
-                </span>
-                <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <Badge tone="neutral" className="px-1.5 py-0 text-[10px]">{t(`topics.${th.topic}`)}</Badge>
-                  {timeAgo(th.last.createdAt, lang)}
-                </span>
-              </button>
-            </li>
-          ))
-        ) : (
-          <li>{empty ?? <EmptyState icon={<Mail />} title={t("empty")} className="py-12" />}</li>
+      <div className={cn("flex min-w-0 flex-col border-e", (open || composing) && "hidden md:flex")}>
+        {canStart && (
+          <div className="border-b p-3">
+            <Button className="w-full" variant={composing ? "secondary" : "default"} onClick={startNew}>
+              <MessageSquarePlus /> {t("newConversation")}
+            </Button>
+          </div>
         )}
-      </ul>
-      <div className={cn("min-w-0 flex-col", open ? "flex" : "hidden md:flex")}>
-        {open ? (
+        <ul className="flex-1 divide-y overflow-y-auto md:max-h-[640px]">
+          {threads.length ? (
+            threads.map((th) => (
+              <li key={th.id}>
+                <button
+                  onClick={() => {
+                    setComposing(false);
+                    onSelect(th.id);
+                  }}
+                  className={cn("flex w-full flex-col gap-1 px-4 py-3 text-start transition hover:bg-surface-2/70", th.id === selected && "bg-primary-soft/50")}
+                  aria-current={th.id === selected ? "true" : undefined}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className={cn("min-w-0 flex-1 truncate text-sm", th.unread ? "font-bold text-ink" : "font-semibold text-foreground")}>{th.subject}</span>
+                    {th.unread > 0 && <span className="size-2 shrink-0 rounded-full bg-accent" aria-label={t("unread")} />}
+                  </span>
+                  <span className="line-clamp-1 text-xs text-muted-foreground">
+                    {th.last.from === viewer ? `${t("you")}: ` : ""}
+                    {th.last.body}
+                  </span>
+                  <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <Badge tone="neutral" className="px-1.5 py-0 text-[10px]">{t(`topics.${th.topic}`)}</Badge>
+                    {timeAgo(th.last.createdAt, lang)}
+                  </span>
+                </button>
+              </li>
+            ))
+          ) : (
+            <li>{empty ?? <EmptyState icon={<Mail />} title={t("empty")} className="py-12" />}</li>
+          )}
+        </ul>
+      </div>
+      <div className={cn("min-w-0 flex-col", open || composing ? "flex" : "hidden md:flex")}>
+        {composing ? (
+          <NewThreadView
+            viewer={viewer}
+            partnerId={partnerId}
+            partnerName={partnerName}
+            partnerEmail={partnerEmail}
+            onCancel={() => setComposing(false)}
+            onSent={() => {
+              setComposing(false);
+              onSelect(null);
+            }}
+          />
+        ) : open ? (
           <ThreadView key={open.id} thread={open} viewer={viewer} partnerId={partnerId} partnerName={partnerName} onBack={() => onSelect(null)} />
         ) : (
           <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-muted-foreground">{threads.length ? t("pick") : null}</div>
@@ -112,6 +158,7 @@ export function MessageCenter({
 
 function ThreadView({ thread, viewer, partnerId, partnerName, onBack }: { thread: Thread; viewer: Viewer; partnerId: string; partnerName: string; onBack: () => void }) {
   const t = useTranslations("portal.messages");
+  const tc = useTranslations("admin.partners.contactCo");
   const lang = useLang();
   const users = useStore((s) => s.users);
   const send = useStore((s) => s.sendMessage);
@@ -133,7 +180,8 @@ function ThreadView({ thread, viewer, partnerId, partnerName, onBack }: { thread
     if (body.trim().length < 2) return;
     send({ partnerId, from: viewer, threadId: thread.id, body, byUserId: viewer === "kompass" ? user?.id : undefined });
     setBody("");
-    toast.success(t("sent"));
+    // the toast names who receives it
+    toast.success(viewer === "kompass" ? tc("sent", { name: partnerName }) : t("sent"));
   };
 
   return (
@@ -178,6 +226,87 @@ function ThreadView({ thread, viewer, partnerId, partnerName, onBack }: { thread
           className="min-h-0 flex-1 resize-none"
         />
         <Button onClick={reply} disabled={body.trim().length < 2}><Send /> <span className="hidden sm:inline">{t("send")}</span></Button>
+      </div>
+    </>
+  );
+}
+
+/** Writing the first message of a new conversation, in the same pane a conversation opens in. */
+function NewThreadView({
+  viewer,
+  partnerId,
+  partnerName,
+  partnerEmail,
+  onCancel,
+  onSent,
+}: {
+  viewer: Viewer;
+  partnerId: string;
+  partnerName: string;
+  partnerEmail?: string;
+  onCancel: () => void;
+  onSent: () => void;
+}) {
+  const t = useTranslations("portal.messages");
+  const tc = useTranslations("admin.partners.contactCo");
+  const ta = useTranslations("common.actions");
+  const sendCompanyMessage = useStore((s) => s.sendCompanyMessage);
+  const sendMessage = useStore((s) => s.sendMessage);
+  const { user } = useCurrentUser();
+  const [topic, setTopic] = useState<MessageTopic>("general");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [channel, setChannel] = useState<"email" | "portal">("email");
+  const fromKompass = viewer === "kompass";
+  const ready = subject.trim().length > 0 && body.trim().length >= 3;
+
+  const send = () => {
+    if (!ready) return;
+    if (fromKompass) sendCompanyMessage({ partnerId, subject: subject.trim(), body: body.trim(), channel, topic, byUserId: user?.id });
+    else sendMessage({ partnerId, from: viewer, subject: subject.trim(), body: body.trim(), topic });
+    toast.success(fromKompass ? tc("sent", { name: partnerName }) : t("sent"));
+    onSent();
+  };
+
+  return (
+    <>
+      <div className="flex items-center gap-2 border-b px-4 py-3">
+        <Button variant="ghost" size="icon-sm" className="md:hidden" onClick={onCancel} aria-label={t("back")}><ArrowLeft /></Button>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-bold text-ink">{fromKompass ? tc("title", { name: partnerName }) : t("newTitle")}</p>
+          <p className="text-xs text-muted-foreground">
+            {fromKompass ? (channel === "email" ? `${partnerEmail ?? ""} · ${tc("emailHint")}` : tc("portalHint")) : t("newBody")}
+          </p>
+        </div>
+      </div>
+      <div className="grid flex-1 content-start gap-4 bg-surface-2/40 p-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={t("topic")}>
+            <Select value={topic} onValueChange={(v) => setTopic(v as MessageTopic)} options={(["general", "billing", "leads", "documents", "profile"] as const).map((k) => ({ value: k, label: t(`topics.${k}`) }))} />
+          </Field>
+          {fromKompass && (
+            <Field label={tc("channel")}>
+              <RadioCards className="grid-cols-2" value={channel} onValueChange={(v) => setChannel(v as "email" | "portal")} options={(["email", "portal"] as const).map((c) => ({ value: c, label: tc(`channels.${c}`) }))} />
+            </Field>
+          )}
+        </div>
+        <Field label={t("subject")} required>
+          <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
+        </Field>
+        <Field label={tc("message")} required>
+          <Textarea
+            rows={6}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send();
+            }}
+          />
+        </Field>
+      </div>
+      <div className="flex justify-end gap-2 border-t p-3">
+        <Button variant="outline" onClick={onCancel}>{ta("cancel")}</Button>
+        <Button onClick={send} disabled={!ready}><Send /> {t("send")}</Button>
       </div>
     </>
   );

@@ -291,6 +291,8 @@ export interface Partner {
   canton: string;
   about: L10n;
   serviceIds: ID[];
+  /** Services the company offers but has paused for a while: no new offers for them until resumed. */
+  pausedServiceIds?: ID[];
   status: PartnerStatus;
   banned: boolean;
   featured: boolean;
@@ -327,6 +329,8 @@ export interface PartnerDue {
   method: "bank_transfer" | "twint" | "card";
   reference: string;
   receipt: string; // image url
+  /** The credit invoice this payment pays. Confirming marks the invoice paid instead of crediting the wallet. */
+  invoiceId?: ID;
   status: DueStatus;
   createdAt: string;
   decidedAt?: string;

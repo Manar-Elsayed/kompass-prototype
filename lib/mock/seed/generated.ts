@@ -198,6 +198,11 @@ export const partners: Partner[] = rawPartners.map(({ expiresAt, documents: uplo
 });
 
 const approved = partners.filter((p) => p.status === "approved" && !p.banned);
+// one company has paused a service for a while (no new offers for it until it resumes)
+{
+  const busy = approved.find((p) => p.serviceIds.length >= 3);
+  if (busy) busy.pausedServiceIds = [busy.serviceIds[busy.serviceIds.length - 1]];
+}
 
 /* ---------- offers (leads) ---------- */
 // Status hint for offers older than 4 days, drawn by pool position. The positions keep the

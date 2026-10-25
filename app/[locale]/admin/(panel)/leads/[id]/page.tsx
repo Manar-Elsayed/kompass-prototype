@@ -28,7 +28,7 @@ import type { FakeReport, Offer, Order } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { CITIES } from "@/lib/mock/seed";
-import { canBuyLeads, companyScore, daysLeft, isExpiringSoon, surveyDate, surveySent } from "@/lib/mock/selectors";
+import { canBuyLeads, companyScore, daysLeft, isExpiringSoon, surveyDate, surveySent, takesOffersFor } from "@/lib/mock/selectors";
 import { useL, useLang, usePartnerMap, useServiceMap } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
@@ -90,7 +90,7 @@ export default function LeadDetail() {
   const days = daysLeft(offer.deadline);
   const expiring = isExpiringSoon(offer);
   const open = offer.status === "new" || offer.status === "in_progress";
-  const matching = partners.filter((p) => p.status === "approved" && !p.banned && p.serviceIds.includes(offer.serviceId)).length;
+  const matching = partners.filter((p) => p.status === "approved" && !p.banned && takesOffersFor(p, offer.serviceId)).length;
 
   const approve = () =>
     confirm({
@@ -446,7 +446,7 @@ function AssignPanel({ offer, orders }: { offer: Offer; orders: Order[] }) {
   const rank = (id: string) => (picks.includes(id) ? picks.indexOf(id) : 99);
   // nominated for this region first (in admin's order), then same canton by performance, then the rest
   const eligible = partners
-    .filter((p) => p.status === "approved" && !p.banned && p.serviceIds.includes(offer.serviceId) && !orders.some((o) => o.partnerId === p.id))
+    .filter((p) => p.status === "approved" && !p.banned && takesOffersFor(p, offer.serviceId) && !orders.some((o) => o.partnerId === p.id))
     .map((p) => ({ p, score: companyScore({ orders: allOrders, reviews }, p).score }))
     .sort((a, b) => rank(a.p.id) - rank(b.p.id) || Number(b.p.canton === canton) - Number(a.p.canton === canton) || b.score - a.score)
     .map((x) => x.p);
