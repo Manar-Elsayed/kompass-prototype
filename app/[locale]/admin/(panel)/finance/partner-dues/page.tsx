@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Building2, Check, CheckCircle2, Clock, Receipt, X } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +19,7 @@ import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 import { MoneyDocument } from "@/components/shared/money-doc";
+import { PaymentProof } from "@/components/shared/payment-proof";
 
 export default function PartnerDuesPage() {
   const t = useTranslations();
@@ -169,10 +169,7 @@ export default function PartnerDuesPage() {
             )}
             {/* what the company uploaded as proof */}
             <SheetSection title={td("proofTitle")}>
-              <a href={receipt.receipt} target="_blank" rel="noreferrer" className="group relative block aspect-[4/3] overflow-hidden rounded-xl border bg-surface-2" aria-label={td("proofOpen")}>
-                <Image src={receipt.receipt} alt={td("proofTitle")} fill className="object-contain transition group-hover:scale-[1.02]" sizes="560px" />
-                <span className="absolute bottom-2 end-2 rounded-md bg-surface/90 px-2 py-1 text-xs font-semibold text-ink shadow-sm">{td("proofOpen")}</span>
-              </a>
+              <PaymentProof due={receipt} partner={partner} />
             </SheetSection>
             {partner && (
               <SheetSection title={t("admin.rows.walletImpact")}>
