@@ -362,6 +362,8 @@ export const admin: Built<typeof Def> = {
     revenue: "Umsatz",
   },
   fake: {
+    report: "Meldung",
+    searchPh: "Meldung, Anfrage, Kunde, Firma oder Grund suchen…",
     title: "Meldungen gefälschter Anfragen",
     subtitle: "Partner melden Anfragen, die sie für gefälscht halten. Bei bestätigten Meldungen wird der Anfragepreis dem Partner-Wallet gutgeschrieben.",
     reason: "Grund",

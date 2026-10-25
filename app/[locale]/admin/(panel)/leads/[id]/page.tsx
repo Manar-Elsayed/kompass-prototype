@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import type { Offer, Order } from "@/lib/types";
+import type { FakeReport, Offer, Order } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { CITIES } from "@/lib/mock/seed";
@@ -42,6 +42,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { Icon } from "@/components/shared/icon";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
+import { FakeStatusSelect, isFinalReport, useFakeReportStatus } from "@/components/admin/fake-report-status";
 import { SurveyEmail } from "@/components/site/request-bits";
 import { JobFacts, JobPlaces } from "@/components/shared/job-details";
 
@@ -64,13 +65,13 @@ export default function LeadDetail() {
   const { confirm, dialog } = useConfirm();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
-  // row menus on the leads list link here with #cancel (open the dialog) or #assign (jump to the panel)
+  // row menus link here with #cancel (open the dialog), #assign (jump to the panel) or #fake-reports
   const hasOffer = !!offer;
   useEffect(() => {
     if (!hasOffer) return;
     const hash = window.location.hash;
     if (hash === "#cancel") setCancelOpen(true);
-    else if (hash === "#assign") document.getElementById("assign")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    else if (hash === "#assign" || hash === "#fake-reports") document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: "smooth", block: hash === "#assign" ? "center" : "start" });
   }, [hasOffer]);
 
   if (!offer) {
@@ -248,6 +249,8 @@ export default function LeadDetail() {
               </CardBody>
             </Card>
           )}
+
+          <FakeReportsCard orders={orders} />
 
           <Card>
             <CardHeader title={tl("move")} />
@@ -640,6 +643,47 @@ function SurveyCard({ offer, orders }: { offer: Offer; orders: Order[] }) {
           <SurveyEmail offer={offer} />
         </DialogContent>
       </Dialog>
+    </Card>
+  );
+}
+
+/** Companies that reported this offer as fake, with the same status picker as the reports list. */
+function FakeReportsCard({ orders }: { orders: Order[] }) {
+  const t = useTranslations();
+  const lang = useLang();
+  const allReports = useStore((s) => s.fakeReports);
+  const partnerMap = usePartnerMap();
+  const { setStatus, dialog } = useFakeReportStatus();
+  const orderOf = (r: FakeReport) => orders.find((o) => o.id === r.orderId);
+  const reports = allReports.filter((r) => orderOf(r)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  if (!reports.length) return null;
+  const active = reports.some((r) => !isFinalReport(r));
+
+  return (
+    <Card id="fake-reports" className={cn("scroll-mt-24", active && "border-warning/40")}>
+      <CardHeader title={t("admin.fake.title")} description={active ? t("admin.rows.confirmFakeHint") : undefined} />
+      <CardBody>
+        <ul className="divide-y rounded-xl border">
+          {reports.map((r) => {
+            const o = orderOf(r)!;
+            const p = partnerMap[o.partnerId];
+            return (
+              <li key={r.id} className="flex flex-wrap items-start gap-3 p-3 sm:flex-nowrap">
+                <Avatar name={p?.name ?? "?"} square className="size-9" />
+                <div className="min-w-0 flex-1">
+                  <Link href={`/admin/partners/${o.partnerId}`} className="font-semibold text-ink hover:text-primary">{p?.name}</Link>
+                  <p className="text-xs text-muted-foreground">
+                    <Mono className="text-xs font-medium text-muted-foreground">{r.id}</Mono> · {formatDateTime(r.createdAt, lang)} · {formatCHF(o.price, lang)}
+                  </p>
+                  <p className="mt-1 text-sm text-ink">“{r.reason}”</p>
+                </div>
+                <FakeStatusSelect report={r} onChange={(s) => setStatus(r, s)} className="shrink-0" />
+              </li>
+            );
+          })}
+        </ul>
+      </CardBody>
+      {dialog}
     </Card>
   );
 }
