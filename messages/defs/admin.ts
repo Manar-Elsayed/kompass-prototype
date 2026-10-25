@@ -727,6 +727,8 @@ export const admin = {
     subtitle: "Credit invoices to collect, and a receipt for every payment and offer purchase.",
     creditTab: "Credit invoices",
     receiptsTab: "Receipts",
+    searchPh: "Search invoice or company…",
+    receiptsSearchPh: "Search receipt, reference or company…",
     number: "Invoice",
     issued: "Issued",
     due: "Due date",

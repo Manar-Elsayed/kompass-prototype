@@ -730,6 +730,8 @@ export const admin: Built<typeof Def> = {
     subtitle: "Offene Kreditrechnungen und ein Beleg für jede Zahlung und jeden Anfragekauf.",
     creditTab: "Kreditrechnungen",
     receiptsTab: "Belege",
+    searchPh: "Rechnung oder Firma suchen…",
+    receiptsSearchPh: "Beleg, Referenz oder Firma suchen…",
     number: "Rechnung",
     issued: "Ausgestellt",
     due: "Fällig am",
