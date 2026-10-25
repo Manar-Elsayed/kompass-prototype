@@ -730,6 +730,8 @@ export const admin: Built<typeof Def> = {
     subtitle: "Le fatture di credito da incassare e una ricevuta per ogni pagamento e acquisto di richieste.",
     creditTab: "Fatture di credito",
     receiptsTab: "Ricevute",
+    searchPh: "Cerca fattura o azienda…",
+    receiptsSearchPh: "Cerca ricevuta, riferimento o azienda…",
     number: "Fattura",
     issued: "Emessa il",
     due: "Scadenza",

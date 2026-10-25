@@ -730,6 +730,8 @@ export const admin: Built<typeof Def> = {
     subtitle: "Les factures de crédit à encaisser et un reçu pour chaque paiement et achat de demande.",
     creditTab: "Factures de crédit",
     receiptsTab: "Reçus",
+    searchPh: "Rechercher une facture ou une entreprise…",
+    receiptsSearchPh: "Rechercher un reçu, une référence ou une entreprise…",
     number: "Facture",
     issued: "Émise le",
     due: "Échéance",
