@@ -57,6 +57,7 @@ export function DataTable<T>({
   emptyState,
   dense,
   initialFilters,
+  wideSearch,
 }: {
   data: T[];
   columns: ColumnDef<T, unknown>[];
@@ -72,6 +73,8 @@ export function DataTable<T>({
   dense?: boolean;
   /** Filter values to start with, e.g. from the URL so a dashboard link opens a filtered list. */
   initialFilters?: Record<string, string>;
+  /** The search box takes the toolbar width the filters leave free. */
+  wideSearch?: boolean;
 }) {
   const t = useTranslations("common");
   const [q, setQ] = React.useState("");
@@ -152,74 +155,95 @@ export function DataTable<T>({
     stopSelecting();
   };
 
+  const searchBox = search && (
+    <div className={cn("relative w-full", wideSearch ? "min-w-0 flex-1" : "sm:w-64")}>
+      <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={searchPlaceholder ?? t("actions.search")} className="h-9 ps-9" />
+    </div>
+  );
+  const filterBits = (
+    <>
+      {filters.map((f) => (
+        <div key={f.id} className="w-[calc(50%-4px)] sm:w-44">
+          <Select
+            size="sm"
+            className="h-9"
+            value={active[f.id] ?? "__all"}
+            onValueChange={(v) => setActive((a) => ({ ...a, [f.id]: v }))}
+            options={[{ value: "__all", label: `${f.label}: ${t("table.all")}` }, ...f.options]}
+          />
+        </div>
+      ))}
+      {hasFilters && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setQ("");
+            setActive({});
+          }}
+        >
+          <X /> {t("actions.clear")}
+        </Button>
+      )}
+    </>
+  );
+  const tools = (
+    <>
+      {toolbar}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-9">
+            <Columns3 /> <span className="hidden sm:inline">{t("actions.columns")}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>{t("actions.columns")}</DropdownMenuLabel>
+          {table
+            .getAllLeafColumns()
+            .filter((c) => c.getCanHide() && c.id !== "actions")
+            .map((c) => (
+              <DropdownMenuCheckboxItem key={c.id} checked={c.getIsVisible()} onCheckedChange={(v) => c.toggleVisibility(!!v)} onSelect={(e) => e.preventDefault()}>
+                {typeof c.columnDef.header === "string" ? c.columnDef.header : c.id}
+              </DropdownMenuCheckboxItem>
+            ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button
+        variant={selecting ? "secondary" : "outline"}
+        size="sm"
+        className="h-9"
+        onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+        aria-label={t("actions.export")}
+        aria-pressed={selecting}
+        title={t("actions.export")}
+      >
+        <Download />
+      </Button>
+    </>
+  );
+
   return (
     <Card className="overflow-hidden">
       {/* toolbar */}
-      <div className="flex flex-col gap-3 border-b p-3 lg:flex-row lg:items-center">
-        <div className="flex flex-1 flex-wrap items-center gap-2">
-          {search && (
-            <div className="relative w-full sm:w-64">
-              <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={searchPlaceholder ?? t("actions.search")} className="h-9 ps-9" />
-            </div>
-          )}
-          {filters.map((f) => (
-            <div key={f.id} className="w-[calc(50%-4px)] sm:w-44">
-              <Select
-                size="sm"
-                className="h-9"
-                value={active[f.id] ?? "__all"}
-                onValueChange={(v) => setActive((a) => ({ ...a, [f.id]: v }))}
-                options={[{ value: "__all", label: `${f.label}: ${t("table.all")}` }, ...f.options]}
-              />
-            </div>
-          ))}
-          {hasFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setQ("");
-                setActive({});
-              }}
-            >
-              <X /> {t("actions.clear")}
-            </Button>
-          )}
+      {wideSearch ? (
+        // search on its own row (it fills the width), filters together underneath
+        <div className="flex flex-col gap-3 border-b p-3">
+          <div className="flex items-center gap-2">
+            {searchBox}
+            <div className="flex shrink-0 items-center gap-2">{tools}</div>
+          </div>
+          {filters.length > 0 && <div className="flex flex-wrap items-center gap-2">{filterBits}</div>}
         </div>
-        <div className="flex items-center gap-2">
-          {toolbar}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
-                <Columns3 /> <span className="hidden sm:inline">{t("actions.columns")}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t("actions.columns")}</DropdownMenuLabel>
-              {table
-                .getAllLeafColumns()
-                .filter((c) => c.getCanHide() && c.id !== "actions")
-                .map((c) => (
-                  <DropdownMenuCheckboxItem key={c.id} checked={c.getIsVisible()} onCheckedChange={(v) => c.toggleVisibility(!!v)} onSelect={(e) => e.preventDefault()}>
-                    {typeof c.columnDef.header === "string" ? c.columnDef.header : c.id}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button
-            variant={selecting ? "secondary" : "outline"}
-            size="sm"
-            className="h-9"
-            onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
-            aria-label={t("actions.export")}
-            aria-pressed={selecting}
-            title={t("actions.export")}
-          >
-            <Download />
-          </Button>
+      ) : (
+        <div className="flex flex-col gap-3 border-b p-3 lg:flex-row lg:items-center">
+          <div className="flex flex-1 flex-wrap items-center gap-2">
+            {searchBox}
+            {filterBits}
+          </div>
+          <div className="flex items-center gap-2">{tools}</div>
         </div>
-      </div>
+      )}
 
       {/* choosing rows to export */}
       {selecting && (

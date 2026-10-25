@@ -29,7 +29,7 @@ export const admin: Built<typeof Def> = {
   nav: {
     dashboard: "Dashboard",
     offers: "Alle Anfragen",
-    shop: "Shop-Bestellungen",
+    shop: "Bestellungen",
     fakeReports: "Meldungen gefälschter Anfragen",
     offerTypes: "Dienstleistungen & Preise",
     partners: "Partner",
@@ -343,7 +343,9 @@ export const admin: Built<typeof Def> = {
     },
   },
   shop: {
-    title: "Shop-Bestellungen",
+    title: "Bestellungen",
+    searchPh: "Bestellung, Anfrage, Firma oder Kunde suchen…",
+    ordersCount: "{count, plural, one {# Bestellung} other {# Bestellungen}}",
     subtitle: "Von Partnern gekaufte Anfragen – über den Shop oder dynamische Verteilung.",
     order: "Bestellung",
     channel: "Kanal",

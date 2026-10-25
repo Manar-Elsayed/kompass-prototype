@@ -26,7 +26,7 @@ export const admin = {
   nav: {
     dashboard: "Dashboard",
     offers: "All offers",
-    shop: "Shop orders",
+    shop: "Orders",
     fakeReports: "Fake-offer reports",
     offerTypes: "Services & pricing",
     partners: "Partners",
@@ -340,7 +340,9 @@ export const admin = {
     },
   },
   shop: {
-    title: "Shop orders",
+    title: "Orders",
+    searchPh: "Search order, offer, company or customer…",
+    ordersCount: "{count, plural, one {# order} other {# orders}}",
     subtitle: "Offers purchased by partners — via the shop or dynamic distribution.",
     order: "Order",
     channel: "Channel",
