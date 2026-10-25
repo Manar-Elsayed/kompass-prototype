@@ -744,6 +744,8 @@ export const admin = {
     invoiceNo: "Invoice {id}",
     view: "View",
     print: "Print",
+    downloadPdf: "Download PDF",
+    pdfFailed: "The PDF couldn’t be created. Use Print and choose “Save as PDF”.",
     billedTo: "Billed to",
     description: "Description",
     total: "Total",

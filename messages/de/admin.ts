@@ -747,6 +747,8 @@ export const admin: Built<typeof Def> = {
     invoiceNo: "Rechnung {id}",
     view: "Ansehen",
     print: "Drucken",
+    downloadPdf: "PDF herunterladen",
+    pdfFailed: "Das PDF konnte nicht erstellt werden. Wählen Sie Drucken und dann „Als PDF speichern“.",
     billedTo: "Rechnungsempfänger",
     description: "Beschreibung",
     total: "Total",
