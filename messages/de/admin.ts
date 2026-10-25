@@ -494,6 +494,8 @@ export const admin: Built<typeof Def> = {
       refunded: "Erstattet",
       notConfirmed: "Nicht als Fake bestätigt",
       noFake: "Keine Fake-Buchungen.",
+      searchPh: "Bestellung, Angebot oder Ort suchen…",
+      readyToRefund: "Bereit zur Rückerstattung",
     },
     threadsHint: "Unterhaltungen mit dieser Firma. Ihre Antworten und Anfragen erscheinen auch in Ihren Benachrichtigungen.",
     contactCo: {

@@ -491,6 +491,8 @@ export const admin = {
       refunded: "Refunded",
       notConfirmed: "Not confirmed fake",
       noFake: "No fake bookings.",
+      searchPh: "Search order, offer or city…",
+      readyToRefund: "Ready to refund",
     },
     threadsHint: "Conversations with this company. Its replies and requests also show up in your notifications.",
     contactCo: {
