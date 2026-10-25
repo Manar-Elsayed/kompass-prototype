@@ -138,7 +138,9 @@ export default function CouponsPage() {
       <DataTable
         data={coupons}
         columns={columns}
-        search={(c) => c.code}
+        search={(c) => `${c.code} ${c.serviceId === "all" ? tc("allServices") : L(serviceMap[c.serviceId]?.name)}`}
+        searchPlaceholder={tc("searchPh")}
+        wideSearch
         onRowClick={(c) => { setErr(""); setDraft(c); }}
         filters={[{ id: "st", label: t("common.fields.status"), options: (["active", "inactive", "expired"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: status }]}
       />

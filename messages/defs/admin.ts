@@ -631,6 +631,7 @@ export const admin = {
     title: "Coupons",
     subtitle: "Discount codes partners can apply when buying offers.",
     add: "New coupon",
+    searchPh: "Search code or service…",
     edit: "Edit coupon",
     discount: "Discount",
     type: "Type",

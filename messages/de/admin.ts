@@ -634,6 +634,7 @@ export const admin: Built<typeof Def> = {
     title: "Gutscheine",
     subtitle: "Rabattcodes, die Partner beim Kauf von Anfragen einlösen können.",
     add: "Neuer Gutschein",
+    searchPh: "Code oder Dienstleistung suchen…",
     edit: "Gutschein bearbeiten",
     discount: "Rabatt",
     type: "Typ",
