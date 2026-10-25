@@ -192,4 +192,9 @@ export const common: Built<typeof Def> = {
     hintAdmin: "Mettez un service en attente quand l’entreprise ne peut pas accepter de travaux pendant un temps. Il ne reçoit plus de nouvelles demandes mais reste sur la page entreprise. Seule l’entreprise ajoute ou retire des services, depuis son portail.",
     hintPartner: "Vous ne pouvez pas accepter de travaux pour un service pendant un temps ? Mettez-le en attente : vous ne recevez plus de demandes jusqu’à ce que vous le réactiviez. Il reste sur votre page entreprise.",
   },
+  dueStatus: {
+    pending: "En attente de vérification",
+    confirmed: "Approuvé",
+    canceled: "Refusé",
+  },
 };

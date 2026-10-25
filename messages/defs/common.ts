@@ -189,4 +189,9 @@ export const common = {
     hintAdmin: "Put a service on hold when the company can’t take jobs for it for a while. It gets no new offers but stays on the company page. Only the company adds or removes services, in its portal.",
     hintPartner: "Can’t take jobs for a service for a while? Put it on hold: you get no new offers for it until you activate it again. It stays on your company page.",
   },
+  dueStatus: {
+    pending: "Waiting for check",
+    confirmed: "Approved",
+    canceled: "Rejected",
+  },
 } as const;

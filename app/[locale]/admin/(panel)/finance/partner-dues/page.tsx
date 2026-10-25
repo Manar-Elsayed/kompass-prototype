@@ -14,7 +14,8 @@ import { inLastDays } from "@/lib/mock/selectors";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/controls";
-import { StatusBadge, useConfirm } from "@/components/shared/bits";
+import { useConfirm } from "@/components/shared/bits";
+import { DueStatusBadge } from "@/components/shared/due-status";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
@@ -30,7 +31,8 @@ export default function PartnerDuesPage() {
   const [receipt, setReceipt] = useState<PartnerDue | null>(null);
 
   const pending = dues.filter((d) => d.status === "pending");
-  const confirmed30 = dues.filter((d) => d.status === "confirmed" && inLastDays(d.createdAt, 30));
+  // approved in the last 30 days (by the decision date, not the upload date)
+  const confirmed30 = dues.filter((d) => d.status === "confirmed" && inLastDays(d.decidedAt ?? d.createdAt, 30));
 
   const approve = (d: PartnerDue) =>
     confirm({
@@ -82,22 +84,12 @@ export default function PartnerDuesPage() {
         </div>
       ),
     },
-    {
-      id: "receipt",
-      header: td("receipt"),
-      enableSorting: false,
-      cell: ({ row: { original: d } }) => (
-        <button onClick={(e) => { e.stopPropagation(); setReceipt(d); }} className="group relative block h-10 w-16 overflow-hidden rounded-md border bg-surface-2" aria-label={td("receipt")}>
-          <Image src={d.receipt} alt="" fill className="object-cover transition group-hover:scale-110" sizes="64px" />
-        </button>
-      ),
-    },
     { id: "date", header: t("common.fields.date"), accessorFn: (d) => d.createdAt, cell: (c) => <span className="text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
     {
       id: "status",
       header: t("common.fields.status"),
       accessorFn: (d) => d.status,
-      cell: ({ row: { original: d } }) => <StatusBadge status={d.status} />,
+      cell: ({ row: { original: d } }) => <DueStatusBadge status={d.status} />,
     },
     actionsColumn<PartnerDue>((d) => (
       <RowActions
@@ -116,15 +108,17 @@ export default function PartnerDuesPage() {
     <>
       <PageHeader title={td("title")} subtitle={td("subtitle")} />
       <div className="mb-4 grid gap-4 sm:grid-cols-3">
-        <KpiCard label={td("pendingTotal")} value={formatCHF(pending.reduce((a, d) => a + d.amount, 0), lang)} icon={<Clock />} tone="warning" footer={`${pending.length} ${td("receipt")}`} />
-        <KpiCard label={td("confirmedTotal")} value={formatCHF(confirmed30.reduce((a, d) => a + d.amount, 0), lang)} icon={<CheckCircle2 />} tone="success" footer={`${confirmed30.length} ${td("receipt")}`} />
+        <KpiCard label={td("pendingTotal")} value={formatCHF(pending.reduce((a, d) => a + d.amount, 0), lang)} icon={<Clock />} tone="warning" footer={td("receiptsCount", { count: pending.length })} />
+        <KpiCard label={td("confirmedTotal")} value={formatCHF(confirmed30.reduce((a, d) => a + d.amount, 0), lang)} icon={<CheckCircle2 />} tone="success" footer={td("receiptsCount", { count: confirmed30.length })} />
         <KpiCard label={t("common.table.all")} value={dues.length} icon={<Receipt />} />
       </div>
       <DataTable
         data={dues}
         columns={columns}
-        search={(d) => `${d.id} ${d.reference} ${partnerMap[d.partnerId]?.name}`}
-        filters={[{ id: "status", label: t("common.fields.status"), options: (["pending", "confirmed", "canceled"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (d) => d.status }]}
+        search={(d) => `${d.id} ${d.reference} ${d.invoiceId ?? ""} ${partnerMap[d.partnerId]?.name}`}
+        searchPlaceholder={td("searchPh")}
+        wideSearch
+        filters={[{ id: "status", label: t("common.fields.status"), options: (["pending", "confirmed", "canceled"] as const).map((s) => ({ value: s, label: t(`common.dueStatus.${s}`) })), get: (d) => d.status }]}
         onRowClick={setReceipt}
         rowClassName={(d) => (d.status === "pending" ? "bg-warning-soft/25" : undefined)}
       />
@@ -134,7 +128,7 @@ export default function PartnerDuesPage() {
         open={!!receipt}
         onOpenChange={(v) => !v && setReceipt(null)}
         title={<Mono className="text-lg">{receipt?.id}</Mono>}
-        badge={receipt && <StatusBadge status={receipt.status} />}
+        badge={receipt && <DueStatusBadge status={receipt.status} />}
         subtitle={receipt && `${partner?.name ?? "–"} · ${formatDate(receipt.createdAt, lang)}`}
         footer={
           receipt?.status === "pending" ? (
@@ -170,7 +164,7 @@ export default function PartnerDuesPage() {
                       label: receipt.status === "pending" ? t("admin.rows.walletAfter") : t("common.fields.status"),
                       value:
                         receipt.status !== "pending" ? (
-                          <StatusBadge status={receipt.status} />
+                          <DueStatusBadge status={receipt.status} />
                         ) : receipt.invoiceId ? (
                           <span className="text-muted-foreground">{formatCHF(partner.wallet, lang)} · {td("walletUnchanged")}</span>
                         ) : (

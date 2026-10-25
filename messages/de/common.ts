@@ -192,4 +192,9 @@ export const common: Built<typeof Def> = {
     hintAdmin: "Halten Sie eine Dienstleistung an, wenn die Firma dafür eine Zeit lang keine Aufträge annehmen kann. Sie erhält keine neuen Anfragen, bleibt aber auf der Firmenseite. Nur die Firma selbst fügt Dienstleistungen in ihrem Portal hinzu oder entfernt sie.",
     hintPartner: "Können Sie eine Zeit lang keine Aufträge für eine Dienstleistung annehmen? Halten Sie sie an: Sie erhalten dafür keine neuen Anfragen, bis Sie sie wieder aktivieren. Sie bleibt auf Ihrer Firmenseite.",
   },
+  dueStatus: {
+    pending: "Wartet auf Prüfung",
+    confirmed: "Freigegeben",
+    canceled: "Abgelehnt",
+  },
 };
