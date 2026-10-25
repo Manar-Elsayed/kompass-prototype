@@ -24,7 +24,7 @@ import { EmptyState, Stars, StatusBadge, useConfirm } from "@/components/shared/
 import { WalletLedger } from "@/components/shared/wallet-ledger";
 import { MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
 import { RowActions } from "@/components/admin/row-actions";
-import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { DL, KpiCard, Mono, ProfileHeader } from "@/components/admin/ui";
 import { CreditDialog, TopUpDialog } from "@/components/admin/wallet-actions";
 import { DocStateBadge } from "@/components/admin/doc-state";
 import { PartnerServices } from "@/components/shared/partner-services";
@@ -201,61 +201,60 @@ function PartnerDetail() {
 
   return (
     <>
-      <PageHeader
+      <ProfileHeader
         crumbs={[{ label: tp("title"), href: "/admin/partners" }, { label: p.name }]}
-        title={
-          <span className="flex flex-wrap items-center gap-3">
-            <Avatar name={p.name} square className="size-11 rounded-xl text-sm" />
-            {p.name}
+        avatar={<Avatar name={p.name} square className="size-14 rounded-2xl text-base" />}
+        title={p.name}
+        badges={
+          <>
             <StatusBadge status={p.banned ? "banned" : p.status} />
             <DocStateBadge partner={p} standalone />
-          </span>
+          </>
         }
         subtitle={`${p.address}, ${p.zip} ${p.city} (${p.canton}) · ${p.regNumber}`}
-        actions={
-          // two rows: the company's settings first, then links to it elsewhere
-          <div className="flex flex-col items-start gap-2 sm:items-end">
-            <div className="flex flex-wrap items-center gap-2">
-              {/* featured among the companies on the homepage (a banned company can't be) */}
-              {!p.banned && (
-                <label className="flex h-10 items-center gap-2 rounded-lg border bg-surface px-3 text-sm font-medium">
-                  <Switch
-                    checked={p.featured}
-                    onCheckedChange={(v) => {
-                      patch("partners", p.id, { featured: v });
-                      toast.success(t(v ? "admin.rows.featured" : "admin.rows.unfeatured", { name: p.name }));
-                    }}
-                  />
-                  {tp("featured")}
-                </label>
-              )}
-              <Button
-                variant={p.banned ? "success" : "danger-soft"}
-                onClick={() =>
-                  confirm({
-                    title: t(p.banned ? "admin.partners.unbanTitle" : "admin.partners.banTitle", { name: p.name }),
-                    body: t(p.banned ? "admin.partners.unbanBody" : "admin.partners.banBody"),
-                    tone: p.banned ? "success" : "danger",
-                    onConfirm: () => {
-                      patch("partners", p.id, { banned: !p.banned });
-                      toast.success(t("common.toast.updated"));
-                    },
-                  })
-                }
-              >
-                {p.banned ? <LockOpen /> : <Lock />} {tp(p.banned ? "unban" : "ban")}
-              </Button>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" onClick={() => setContact(true)}><Mail /> {tp("contactCo.button")}</Button>
-              <Button asChild variant="outline">
-                <Link href={`/companies/${p.id}`} target="_blank"><ExternalLink /> {t("admin.cms.viewOnSite")}</Link>
-              </Button>
-              <Button variant="outline" onClick={() => { partnerLogin(p.id); router.push("/portal"); }}>
-                <Store /> {tp("openPortal")}
-              </Button>
-            </div>
-          </div>
+        primary={
+          <>
+            {/* featured among the companies on the homepage (a banned company can't be) */}
+            {!p.banned && (
+              <label className="flex h-10 items-center gap-2 rounded-lg border bg-surface px-3 text-sm font-medium">
+                <Switch
+                  checked={p.featured}
+                  onCheckedChange={(v) => {
+                    patch("partners", p.id, { featured: v });
+                    toast.success(t(v ? "admin.rows.featured" : "admin.rows.unfeatured", { name: p.name }));
+                  }}
+                />
+                {tp("featured")}
+              </label>
+            )}
+            <Button
+              variant={p.banned ? "success" : "danger-soft"}
+              onClick={() =>
+                confirm({
+                  title: t(p.banned ? "admin.partners.unbanTitle" : "admin.partners.banTitle", { name: p.name }),
+                  body: t(p.banned ? "admin.partners.unbanBody" : "admin.partners.banBody"),
+                  tone: p.banned ? "success" : "danger",
+                  onConfirm: () => {
+                    patch("partners", p.id, { banned: !p.banned });
+                    toast.success(t("common.toast.updated"));
+                  },
+                })
+              }
+            >
+              {p.banned ? <LockOpen /> : <Lock />} {tp(p.banned ? "unban" : "ban")}
+            </Button>
+          </>
+        }
+        secondary={
+          <>
+            <Button variant="outline" onClick={() => setContact(true)}><Mail /> {tp("contactCo.button")}</Button>
+            <Button asChild variant="outline">
+              <Link href={`/companies/${p.id}`} target="_blank"><ExternalLink /> {t("admin.cms.viewOnSite")}</Link>
+            </Button>
+            <Button variant="outline" onClick={() => { partnerLogin(p.id); router.push("/portal"); }}>
+              <Store /> {tp("openPortal")}
+            </Button>
+          </>
         }
       />
 

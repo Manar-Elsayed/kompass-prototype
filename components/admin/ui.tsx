@@ -6,6 +6,71 @@ import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 
+function Crumbs({ crumbs }: { crumbs?: { label: React.ReactNode; href?: string }[] }) {
+  if (!crumbs) return null;
+  return (
+    <nav className="mb-2 flex flex-wrap items-center gap-1 text-sm text-muted-foreground" aria-label="Breadcrumb">
+      {crumbs.map((c, i) => (
+        <span key={i} className="flex items-center gap-1">
+          {i > 0 && <ChevronRight className="size-3.5" />}
+          {c.href ? (
+            <Link href={c.href} className="hover:text-primary">
+              {c.label}
+            </Link>
+          ) : (
+            <span className="text-foreground">{c.label}</span>
+          )}
+        </span>
+      ))}
+    </nav>
+  );
+}
+
+/**
+ * Header for a record's own page (a company, a person): avatar, name and badges, a details line,
+ * and actions in two rows. On wide screens each action row lines up with the text row next to
+ * it (the record's settings beside its name, links beside its details); smaller screens stack: name, details, then the two action rows.
+ */
+export function ProfileHeader({
+  crumbs,
+  avatar,
+  title,
+  badges,
+  subtitle,
+  primary,
+  secondary,
+}: {
+  crumbs?: { label: React.ReactNode; href?: string }[];
+  avatar: React.ReactNode;
+  title: React.ReactNode;
+  badges?: React.ReactNode;
+  subtitle?: React.ReactNode;
+  /** Beside the name: settings of the record. */
+  primary?: React.ReactNode;
+  /** Beside the details line: links and secondary actions. */
+  secondary?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-6">
+      <Crumbs crumbs={crumbs} />
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:grid-rows-[2.5rem_2.5rem] lg:gap-x-4 lg:gap-y-2">
+        <div className="flex items-center gap-3 lg:row-span-2 lg:self-center">
+          {avatar}
+          {/* small screens: the name sits next to the avatar */}
+          <h1 className="text-2xl font-bold tracking-tight text-ink lg:hidden">{title}</h1>
+        </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="hidden truncate text-2xl font-bold tracking-tight text-ink sm:text-[1.65rem] lg:block">{title}</h1>
+          {badges}
+        </div>
+        {primary && <div className="order-2 flex flex-wrap items-center gap-2 lg:order-none lg:col-start-3 lg:row-start-1 lg:justify-end">{primary}</div>}
+        {subtitle && <p className="order-1 text-sm text-muted-foreground lg:order-none lg:col-start-2 lg:truncate lg:row-start-2 lg:self-center">{subtitle}</p>}
+        {secondary && <div className="order-3 flex flex-wrap items-center gap-2 lg:order-none lg:col-start-3 lg:row-start-2 lg:justify-end">{secondary}</div>}
+      </div>
+    </div>
+  );
+}
+
 export function PageHeader({
   title,
   subtitle,
@@ -21,22 +86,7 @@ export function PageHeader({
 }) {
   return (
     <div className="mb-6">
-      {crumbs && (
-        <nav className="mb-2 flex flex-wrap items-center gap-1 text-sm text-muted-foreground" aria-label="Breadcrumb">
-          {crumbs.map((c, i) => (
-            <span key={i} className="flex items-center gap-1">
-              {i > 0 && <ChevronRight className="size-3.5" />}
-              {c.href ? (
-                <Link href={c.href} className="hover:text-primary">
-                  {c.label}
-                </Link>
-              ) : (
-                <span className="text-foreground">{c.label}</span>
-              )}
-            </span>
-          ))}
-        </nav>
-      )}
+      <Crumbs crumbs={crumbs} />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-[1.65rem]">{title}</h1>

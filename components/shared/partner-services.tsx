@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Pause, Play, Plus, Trash2 } from "lucide-react";
+import { CirclePause, CirclePlay, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Partner } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -15,8 +15,8 @@ import { Icon } from "@/components/shared/icon";
 import { useConfirm } from "@/components/shared/bits";
 
 /**
- * A company's services. Kompass can only pause and resume them (e.g. while the company can't take
- * jobs); the company itself also adds and removes them in its portal. A paused service gets no new
+ * A company's services. Kompass can only put them on hold and activate them again (e.g. while the company can't take
+ * jobs); the company itself also adds and removes them in its portal. A service on hold gets no new
  * offers but stays on the public company page.
  */
 export function PartnerServices({ partner, canEdit }: { partner: Partner; canEdit?: boolean }) {
@@ -66,7 +66,7 @@ export function PartnerServices({ partner, canEdit }: { partner: Partner; canEdi
               <span className={cn("flex-1 text-sm font-semibold", isPaused && "text-muted-foreground")}>{L(s?.name)}</span>
               {isPaused ? <Badge tone="warning" dot>{t("paused")}</Badge> : <Badge tone="success" dot>{t("active")}</Badge>}
               <Button variant="outline" size="sm" onClick={() => setPaused(id, !isPaused)}>
-                {isPaused ? <Play /> : <Pause />} {t(isPaused ? "resume" : "pause")}
+                {isPaused ? <CirclePlay /> : <CirclePause />} {t(isPaused ? "resume" : "pause")}
               </Button>
               {canEdit && (
                 <Button variant="ghost" size="icon-sm" className="text-danger hover:bg-danger-soft" aria-label={t("remove")} onClick={() => remove(id)}>
