@@ -579,6 +579,8 @@ export const admin: Built<typeof Def> = {
     none: "Keine Auszahlungsanträge.",
   },
   activity: {
+    spent30: "Ausgaben (30 T.)",
+    searchPh: "Firma, Ort oder Kanton suchen…",
     title: "Partneraktivität",
     subtitle: "Engagement jedes Partners in den letzten 30 Tagen.",
     last30: "Anfragen (30 T.)",

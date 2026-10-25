@@ -579,6 +579,8 @@ export const admin: Built<typeof Def> = {
     none: "Nessuna richiesta di versamento.",
   },
   activity: {
+    spent30: "Speso (30 g)",
+    searchPh: "Cerca azienda, località o cantone…",
     title: "Attività dei partner",
     subtitle: "Interazione di ogni partner negli ultimi 30 giorni.",
     last30: "Richieste (30 g)",
