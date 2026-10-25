@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CreditCard, HandCoins, Lock, LockOpen, MessageSquare, Sparkles, Wallet } from "lucide-react";
+import { CreditCard, HandCoins, Lock, LockOpen, MessageSquare, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { Partner } from "@/lib/types";
 import { useStore } from "@/lib/mock/store";
 import { useConfirm } from "@/components/shared/bits";
 import { ContactCompanyDialog } from "./company-docs";
-import { CreditDialog, TopUpDialog } from "./wallet-actions";
+import { CreditDialog } from "./wallet-actions";
 import type { RowAction } from "./row-actions";
 
 /**
@@ -20,7 +20,7 @@ export function useCompanyActions() {
   const patch = useStore((s) => s.patch);
   const partners = useStore((s) => s.partners);
   const { confirm, dialog } = useConfirm();
-  const [open, setOpen] = useState<{ kind: "contact" | "topup" | "credit"; id: string } | null>(null);
+  const [open, setOpen] = useState<{ kind: "contact" | "credit"; id: string } | null>(null);
   const partner = open && partners.find((p) => p.id === open.id);
 
   const toggleBan = (p: Partner) =>
@@ -37,7 +37,6 @@ export function useCompanyActions() {
 
   const actionsFor = (p: Partner, opts: { money?: boolean } = {}): RowAction[] => [
     { label: t("admin.partners.contactCo.button"), icon: <MessageSquare />, onSelect: () => setOpen({ kind: "contact", id: p.id }) },
-    { label: t("admin.wallets.topUp"), icon: <Wallet />, onSelect: () => setOpen({ kind: "topup", id: p.id }), hidden: opts.money === false },
     { label: t("admin.wallets.addCredit"), icon: <HandCoins />, onSelect: () => setOpen({ kind: "credit", id: p.id }), hidden: opts.money === false },
     { label: t("admin.rows.walletHistory"), icon: <CreditCard />, href: `/admin/partners/${p.id}?tab=wallet` },
     {
@@ -56,7 +55,6 @@ export function useCompanyActions() {
   const dialogs = (
     <>
       {partner && open?.kind === "contact" && <ContactCompanyDialog partner={partner} onClose={() => setOpen(null)} />}
-      {partner && open?.kind === "topup" && <TopUpDialog partner={partner} onClose={() => setOpen(null)} />}
       {partner && open?.kind === "credit" && <CreditDialog partner={partner} onClose={() => setOpen(null)} />}
       {dialog}
     </>

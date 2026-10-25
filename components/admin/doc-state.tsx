@@ -15,17 +15,26 @@ const TONE: Record<DocState, "success" | "warning" | "info" | "danger"> = {
   missing: "danger",
 };
 
-/** Overall state of a company's required documents, with the next expiry date when relevant. */
-export function DocStateBadge({ partner, withDate }: { partner: Pick<Partner, "documents">; withDate?: boolean }) {
+// the date is the first expiry; it only means something for these states
+const DATE_KEY: Partial<Record<DocState, string>> = { ok: "dateUntil", expiring: "dateOn", expired: "dateSince" };
+
+/**
+ * Overall state of a company's required documents. Under a "Documents" heading (tables, tabs) the
+ * short label is enough; on its own (next to the company name) it says "Documents …".
+ * withDate adds what the date means: valid until, expires on, expired since.
+ */
+export function DocStateBadge({ partner, withDate, standalone }: { partner: Pick<Partner, "documents">; withDate?: boolean; standalone?: boolean }) {
   const t = useTranslations("admin.partners.docs");
   const lang = useLang();
   const d = documentState(partner);
   return (
-    <span className="flex flex-wrap items-center gap-1.5 whitespace-nowrap">
+    <span className={withDate ? "flex flex-col items-start gap-0.5 whitespace-nowrap" : "inline-flex items-center whitespace-nowrap"}>
       <Badge tone={TONE[d.state]} dot>
-        {t(`state.${d.state}`)}
+        {t(`${standalone ? "stateLong" : "state"}.${d.state}`)}
       </Badge>
-      {withDate && d.next && d.state !== "missing" && <span className="text-xs text-muted-foreground">{formatDate(d.next.date, lang)}</span>}
+      {withDate && d.next && DATE_KEY[d.state] && (
+        <span className="text-xs text-muted-foreground">{t(DATE_KEY[d.state]!, { date: formatDate(d.next.date, lang) })}</span>
+      )}
     </span>
   );
 }
