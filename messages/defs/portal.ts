@@ -311,7 +311,6 @@ export const portal = {
     title: "Company profile",
     subtitle: "This information appears on your public profile and on your invoices.",
     public: "Public information",
-    servicesHint: "To add or remove services, contact Kompass — they're verified against your insurance.",
     contract: "Contract",
     validUntil: "Valid until",
     saved: "Profile updated — visible on the website",

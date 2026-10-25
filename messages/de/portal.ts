@@ -314,7 +314,6 @@ export const portal: Built<typeof Def> = {
     title: "Firmenprofil",
     subtitle: "Diese Angaben erscheinen auf Ihrem öffentlichen Profil und auf Ihren Rechnungen.",
     public: "Öffentliche Angaben",
-    servicesHint: "Um Dienstleistungen hinzuzufügen oder zu entfernen, kontaktieren Sie Kompass – sie werden mit Ihrer Versicherung abgeglichen.",
     contract: "Vertrag",
     validUntil: "Gültig bis",
     saved: "Profil aktualisiert – auf der Website sichtbar",

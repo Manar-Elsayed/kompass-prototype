@@ -21,13 +21,13 @@ import { Avatar, Switch } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
 import { EmptyState, Stars, StatusBadge, useConfirm } from "@/components/shared/bits";
-import { Icon } from "@/components/shared/icon";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
 import { MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
 import { RowActions } from "@/components/admin/row-actions";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 import { CreditDialog, TopUpDialog } from "@/components/admin/wallet-actions";
 import { DocStateBadge } from "@/components/admin/doc-state";
+import { PartnerServices } from "@/components/shared/partner-services";
 import { CompanyDocuments, ContactCompanyDialog } from "@/components/admin/company-docs";
 import { FileManager } from "@/components/admin/file-manager";
 import { PayoutDecisionDialog } from "@/components/admin/payout-actions";
@@ -74,7 +74,6 @@ function PartnerDetail() {
   const [credit, setCredit] = useState(false);
   const [doc, setDoc] = useState<MoneyDoc | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
-  const [addSvc, setAddSvc] = useState("");
   const [stars, setStars] = useState("all");
   const [reviewStatus, setReviewStatus] = useState("all");
   const [tab, setTab] = useState("overview");
@@ -103,7 +102,6 @@ function PartnerDetail() {
   const unreadFromCompany = db.messages.filter((m) => m.partnerId === p.id && m.from === "company" && !m.readAt).length;
   const threadCount = new Set(db.messages.filter((m) => m.partnerId === p.id).map((m) => m.threadId)).size;
   const payouts = db.payouts.filter((x) => x.partnerId === p.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const missing = db.services.filter((s) => s.active && !p.serviceIds.includes(s.id));
   const val = (k: keyof typeof p) => form[k as string] ?? String(p[k] ?? "");
   const userName = (uid?: string) => db.users.find((u) => u.id === uid)?.name ?? "Kompass";
 
@@ -215,44 +213,49 @@ function PartnerDetail() {
         }
         subtitle={`${p.address}, ${p.zip} ${p.city} (${p.canton}) · ${p.regNumber}`}
         actions={
-          <>
-            {/* featured among the companies on the homepage (a banned company can't be) */}
-            {!p.banned && (
-              <label className="flex h-10 items-center gap-2 rounded-lg border bg-surface px-3 text-sm font-medium">
-                <Switch
-                  checked={p.featured}
-                  onCheckedChange={(v) => {
-                    patch("partners", p.id, { featured: v });
-                    toast.success(t(v ? "admin.rows.featured" : "admin.rows.unfeatured", { name: p.name }));
-                  }}
-                />
-                {tp("featured")}
-              </label>
-            )}
-            <Button variant="outline" onClick={() => setContact(true)}><Mail /> {tp("contactCo.button")}</Button>
-            <Button asChild variant="outline">
-              <Link href={`/companies/${p.id}`} target="_blank"><ExternalLink /> {t("admin.cms.viewOnSite")}</Link>
-            </Button>
-            <Button variant="outline" onClick={() => { partnerLogin(p.id); router.push("/portal"); }}>
-              <Store /> {tp("openPortal")}
-            </Button>
-            <Button
-              variant={p.banned ? "success" : "danger-soft"}
-              onClick={() =>
-                confirm({
-                  title: t(p.banned ? "admin.partners.unbanTitle" : "admin.partners.banTitle", { name: p.name }),
-                  body: t(p.banned ? "admin.partners.unbanBody" : "admin.partners.banBody"),
-                  tone: p.banned ? "success" : "danger",
-                  onConfirm: () => {
-                    patch("partners", p.id, { banned: !p.banned });
-                    toast.success(t("common.toast.updated"));
-                  },
-                })
-              }
-            >
-              {p.banned ? <LockOpen /> : <Lock />} {tp(p.banned ? "unban" : "ban")}
-            </Button>
-          </>
+          // two rows: the company's settings first, then links to it elsewhere
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* featured among the companies on the homepage (a banned company can't be) */}
+              {!p.banned && (
+                <label className="flex h-10 items-center gap-2 rounded-lg border bg-surface px-3 text-sm font-medium">
+                  <Switch
+                    checked={p.featured}
+                    onCheckedChange={(v) => {
+                      patch("partners", p.id, { featured: v });
+                      toast.success(t(v ? "admin.rows.featured" : "admin.rows.unfeatured", { name: p.name }));
+                    }}
+                  />
+                  {tp("featured")}
+                </label>
+              )}
+              <Button
+                variant={p.banned ? "success" : "danger-soft"}
+                onClick={() =>
+                  confirm({
+                    title: t(p.banned ? "admin.partners.unbanTitle" : "admin.partners.banTitle", { name: p.name }),
+                    body: t(p.banned ? "admin.partners.unbanBody" : "admin.partners.banBody"),
+                    tone: p.banned ? "success" : "danger",
+                    onConfirm: () => {
+                      patch("partners", p.id, { banned: !p.banned });
+                      toast.success(t("common.toast.updated"));
+                    },
+                  })
+                }
+              >
+                {p.banned ? <LockOpen /> : <Lock />} {tp(p.banned ? "unban" : "ban")}
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" onClick={() => setContact(true)}><Mail /> {tp("contactCo.button")}</Button>
+              <Button asChild variant="outline">
+                <Link href={`/companies/${p.id}`} target="_blank"><ExternalLink /> {t("admin.cms.viewOnSite")}</Link>
+              </Button>
+              <Button variant="outline" onClick={() => { partnerLogin(p.id); router.push("/portal"); }}>
+                <Store /> {tp("openPortal")}
+              </Button>
+            </div>
+          </div>
         }
       />
 
@@ -306,28 +309,8 @@ function PartnerDetail() {
             <Card>
               <CardHeader title={tp("servicesOffered")} />
               <CardBody>
-                <ul className="grid gap-2 sm:grid-cols-2">
-                  {p.serviceIds.map((sid) => {
-                    const s = db.services.find((x) => x.id === sid);
-                    return (
-                      <li key={sid} className="flex items-center gap-3 rounded-xl border p-3">
-                        <Icon name={s?.icon ?? "Truck"} className="size-5 text-primary" />
-                        <span className="flex-1 text-sm font-semibold">{L(s?.name)}</span>
-                        <Button variant="ghost" size="icon-sm" aria-label={tp("removeService")} onClick={() => patch("partners", p.id, { serviceIds: p.serviceIds.filter((x) => x !== sid) })}>
-                          <X />
-                        </Button>
-                      </li>
-                    );
-                  })}
-                </ul>
-                {missing.length > 0 && (
-                  <div className="mt-3 flex gap-2">
-                    <Select value={addSvc} onValueChange={setAddSvc} placeholder={tp("addService")} options={missing.map((s) => ({ value: s.id, label: L(s.name) }))} />
-                    <Button variant="outline" disabled={!addSvc} onClick={() => { patch("partners", p.id, { serviceIds: [...p.serviceIds, addSvc] }); setAddSvc(""); toast.success(t("common.toast.updated")); }}>
-                      <Plus /> {t("common.actions.add")}
-                    </Button>
-                  </div>
-                )}
+                {/* Kompass only pauses and resumes; the company adds and removes in its portal */}
+                <PartnerServices partner={p} />
               </CardBody>
             </Card>
           </div>

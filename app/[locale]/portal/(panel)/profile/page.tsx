@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Award, ExternalLink, ImagePlus, Info, Lock, MessageSquarePlus, Trash2, Upload } from "lucide-react";
+import { Award, ExternalLink, ImagePlus, Lock, MessageSquarePlus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
@@ -20,11 +20,11 @@ import { Field } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, Switch } from "@/components/ui/controls";
 import { Tabs, TabsContent, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
-import { Icon } from "@/components/shared/icon";
 import { useConfirm } from "@/components/shared/bits";
 import { DL, PageHeader } from "@/components/admin/ui";
 import { CompanyDocuments } from "@/components/admin/company-docs";
 import { DocStateBadge } from "@/components/admin/doc-state";
+import { PartnerServices } from "@/components/shared/partner-services";
 import { useCompose } from "@/components/portal/compose";
 
 const TABS = ["company", "documents", "media", "area", "notifications"] as const;
@@ -106,7 +106,6 @@ function CompanyTab({ onRequest }: { onRequest: () => void }) {
   const tc = useTranslations("common");
   const L = useL();
   const partner = useCurrentPartner()!;
-  const services = useStore((s) => s.services);
   const patch = useStore((s) => s.patch);
   const [phone, setPhone] = useState(partner.phone);
   const [busy, setBusy] = useState(false);
@@ -162,12 +161,7 @@ function CompanyTab({ onRequest }: { onRequest: () => void }) {
         <Card>
           <CardHeader title={ta("servicesOffered")} />
           <CardBody>
-            <div className="flex flex-wrap gap-2">
-              {services.filter((s) => partner.serviceIds.includes(s.id)).map((s) => (
-                <Badge key={s.id} tone="primary" className="px-3 py-1.5 text-sm"><Icon name={s.icon} className="!size-4" /> {L(s.name)}</Badge>
-              ))}
-            </div>
-            <p className="mt-4 flex items-start gap-2 text-xs text-muted-foreground"><Info className="mt-0.5 size-3.5 shrink-0" />{t("servicesHint")}</p>
+            <PartnerServices partner={partner} canEdit />
           </CardBody>
         </Card>
         <Card>

@@ -291,6 +291,8 @@ export interface Partner {
   canton: string;
   about: L10n;
   serviceIds: ID[];
+  /** Services the company offers but has paused for a while: no new offers for them until resumed. */
+  pausedServiceIds?: ID[];
   status: PartnerStatus;
   banned: boolean;
   featured: boolean;

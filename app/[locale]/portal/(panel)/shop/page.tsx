@@ -6,7 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { SearchX } from "lucide-react";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL } from "@/lib/mock/hooks";
-import { availableLeads, CANTONS, partnerCantons } from "@/lib/mock/selectors";
+import { availableLeads, CANTONS, partnerCantons, takesOffersFor } from "@/lib/mock/selectors";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
@@ -52,7 +52,7 @@ export default function LeadShop() {
     <>
       <PageHeader title={t("title")} subtitle={t("subtitle")} actions={<Badge tone="accent" className="text-sm">{list.length}</Badge>} />
       <Card className="mb-4 grid gap-2 p-3 sm:grid-cols-3">
-        <Select value={svc} onValueChange={setSvc} options={[{ value: "all", label: t("allServices") }, ...services.filter((s) => partner.serviceIds.includes(s.id)).map((s) => ({ value: s.id, label: L(s.name) }))]} />
+        <Select value={svc} onValueChange={setSvc} options={[{ value: "all", label: t("allServices") }, ...services.filter((s) => takesOffersFor(partner, s.id)).map((s) => ({ value: s.id, label: L(s.name) }))]} />
         <Select value={canton} onValueChange={setCanton} options={[{ value: "mine", label: t("myArea", { cantons: area.join(", ") }) }, { value: "all", label: t("allCantons") }, ...cantons.map((c) => ({ value: c, label: `${c} · ${CANTONS[c] ?? c}` }))]} />
         <Select value={sort} onValueChange={setSort} options={[{ value: "newest", label: t("sortNewest") }, { value: "date", label: t("sortDate") }, { value: "slots", label: t("sortSlots") }]} />
       </Card>
