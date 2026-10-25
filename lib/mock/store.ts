@@ -83,7 +83,7 @@ interface Actions {
   /** The reader has seen every message the other side wrote in this thread. */
   markThreadRead: (threadId: string, reader: CompanyMessage["from"]) => void;
   setNominations: (canton: string, partnerIds: string[]) => void;
-  submitReview: (input: Pick<Review, "target" | "name" | "email" | "stars" | "comment" | "offerId" | "publishConsent">) => void;
+  submitReview: (input: Pick<Review, "target" | "name" | "email" | "stars" | "comment" | "offerId">) => void;
   /** Customer, from the review survey: the company that did the job, among those that bought the request. */
   chooseCompany: (offerId: string, partnerId: string) => void;
   /** Website offer form progress (created on first input, updated per step, closed on submit). */
@@ -496,8 +496,7 @@ export const useStore = create<Store>()(
       submitReview: (input) =>
         set((s) => ({
           reviews: [{ ...input, id: uid("RV"), status: "pending", createdAt: nowIso() }, ...s.reviews],
-          // a private review is for the team only: nothing to moderate
-          notifications: input.publishConsent === false ? s.notifications : notify(s, {
+          notifications: notify(s, {
             kind: "review",
             title: { en: `New ${input.stars}★ review awaiting moderation`, de: `Neue ${input.stars}★-Bewertung wartet auf Prüfung`, fr: `Nouvel avis ${input.stars}★ en attente de modération`, it: `Nuova recensione ${input.stars}★ in attesa di moderazione` },
             href: input.target === "kompass" ? "/admin/moderation/kompass-reviews" : "/admin/moderation/partner-reviews",

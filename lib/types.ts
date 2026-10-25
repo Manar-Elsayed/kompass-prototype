@@ -345,8 +345,6 @@ export interface Review {
   stars: number;
   comment: string;
   status: ModerationStatus;
-  /** false = the customer did not agree to publishing: kept private, never moderated or shown on the website. */
-  publishConsent?: boolean;
   createdAt: string;
 }
 

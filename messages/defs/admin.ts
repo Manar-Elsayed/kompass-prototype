@@ -310,8 +310,6 @@ export const admin = {
       sentTo: "Review survey sent to {email}",
       previewNote: "Preview: this is the survey the customer receives. Nothing you enter here is saved.",
       complaint: "Complaint from the customer",
-      privateAnswers: "Private: the customer didn’t agree to publishing, so these reviews never appear on the website or in moderation.",
-      sharedAnswers: "The customer agreed to publishing. The reviews go through moderation first.",
     },
     viewOffer: "View offer",
   },

@@ -28,7 +28,7 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
   const { confirm, dialog } = useConfirm();
   const [openId, setOpenId] = useState<string | null>(null);
   const open = all.find((r) => r.id === openId);
-  const reviews = all.filter((r) => r.publishConsent !== false && (scope === "kompass" ? r.target === "kompass" : r.target !== "kompass"));
+  const reviews = all.filter((r) => (scope === "kompass" ? r.target === "kompass" : r.target !== "kompass"));
   const approved = reviews.filter((r) => r.status === "approved");
   const avg = approved.length ? approved.reduce((a, r) => a + r.stars, 0) / approved.length : 0;
 
