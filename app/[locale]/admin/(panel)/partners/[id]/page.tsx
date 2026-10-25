@@ -216,6 +216,19 @@ function PartnerDetail() {
         subtitle={`${p.address}, ${p.zip} ${p.city} (${p.canton}) · ${p.regNumber}`}
         actions={
           <>
+            {/* featured among the companies on the homepage (a banned company can't be) */}
+            {!p.banned && (
+              <label className="flex h-10 items-center gap-2 rounded-lg border bg-surface px-3 text-sm font-medium">
+                <Switch
+                  checked={p.featured}
+                  onCheckedChange={(v) => {
+                    patch("partners", p.id, { featured: v });
+                    toast.success(t(v ? "admin.rows.featured" : "admin.rows.unfeatured", { name: p.name }));
+                  }}
+                />
+                {tp("featured")}
+              </label>
+            )}
             <Button variant="outline" onClick={() => setContact(true)}><Mail /> {tp("contactCo.button")}</Button>
             <Button asChild variant="outline">
               <Link href={`/companies/${p.id}`} target="_blank"><ExternalLink /> {t("admin.cms.viewOnSite")}</Link>
@@ -326,10 +339,6 @@ function PartnerDetail() {
                 <a href={`tel:${p.phone}`} className="flex items-center gap-2 hover:text-primary"><Phone className="size-4 text-muted-foreground" />{p.phone}</a>
                 <a href={`mailto:${p.email}`} className="flex items-center gap-2 hover:text-primary"><Mail className="size-4 text-muted-foreground" />{p.email}</a>
                 <p className="text-xs text-muted-foreground">{t("common.fields.lastSeen")}: {formatDateTime(p.lastSeen, lang)}</p>
-                <label className="mt-2 flex items-center justify-between gap-3 rounded-xl border p-3 font-medium">
-                  {tp("featured")}
-                  <Switch checked={p.featured} onCheckedChange={(v) => patch("partners", p.id, { featured: v })} />
-                </label>
               </CardBody>
             </Card>
             <Card>

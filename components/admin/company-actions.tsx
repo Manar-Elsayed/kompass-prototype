@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CreditCard, HandCoins, Lock, LockOpen, MessageSquare, Sparkles } from "lucide-react";
+import { CreditCard, HandCoins, Lock, LockOpen, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import type { Partner } from "@/lib/types";
 import { useStore } from "@/lib/mock/store";
@@ -13,7 +13,7 @@ import type { RowAction } from "./row-actions";
 
 /**
  * The things admin does to a company from any list it appears in (partners, activity, wallets…):
- * contact it, move money, feature it on the homepage, ban it. Returns the menu items and the dialogs.
+ * contact it, charge credit, see its wallet, ban it. Returns the menu items and the dialogs.
  */
 export function useCompanyActions() {
   const t = useTranslations();
@@ -39,17 +39,7 @@ export function useCompanyActions() {
     { label: t("admin.partners.contactCo.button"), icon: <MessageSquare />, onSelect: () => setOpen({ kind: "contact", id: p.id }) },
     { label: t("admin.wallets.addCredit"), icon: <HandCoins />, onSelect: () => setOpen({ kind: "credit", id: p.id }), hidden: opts.money === false },
     { label: t("admin.rows.walletHistory"), icon: <CreditCard />, href: `/admin/partners/${p.id}?tab=wallet` },
-    {
-      label: t(p.featured ? "admin.rows.unfeature" : "admin.rows.feature"),
-      icon: <Sparkles />,
-      hidden: p.banned,
-      separated: true,
-      onSelect: () => {
-        patch("partners", p.id, { featured: !p.featured });
-        toast.success(t(p.featured ? "admin.rows.unfeatured" : "admin.rows.featured", { name: p.name }));
-      },
-    },
-    { label: t(p.banned ? "admin.partners.unban" : "admin.partners.ban"), icon: p.banned ? <LockOpen /> : <Lock />, tone: p.banned ? undefined : "danger", onSelect: () => toggleBan(p) },
+    { label: t(p.banned ? "admin.partners.unban" : "admin.partners.ban"), icon: p.banned ? <LockOpen /> : <Lock />, tone: p.banned ? undefined : "danger", separated: true, onSelect: () => toggleBan(p) },
   ];
 
   const dialogs = (
