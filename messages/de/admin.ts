@@ -313,6 +313,8 @@ export const admin: Built<typeof Def> = {
       sentTo: "Bewertungsumfrage an {email} gesendet",
       previewNote: "Vorschau: So sieht die Umfrage für den Kunden aus. Ihre Eingaben hier werden nicht gespeichert.",
       complaint: "Beschwerde des Kunden",
+      privateAnswers: "Privat: Der Kunde hat der Veröffentlichung nicht zugestimmt. Diese Bewertungen erscheinen weder auf der Website noch in der Moderation.",
+      sharedAnswers: "Der Kunde hat der Veröffentlichung zugestimmt. Die Bewertungen werden zuerst moderiert.",
     },
     viewOffer: "Anfrage ansehen",
   },

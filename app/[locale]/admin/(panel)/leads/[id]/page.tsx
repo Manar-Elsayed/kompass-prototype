@@ -623,6 +623,7 @@ function SurveyCard({ offer, orders }: { offer: Offer; orders: Order[] }) {
             </p>
             {companyReview && <p className="text-muted-foreground">{t("companyStars", { stars: companyReview.stars })}</p>}
             {kompassReview && <p className="text-muted-foreground">{t("kompassStars", { stars: kompassReview.stars })}</p>}
+            <p className="mt-1 text-xs text-muted-foreground">{t(answers.some((r) => r.publishConsent === false) ? "privateAnswers" : "sharedAnswers")}</p>
           </div>
         ) : (
           !cancelled && !noBuyers && <p className="text-muted-foreground">{t(sent ? "noAnswer" : "notYet")}</p>

@@ -313,6 +313,8 @@ export const admin: Built<typeof Def> = {
       sentTo: "Sondaggio di valutazione inviato a {email}",
       previewNote: "Anteprima: ecco il sondaggio che riceve il cliente. Nulla di ciò che inserisce qui viene salvato.",
       complaint: "Reclamo del cliente",
+      privateAnswers: "Privato: il cliente non ha acconsentito alla pubblicazione. Queste recensioni non compaiono né sul sito né nella moderazione.",
+      sharedAnswers: "Il cliente ha acconsentito alla pubblicazione. Le recensioni passano prima dalla moderazione.",
     },
     viewOffer: "Vedi richiesta",
   },

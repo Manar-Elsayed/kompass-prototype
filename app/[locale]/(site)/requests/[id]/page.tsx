@@ -33,6 +33,7 @@ export default function ReviewSurveyPage() {
   const submitReview = useStore((s) => s.submitReview);
   const patch = useStore((s) => s.patch);
   const [done, setDone] = useState(false);
+  const [shared, setShared] = useState(false);
 
   if (!hydrated)
     return (
@@ -55,11 +56,12 @@ export default function ReviewSurveyPage() {
   const submit = async (a: SurveyAnswers) => {
     await mock(() => {
       chooseCompany(offer.id, a.companyId);
-      submitReview({ target: a.companyId, offerId: offer.id, name: shownAs, email: person.email, stars: a.companyStars, comment: a.companyComment });
-      submitReview({ target: "kompass", offerId: offer.id, name: shownAs, email: person.email, stars: a.kompassStars, comment: a.kompassComment });
+      submitReview({ target: a.companyId, offerId: offer.id, name: shownAs, email: person.email, stars: a.companyStars, comment: a.companyComment, publishConsent: a.publishConsent });
+      submitReview({ target: "kompass", offerId: offer.id, name: shownAs, email: person.email, stars: a.kompassStars, comment: a.kompassComment, publishConsent: a.publishConsent });
       // a complaint stays private: the team sees it on the offer
       if (a.complaint) patch("offers", offer.id, { surveyComplaint: a.complaint });
     });
+    setShared(a.publishConsent);
     setDone(true);
   };
 
@@ -76,7 +78,7 @@ export default function ReviewSurveyPage() {
         <div className="mt-8 rounded-2xl border border-success/30 bg-success-soft/40 p-8 text-center" role="status">
           <CheckCircle2 className="mx-auto size-12 text-success" />
           <p className="mt-3 text-lg font-bold text-ink">{t("thanksTitle")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{t("thanksBody")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t(shared ? "thanksBody" : "thanksBodyPrivate")}</p>
         </div>
       ) : (
         <div className="mt-8">

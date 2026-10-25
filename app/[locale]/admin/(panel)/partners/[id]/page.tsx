@@ -97,7 +97,7 @@ function PartnerDetail() {
   const fakeBookings = orders.filter(isFakeBooking);
   const bookings = orders.filter((o) => !isFakeBooking(o));
   const refundOf = (o: Order) => db.refunds.find((r) => r.orderId === o.id && r.status !== "rejected");
-  const reviews = db.reviews.filter((r) => r.target === p.id && (stars === "all" || r.stars === Number(stars)) && (reviewStatus === "all" || r.status === reviewStatus));
+  const reviews = db.reviews.filter((r) => r.target === p.id && r.publishConsent !== false && (stars === "all" || r.stars === Number(stars)) && (reviewStatus === "all" || r.status === reviewStatus));
   const allReviews = db.reviews.filter((r) => r.target === p.id);
   const invoices = db.invoices.filter((i) => i.partnerId === p.id);
   const unreadFromCompany = db.messages.filter((m) => m.partnerId === p.id && m.from === "company" && !m.readAt).length;

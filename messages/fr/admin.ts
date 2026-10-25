@@ -313,6 +313,8 @@ export const admin: Built<typeof Def> = {
       sentTo: "Questionnaire d’avis envoyé à {email}",
       previewNote: "Aperçu : voici le questionnaire que reçoit le client. Rien de ce que vous saisissez ici n’est enregistré.",
       complaint: "Réclamation du client",
+      privateAnswers: "Privé : le client n’a pas accepté la publication. Ces avis n’apparaissent ni sur le site ni dans la modération.",
+      sharedAnswers: "Le client a accepté la publication. Les avis passent d’abord par la modération.",
     },
     viewOffer: "Voir la demande",
   },
