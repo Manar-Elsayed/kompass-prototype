@@ -576,6 +576,8 @@ export const admin = {
     none: "No payout requests.",
   },
   activity: {
+    spent30: "Spent (30d)",
+    searchPh: "Search company, city or canton…",
     title: "Partner activity",
     subtitle: "Engagement of each partner over the last 30 days.",
     last30: "Offers (30d)",
