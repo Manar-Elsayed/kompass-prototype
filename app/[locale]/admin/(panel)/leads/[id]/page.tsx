@@ -472,7 +472,7 @@ function AssignPanel({ offer, orders }: { offer: Offer; orders: Order[] }) {
     <div className="mt-4 rounded-xl bg-surface-2/70 p-4">
       <p className="mb-1 flex items-center gap-2 text-sm font-bold text-ink"><UserPlus className="size-4 text-primary" /> {t("assignTitle")}</p>
       <p className="mb-3 text-xs text-muted-foreground">{t("assignHint")}</p>
-      <div className="grid gap-3 sm:grid-cols-[1fr_140px]">
+      <div className="grid items-start gap-3 sm:grid-cols-[1fr_140px]">
         <Field label={t("company")} hint={t("matchHint")}>
           <Select
             value={partnerId}

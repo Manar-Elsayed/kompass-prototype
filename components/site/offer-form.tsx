@@ -729,7 +729,7 @@ export function OfferForm({
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Lock className="size-3.5" /> {L(content.note)}
             </p>
-            <Button type="button" size="lg" onClick={next} className="w-full sm:w-auto">
+            <Button type="button" size={isAdmin ? "default" : "lg"} onClick={next} className="w-full sm:w-auto">
               {t("common.actions.next")}
               <ArrowRight className="" />
             </Button>
@@ -893,11 +893,12 @@ export function OfferForm({
           </aside>
 
           <div className="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:justify-between lg:col-span-2">
-            <Button type="button" variant="ghost" onClick={() => setStep(1)}>
+            <Button type="button" variant={isAdmin ? "outline" : "ghost"} onClick={() => setStep(1)}>
               <ArrowLeft className="" />
               {t("common.actions.back")}
             </Button>
-            <Button type="submit" variant="accent" size="lg" loading={formState.isSubmitting}>
+            {/* the dashboard uses its standard primary button; the website keeps its large orange call to action */}
+            <Button type="submit" variant={isAdmin ? "default" : "accent"} size={isAdmin ? "default" : "lg"} loading={formState.isSubmitting}>
               {formState.isSubmitting ? t("site.offerForm.sending") : isAdmin ? t("admin.leads.form.submit") : t("site.offerForm.submit")}
             </Button>
           </div>
