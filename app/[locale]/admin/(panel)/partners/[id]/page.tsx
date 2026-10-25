@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Check, CheckCircle2, ClipboardList, ExternalLink, EyeOff, HandCoins, Landmark, Lock, LockOpen, Mail, MessageSquare, Phone, Plus, RotateCcw, Star, Store, Trash2, Wallet, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ClipboardList, ExternalLink, EyeOff, HandCoins, Landmark, Lock, LockOpen, Mail, Phone, Plus, RotateCcw, Star, Store, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { Order, Payout } from "@/lib/types";
@@ -474,11 +474,18 @@ function PartnerDetail() {
         </TabsContent>
 
         <TabsContent value="messages">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-muted-foreground">{tp("threadsHint")}</p>
-            <Button size="sm" onClick={() => setContact(true)}><MessageSquare /> {tp("contactCo.button")}</Button>
-          </div>
-          <MessageCenter partnerId={p.id} partnerName={p.name} viewer="kompass" selected={thread} onSelect={setThread} empty={<EmptyState title={tp("contactCo.none")} className="py-12" />} />
+          <p className="mb-3 text-sm text-muted-foreground">{tp("threadsHint")}</p>
+          <MessageCenter
+            partnerId={p.id}
+            partnerName={p.name}
+            partnerEmail={p.email}
+            viewer="kompass"
+            selected={thread}
+            onSelect={setThread}
+            canStart
+            autoOpen
+            empty={<EmptyState title={tp("contactCo.none")} className="py-12" />}
+          />
         </TabsContent>
       </Tabs>
 

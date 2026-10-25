@@ -567,8 +567,9 @@ export const admin: Built<typeof Def> = {
     dormant: "Inattivo",
   },
   dues: {
+    payment: "Pagamento",
     title: "Pagamenti partner",
-    subtitle: "Ricariche e pagamenti di fatture caricati dai partner. La conferma accredita l’importo sul portafoglio del partner.",
+    subtitle: "Ricevute di pagamento caricate dalle aziende. Confermare una ricarica accredita il portafoglio; confermare il pagamento di una fattura la segna come pagata.",
     method: "Metodo",
     receipt: "Ricevuta",
     bank_transfer: "Bonifico bancario",
@@ -580,6 +581,12 @@ export const admin: Built<typeof Def> = {
     canceled: "Pagamento annullato",
     pendingTotal: "In sospeso",
     confirmedTotal: "Confermati questo mese",
+    forLabel: "Per",
+    forWallet: "Ricarica del portafoglio",
+    forInvoice: "Fattura {id}",
+    confirmInvoiceBody: "La fattura {id} viene segnata come pagata. Il portafoglio non cambia: il credito è stato aggiunto all’emissione della fattura.",
+    confirmedInvoice: "Pagamento confermato · fattura {id} pagata",
+    walletUnchanged: "invariato",
   },
   coupons: {
     title: "Coupon",
@@ -671,6 +678,8 @@ export const admin: Built<typeof Def> = {
       bank_transfer: "Bonifico bancario",
       cash: "Contanti",
     },
+    openInvoicesHint: "{count, plural, one {Questa azienda ha # fattura aperta.} other {Questa azienda ha # fatture aperte.}} Si tratta del pagamento di una fattura? Segni invece la fattura come pagata, per non accreditare il portafoglio due volte.",
+    openInvoicesLink: "Vai alle fatture",
   },
   invoices: {
     title: "Fatture",

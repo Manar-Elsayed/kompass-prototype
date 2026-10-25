@@ -36,7 +36,8 @@ export const isOverdue = (inv: { status: string; dueAt: string }) => inv.status 
 export function walletLedger(db: LedgerDB, partnerId: string) {
   const entries: LedgerEntry[] = [
     ...db.dues
-      .filter((d) => d.partnerId === partnerId && d.status === "confirmed")
+      // invoice payments don't move the wallet (the credit was added when the invoice was issued)
+      .filter((d) => d.partnerId === partnerId && d.status === "confirmed" && !d.invoiceId)
       .map((d) => ({ id: d.id, at: d.createdAt, kind: "receipt" as const, amount: d.amount, reference: d.reference, payMethod: d.method })),
     ...db.topups
       .filter((x) => x.partnerId === partnerId)
@@ -287,6 +288,7 @@ export type FeedKind =
   | "docExpiring"
   | "docExpired"
   | "receiptConfirmed"
+  | "invoiceReceiptConfirmed"
   | "receiptRejected"
   | "topupAdmin"
   | "credit"
@@ -339,7 +341,14 @@ export function partnerFeed(db: FeedDB, partnerId: string): FeedItem[] {
   }
 
   for (const d of db.dues.filter((x) => x.partnerId === partnerId && x.status !== "pending"))
-    push(d.id, d.decidedAt ?? d.createdAt, d.status === "confirmed" ? "receiptConfirmed" : "receiptRejected", d.status === "confirmed" ? "success" : "danger", "/portal/payments?tab=statement", { amount: d.amount, ref: d.reference });
+    push(
+      d.id,
+      d.decidedAt ?? d.createdAt,
+      d.status !== "confirmed" ? "receiptRejected" : d.invoiceId ? "invoiceReceiptConfirmed" : "receiptConfirmed",
+      d.status === "confirmed" ? "success" : "danger",
+      d.invoiceId ? "/portal/payments?tab=invoices" : "/portal/payments?tab=statement",
+      { amount: d.amount, ref: d.reference, invoice: d.invoiceId ?? "" },
+    );
 
   for (const x of db.topups.filter((t) => t.partnerId === partnerId && t.method !== "online")) {
     if (x.method === "admin") push(x.id, x.createdAt, "topupAdmin", "success", "/portal/payments?tab=statement", { amount: x.amount });

@@ -13,6 +13,7 @@ import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useLang } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
@@ -61,6 +62,8 @@ function Payments() {
   const [online, setOnline] = useState(false);
   const [payout, setPayout] = useState(false);
   const [paying, setPaying] = useState<Invoice | null>(null);
+  // the receipt upload can be opened for a specific invoice (after "I've made the transfer")
+  const [uploadInvoice, setUploadInvoice] = useState<string | undefined>(undefined);
   const [doc, setDoc] = useState<MoneyDoc | null>(null);
   const [dueId, setDueId] = useState<string | null>(null);
   const due = dues.find((d) => d.id === dueId);
@@ -80,6 +83,8 @@ function Payments() {
   const myPayouts = payouts.filter((p) => p.partnerId === partner.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const pending = myDues.filter((d) => d.status === "pending").reduce((a, d) => a + d.amount, 0);
   const openInvoices = myInvoices.filter((i) => i.status === "due");
+  // a transfer receipt for this invoice is waiting for Kompass
+  const checking = (i: Invoice) => i.status === "due" && dues.some((d) => d.invoiceId === i.id && d.status === "pending");
   const invStatus = (i: Invoice) => (i.status === "paid" ? "paid" : isOverdue(i) ? "overdue" : "due");
   const openDoc = (i: Invoice) => setDoc({ kind: "invoice", id: i.id, date: i.issuedAt, partner, line: ti("creditLine"), amount: i.amount, status: invStatus(i), dueAt: i.dueAt, paidAt: i.paidAt });
 
@@ -160,10 +165,10 @@ function Payments() {
                       <span className="block text-xs">{i.status === "paid" && i.paidAt ? t("paidOn", { date: formatDate(i.paidAt, lang) }) : t("dueOn", { date: formatDate(i.dueAt, lang) })}</span>
                     </span>
                     <span className="font-bold">{formatCHF(i.amount, lang)}</span>
-                    <StatusBadge status={invStatus(i)} />
+                    {checking(i) ? <Badge tone="info" dot>{t("receiptChecking")}</Badge> : <StatusBadge status={invStatus(i)} />}
                     <span className="flex gap-1.5">
                       <Button variant="ghost" size="icon-sm" onClick={() => openDoc(i)} aria-label={t("downloadPdf")}><Download /></Button>
-                      {i.status === "due" && <Button size="sm" variant={isOverdue(i) ? "accent" : "outline"} onClick={() => setPaying(i)}>{t("pay")}</Button>}
+                      {i.status === "due" && !checking(i) && <Button size="sm" variant={isOverdue(i) ? "accent" : "outline"} onClick={() => setPaying(i)}>{t("pay")}</Button>}
                     </span>
                   </div>
                 ))
@@ -214,10 +219,20 @@ function Payments() {
         </TabsContent>
       </Tabs>
 
-      {upload && <UploadDialog onClose={() => setUpload(false)} />}
+      {upload && <UploadDialog invoiceId={uploadInvoice} onClose={() => { setUpload(false); setUploadInvoice(undefined); }} />}
       {online && <OnlineTopUpDialog onClose={() => setOnline(false)} onTransfer={() => { setOnline(false); setUpload(true); }} />}
       {payout && <PayoutDialog onClose={() => setPayout(false)} onDone={() => setTab("payouts")} />}
-      {paying && <PayInvoiceDialog invoice={paying} onClose={() => setPaying(null)} />}
+      {paying && (
+        <PayInvoiceDialog
+          invoice={paying}
+          onClose={() => setPaying(null)}
+          onTransfer={(id) => {
+            setPaying(null);
+            setUploadInvoice(id);
+            setUpload(true);
+          }}
+        />
+      )}
       {doc && <MoneyDocDialog doc={doc} onClose={() => setDoc(null)} />}
       <DetailSheet
         open={!!due}
@@ -357,7 +372,7 @@ function Row({ label, value, muted, strong }: { label: string; value: string; mu
 }
 
 /** Pay a credit invoice: online (card / TWINT, settled at once) or by bank transfer with the invoice number as reference. */
-function PayInvoiceDialog({ invoice, onClose }: { invoice: Invoice; onClose: () => void }) {
+function PayInvoiceDialog({ invoice, onClose, onTransfer }: { invoice: Invoice; onClose: () => void; onTransfer: (invoiceId: string) => void }) {
   const t = useTranslations("portal.payments");
   const tw = useTranslations("admin.wallets");
   const tc = useTranslations("common");
@@ -428,7 +443,7 @@ function PayInvoiceDialog({ invoice, onClose }: { invoice: Invoice; onClose: () 
             <DialogFooter>
               <Button variant="outline" onClick={onClose}>{tc("actions.cancel")}</Button>
               {how === "transfer" ? (
-                <Button onClick={onClose}><Check /> {t("transferDone")}</Button>
+                <Button onClick={() => onTransfer(invoice.id)}><Upload /> {t("transferDone")}</Button>
               ) : (
                 <Button variant="accent" onClick={pay} loading={busy}><CreditCard /> {t("payNow", { amount: invoice.amount })}</Button>
               )}
@@ -490,7 +505,7 @@ function OnlineTopUpDialog({ onClose, onTransfer }: { onClose: () => void; onTra
   );
 }
 
-function UploadDialog({ onClose }: { onClose: () => void }) {
+function UploadDialog({ onClose, invoiceId: forInvoice }: { onClose: () => void; invoiceId?: string }) {
   const t = useTranslations("portal.payments");
   const td = useTranslations("admin.dues");
   const tr = useTranslations("admin.refunds");
@@ -498,13 +513,28 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
   const partner = useCurrentPartner()!;
   const uploadPayment = useStore((s) => s.uploadPayment);
   const prefix = useStore((s) => s.config.invoicePrefix);
+  const lang = useLang();
+  const allInvoices = useStore((s) => s.invoices);
+  const openInvoices = allInvoices.filter((i) => i.partnerId === partner.id && i.status === "due");
+  // "wallet" tops up the wallet; an invoice id pays that invoice
+  const [purpose, setPurpose] = useState<string>(forInvoice ?? "wallet");
+  const invoice = openInvoices.find((i) => i.id === purpose);
+  // opened for an invoice: amount and reference follow it
+  const [amount, setAmount] = useState(invoice ? String(invoice.amount) : "200");
+  const [reference, setReference] = useState(invoice?.id ?? `${prefix}-2026-${String(Math.floor(Math.random() * 9000) + 1000)}`);
   const ref = useRef<HTMLInputElement>(null);
-  const [amount, setAmount] = useState("200");
   const [method, setMethod] = useState<PartnerDue["method"]>("bank_transfer");
-  const [reference, setReference] = useState(`${prefix}-2026-${String(Math.floor(Math.random() * 9000) + 1000)}`);
   const [receipt, setReceipt] = useState<{ name: string; url: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const valid = Number(amount) >= 10;
+  const valid = invoice ? true : Number(amount) >= 10;
+  const choose = (v: string) => {
+    setPurpose(v);
+    const inv = openInvoices.find((i) => i.id === v);
+    if (inv) {
+      setAmount(String(inv.amount));
+      setReference(inv.id);
+    }
+  };
 
   const onFile = (f: File) => {
     if (f.size > 1_500_000) return toast.error(t("maxSize"));
@@ -527,14 +557,28 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
           </span>
           <Button variant="ghost" size="icon-sm" aria-label={tc("actions.copy")} onClick={() => { navigator.clipboard?.writeText(KOMPASS_IBAN); toast.success(tc("toast.copied")); }}><Copy /></Button>
         </div>
+        {openInvoices.length > 0 && (
+          <Field label={t("purpose")} hint={invoice ? t("purposeInvoiceHint") : t("purposeWalletHint")}>
+            <Select
+              value={purpose}
+              onValueChange={choose}
+              options={[
+                { value: "wallet", label: t("purposeWallet") },
+                ...openInvoices.map((i) => ({ value: i.id, label: t("purposeInvoice", { id: i.id, amount: formatCHF(i.amount, lang) }) })),
+              ]}
+            />
+          </Field>
+        )}
         <Field label={`${tc("fields.amount")} (CHF)`}>
-          <Input type="number" min={10} dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <Input type="number" min={10} dir="ltr" value={amount} readOnly={!!invoice} className={invoice ? "bg-surface-2" : undefined} onChange={(e) => setAmount(e.target.value)} />
         </Field>
-        <div className="-mt-2 flex flex-wrap gap-2">
-          {[100, 200, 500, 1000].map((v) => (
-            <Button key={v} type="button" variant={Number(amount) === v ? "secondary" : "outline"} size="sm" onClick={() => setAmount(String(v))}>CHF {v}</Button>
-          ))}
-        </div>
+        {!invoice && (
+          <div className="-mt-2 flex flex-wrap gap-2">
+            {[100, 200, 500, 1000].map((v) => (
+              <Button key={v} type="button" variant={Number(amount) === v ? "secondary" : "outline"} size="sm" onClick={() => setAmount(String(v))}>CHF {v}</Button>
+            ))}
+          </div>
+        )}
         <Field label={td("method")}>
           <RadioCards className="grid-cols-3" value={method} onValueChange={(v) => setMethod(v as PartnerDue["method"])} options={(["bank_transfer", "twint", "card"] as const).map((m) => ({ value: m, label: td(m) }))} />
         </Field>
@@ -557,7 +601,7 @@ function UploadDialog({ onClose }: { onClose: () => void }) {
             loading={busy}
             onClick={async () => {
               setBusy(true);
-              await mock(() => uploadPayment({ partnerId: partner.id, amount: Number(amount), method, reference, receipt: receipt?.url ?? "/images/complaint.png" }));
+              await mock(() => uploadPayment({ partnerId: partner.id, amount: Number(amount), method, reference, receipt: receipt?.url ?? "/images/complaint.png", invoiceId: invoice?.id }));
               setBusy(false);
               toast.success(t("sent"));
               onClose();

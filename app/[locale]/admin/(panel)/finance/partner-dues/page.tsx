@@ -12,6 +12,7 @@ import { useStore } from "@/lib/mock/store";
 import { useLang, usePartnerMap } from "@/lib/mock/hooks";
 import { inLastDays } from "@/lib/mock/selectors";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/controls";
 import { StatusBadge, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
@@ -34,12 +35,13 @@ export default function PartnerDuesPage() {
   const approve = (d: PartnerDue) =>
     confirm({
       title: td("confirmTitle", { amount: d.amount, name: partnerMap[d.partnerId]?.name ?? "" }),
-      body: td("confirmBody"),
+      // an invoice payment marks the invoice paid; a top-up credits the wallet
+      body: d.invoiceId ? td("confirmInvoiceBody", { id: d.invoiceId }) : td("confirmBody"),
       tone: "success",
       confirmLabel: t("common.actions.approve"),
       onConfirm: () => {
         decideDue(d.id, "confirmed");
-        toast.success(td("confirmed"));
+        toast.success(d.invoiceId ? td("confirmedInvoice", { id: d.invoiceId }) : td("confirmed"));
       },
     });
   const cancel = (d: PartnerDue) =>
@@ -55,11 +57,31 @@ export default function PartnerDuesPage() {
     });
 
   const columns: ColumnDef<PartnerDue, unknown>[] = [
-    { id: "id", header: t("admin.shop.order"), accessorFn: (d) => d.id, cell: (c) => <Mono>{c.getValue() as string}</Mono> },
+    { id: "id", header: td("payment"), accessorFn: (d) => d.id, cell: (c) => <Mono>{c.getValue() as string}</Mono> },
     { id: "partner", header: t("common.fields.company"), accessorFn: (d) => partnerMap[d.partnerId]?.name ?? "–", cell: (c) => <span className="flex items-center gap-2 font-semibold text-ink"><Avatar name={c.getValue() as string} square className="size-7 text-[10px]" />{c.getValue() as string}</span> },
-    { id: "amount", header: t("common.fields.amount"), accessorFn: (d) => d.amount, cell: (c) => <span className="font-bold">{formatCHF(c.getValue() as number, lang)}</span> },
-    { id: "method", header: td("method"), accessorFn: (d) => d.method, cell: (c) => td(c.getValue() as "card") },
-    { id: "ref", header: t("common.fields.reference"), accessorFn: (d) => d.reference, cell: (c) => <Mono className="text-muted-foreground">{c.getValue() as string}</Mono> },
+    {
+      id: "amount",
+      header: t("common.fields.amount"),
+      accessorFn: (d) => d.amount,
+      // the amount, and what it pays: a wallet top-up or a credit invoice
+      cell: ({ row: { original: d } }) => (
+        <div className="whitespace-nowrap">
+          <p className="font-bold">{formatCHF(d.amount, lang)}</p>
+          {d.invoiceId ? <Badge tone="info" className="mt-0.5">{td("forInvoice", { id: d.invoiceId })}</Badge> : <Badge tone="neutral" className="mt-0.5">{td("forWallet")}</Badge>}
+        </div>
+      ),
+    },
+    {
+      id: "ref",
+      header: t("common.fields.reference"),
+      accessorFn: (d) => d.reference,
+      cell: ({ row: { original: d } }) => (
+        <div className="whitespace-nowrap">
+          <Mono className="text-muted-foreground">{d.reference}</Mono>
+          <p className="text-xs text-muted-foreground">{td(d.method)}</p>
+        </div>
+      ),
+    },
     {
       id: "receipt",
       header: td("receipt"),
@@ -132,6 +154,7 @@ export default function PartnerDuesPage() {
               <DL
                 items={[
                   { label: t("common.fields.amount"), value: <span className="font-bold">{formatCHF(receipt.amount, lang)}</span> },
+                  { label: td("forLabel"), value: receipt.invoiceId ? td("forInvoice", { id: receipt.invoiceId }) : td("forWallet") },
                   { label: td("method"), value: td(receipt.method) },
                   { label: t("common.fields.reference"), value: <Mono>{receipt.reference}</Mono> },
                   { label: t("common.fields.company"), value: partner ? <Link href={`/admin/partners/${partner.id}`} className="font-semibold text-primary hover:underline">{partner.name}</Link> : "–" },
@@ -145,7 +168,14 @@ export default function PartnerDuesPage() {
                     { label: t("admin.rows.walletNow"), value: formatCHF(partner.wallet, lang) },
                     {
                       label: receipt.status === "pending" ? t("admin.rows.walletAfter") : t("common.fields.status"),
-                      value: receipt.status === "pending" ? <span className="font-bold text-success">{formatCHF(partner.wallet + receipt.amount, lang)}</span> : <StatusBadge status={receipt.status} />,
+                      value:
+                        receipt.status !== "pending" ? (
+                          <StatusBadge status={receipt.status} />
+                        ) : receipt.invoiceId ? (
+                          <span className="text-muted-foreground">{formatCHF(partner.wallet, lang)} · {td("walletUnchanged")}</span>
+                        ) : (
+                          <span className="font-bold text-success">{formatCHF(partner.wallet + receipt.amount, lang)}</span>
+                        ),
                     },
                   ]}
                 />

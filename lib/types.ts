@@ -329,6 +329,8 @@ export interface PartnerDue {
   method: "bank_transfer" | "twint" | "card";
   reference: string;
   receipt: string; // image url
+  /** The credit invoice this payment pays. Confirming marks the invoice paid instead of crediting the wallet. */
+  invoiceId?: ID;
   status: DueStatus;
   createdAt: string;
   decidedAt?: string;

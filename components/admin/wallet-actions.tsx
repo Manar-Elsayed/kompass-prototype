@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { HandCoins, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { Partner, PayMethod } from "@/lib/types";
@@ -26,6 +27,7 @@ export function TopUpDialog({ partner, onClose }: { partner: Partner; onClose: (
   const lang = useLang();
   const { user } = useCurrentUser();
   const topUp = useStore((s) => s.topUpWallet);
+  const openInvoices = useStore((s) => s.invoices).filter((i) => i.partnerId === partner.id && i.status === "due").length;
   const [amount, setAmount] = useState("200");
   const [payMethod, setPayMethod] = useState<PayMethod>("bank_transfer");
   const [reference, setReference] = useState("");
@@ -48,6 +50,13 @@ export function TopUpDialog({ partner, onClose }: { partner: Partner; onClose: (
           <DialogTitle>{t("topUpTitle", { name: partner.name })}</DialogTitle>
           <DialogDescription>{t("topUpHint")}</DialogDescription>
         </DialogHeader>
+        {/* paying a credit invoice is recorded on the invoice, not here, or the wallet is credited twice */}
+        {openInvoices > 0 && (
+          <p className="rounded-xl border border-warning/30 bg-warning-soft/40 p-3 text-sm text-ink">
+            {t("openInvoicesHint", { count: openInvoices })}{" "}
+            <Link href="/admin/finance/invoices" className="font-semibold text-primary hover:underline">{t("openInvoicesLink")}</Link>
+          </p>
+        )}
         <Field label={`${tc("fields.amount")} (CHF)`} required hint={`${t("balance")}: ${formatCHF(partner.wallet, lang)} → ${formatCHF(partner.wallet + value, lang)}`}>
           <Input type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} />
         </Field>
