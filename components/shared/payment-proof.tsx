@@ -45,10 +45,11 @@ export function PaymentProof({ due, partner }: { due: PartnerDue; partner?: Pick
 
   return (
     <>
-      <button type="button" onClick={() => setBig(true)} className="group relative block w-full text-start" aria-label={t("open")}>
+      <button type="button" onClick={() => setBig(true)} className="group relative block w-full text-start" aria-label={t("open")} title={t("open")}>
         {view(false)}
-        <span className="absolute end-2 top-2 flex items-center gap-1 rounded-md bg-surface/90 px-2 py-1 text-xs font-semibold text-ink opacity-90 shadow-sm transition group-hover:opacity-100">
-          <Maximize2 className="size-3.5" /> {t("open")}
+        {/* icon only, in the bottom corner, so it never covers the header or the date */}
+        <span className="absolute bottom-2 end-2 flex size-8 items-center justify-center rounded-lg border bg-surface/95 text-ink shadow-sm transition group-hover:bg-surface group-hover:text-primary">
+          <Maximize2 className="size-4" />
         </span>
       </button>
       <Dialog open={big} onOpenChange={setBig}>
@@ -103,7 +104,8 @@ function Confirmation({ due, partner, large }: { due: PartnerDue; partner?: Pick
         <span>{head.brand}</span>
         <span className="opacity-70">{when}</span>
       </div>
-      <div className={cn("px-4", large ? "py-6" : "py-4")}>
+      {/* the small view keeps room at the bottom for the enlarge icon */}
+      <div className={cn("px-4", large ? "py-6" : "pb-12 pt-4")}>
         <div className="flex items-center gap-2 text-success">
           <CheckCircle2 className={large ? "size-6" : "size-5"} />
           <span className="font-semibold">{head.title}</span>
