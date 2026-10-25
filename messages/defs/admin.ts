@@ -359,6 +359,8 @@ export const admin = {
     revenue: "Revenue",
   },
   fake: {
+    report: "Report",
+    searchPh: "Search report, offer, customer, company or reason…",
     title: "Fake-offer reports",
     subtitle: "Partners report offers they believe are fake. Confirmed reports refund the offer price to the partner wallet.",
     reason: "Reason",

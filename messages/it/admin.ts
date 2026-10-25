@@ -362,6 +362,8 @@ export const admin: Built<typeof Def> = {
     revenue: "Ricavi",
   },
   fake: {
+    report: "Segnalazione",
+    searchPh: "Cerca segnalazione, richiesta, cliente, azienda o motivo…",
     title: "Segnalazioni di richieste false",
     subtitle: "I partner segnalano le richieste che ritengono false. Le segnalazioni confermate rimborsano il prezzo della richiesta sul portafoglio del partner.",
     reason: "Motivo",
