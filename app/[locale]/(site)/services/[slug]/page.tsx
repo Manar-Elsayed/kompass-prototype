@@ -6,7 +6,8 @@ import { useTranslations } from "next-intl";
 import { ArrowRight, CheckCircle2, Clock, Lightbulb, Users } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
-import { useL } from "@/lib/mock/hooks";
+import { useHydrated, useL } from "@/lib/mock/hooks";
+import { PageSkeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/shared/icon";
 import { OfferForm } from "@/components/site/offer-form";
@@ -20,8 +21,13 @@ export default function ServiceDetailPage() {
   const services = useStore((s) => s.services);
   const partners = useStore((s) => s.partners);
   const blogs = useStore((s) => s.blogs);
+  const hydrated = useHydrated();
   const service = services.find((s) => s.slug === slug);
-  if (!service) notFound();
+  // pages added in the admin live only in the browser: wait for the saved data before calling it missing
+  if (!service) {
+    if (!hydrated) return <PageSkeleton />;
+    notFound();
+  }
 
   const count = partners.filter((p) => p.status === "approved" && !p.banned && p.serviceIds.includes(service.id)).length;
   const related = blogs.filter((b) => b.published && b.serviceId === service.id).slice(0, 3);
