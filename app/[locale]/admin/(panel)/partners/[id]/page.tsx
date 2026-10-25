@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { AlertTriangle, Check, CheckCircle2, ClipboardList, ExternalLink, EyeOff, HandCoins, Landmark, Lock, LockOpen, Mail, Phone, Plus, RotateCcw, Star, Store, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
-import type { Order, Payout } from "@/lib/types";
+import type { Order, Payout, Review } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, usePartnerRatings } from "@/lib/mock/hooks";
@@ -16,14 +16,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { Avatar, Switch } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
 import { EmptyState, Stars, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
 import { MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
-import { RowActions } from "@/components/admin/row-actions";
+import { RowActions, actionsColumn } from "@/components/admin/row-actions";
+import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { DL, KpiCard, Mono, ProfileHeader } from "@/components/admin/ui";
 import { CreditDialog, TopUpDialog } from "@/components/admin/wallet-actions";
 import { DocStateBadge } from "@/components/admin/doc-state";
@@ -73,8 +73,6 @@ function PartnerDetail() {
   const [credit, setCredit] = useState(false);
   const [doc, setDoc] = useState<MoneyDoc | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
-  const [stars, setStars] = useState("all");
-  const [reviewStatus, setReviewStatus] = useState("all");
   const [tab, setTab] = useState("overview");
   const [thread, setThread] = useState<string | null>(null);
   const [deciding, setDeciding] = useState<{ payout: Payout; decision: "paid" | "rejected" } | null>(null);
@@ -95,8 +93,56 @@ function PartnerDetail() {
   const fakeBookings = orders.filter(isFakeBooking);
   const bookings = orders.filter((o) => !isFakeBooking(o));
   const refundOf = (o: Order) => db.refunds.find((r) => r.orderId === o.id && r.status !== "rejected");
-  const reviews = db.reviews.filter((r) => r.target === p.id && (stars === "all" || r.stars === Number(stars)) && (reviewStatus === "all" || r.status === reviewStatus));
   const allReviews = db.reviews.filter((r) => r.target === p.id);
+  const reviewColumns: ColumnDef<Review, unknown>[] = [
+    { id: "stars", header: tp("rating"), accessorFn: (r) => r.stars, cell: ({ row: { original: r } }) => <Stars value={r.stars} /> },
+    {
+      id: "comment",
+      header: tp("review"),
+      enableSorting: false,
+      accessorFn: (r) => r.comment,
+      cell: ({ row: { original: r } }) => <p className="line-clamp-2 min-w-48 text-sm text-ink">“{r.comment}”</p>,
+    },
+    {
+      id: "name",
+      header: tp("reviewer"),
+      accessorFn: (r) => r.name,
+      cell: ({ row: { original: r } }) => (
+        <div className="whitespace-nowrap">
+          <p className="font-semibold text-ink">{r.name}</p>
+          {r.offerId && <Mono className="text-xs text-muted-foreground">{r.offerId}</Mono>}
+        </div>
+      ),
+    },
+    { id: "date", header: t("common.fields.date"), accessorFn: (r) => r.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
+    { id: "status", header: t("common.fields.status"), accessorFn: (r) => r.status, cell: (c) => <StatusBadge status={c.getValue() as string} /> },
+    actionsColumn<Review>((r) => (
+      <RowActions
+        actions={[
+          { label: t("common.actions.approve"), icon: <CheckCircle2 />, onSelect: () => decideReview(r.id, "approved"), hidden: r.status === "approved" },
+          { label: t(r.status === "approved" ? "admin.rows.unpublish" : "common.actions.reject"), icon: <EyeOff />, onSelect: () => decideReview(r.id, "rejected"), hidden: r.status === "rejected" },
+          { label: t("admin.rows.openBooking"), icon: <ClipboardList />, href: r.offerId ? `/admin/leads/${r.offerId}` : undefined, hidden: !r.offerId, separated: true },
+          {
+            label: t("common.actions.delete"),
+            icon: <Trash2 />,
+            tone: "danger",
+            separated: true,
+            onSelect: () =>
+              confirm({
+                title: t("common.confirm.title"),
+                body: t("common.confirm.deleteBody"),
+                tone: "danger",
+                confirmLabel: t("common.actions.delete"),
+                onConfirm: () => {
+                  removeItem("reviews", r.id);
+                  toast.success(t("common.toast.deleted"));
+                },
+              }),
+          },
+        ]}
+      />
+    )),
+  ];
   const invoices = db.invoices.filter((i) => i.partnerId === p.id);
   const unreadFromCompany = db.messages.filter((m) => m.partnerId === p.id && m.from === "company" && !m.readAt).length;
   const threadCount = new Set(db.messages.filter((m) => m.partnerId === p.id).map((m) => m.threadId)).size;
@@ -415,56 +461,19 @@ function PartnerDetail() {
         </TabsContent>
 
         <TabsContent value="reviews">
-          <div className="mb-3 flex flex-wrap gap-2">
-            <div className="w-40">
-              <Select value={stars} onValueChange={setStars} options={[{ value: "all", label: tp("allRatings") }, ...[5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: tp("starsN", { n }) }))]} />
-            </div>
-            <div className="w-40">
-              <Select value={reviewStatus} onValueChange={setReviewStatus} options={[{ value: "all", label: t("common.table.all") }, ...(["approved", "pending", "rejected"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) }))]} />
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {reviews.length ? (
-              reviews.map((r) => (
-                <Card key={r.id} className="p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <Stars value={r.stars} />
-                    <span className="flex items-center gap-1">
-                      <StatusBadge status={r.status} />
-                      <RowActions
-                        actions={[
-                          { label: t("common.actions.approve"), icon: <CheckCircle2 />, onSelect: () => decideReview(r.id, "approved"), hidden: r.status === "approved" },
-                          { label: t(r.status === "approved" ? "admin.rows.unpublish" : "common.actions.reject"), icon: <EyeOff />, onSelect: () => decideReview(r.id, "rejected"), hidden: r.status === "rejected" },
-                          { label: t("admin.rows.openBooking"), icon: <ClipboardList />, href: r.offerId ? `/admin/leads/${r.offerId}` : undefined, hidden: !r.offerId, separated: true },
-                          {
-                            label: t("common.actions.delete"),
-                            icon: <Trash2 />,
-                            tone: "danger",
-                            separated: true,
-                            onSelect: () =>
-                              confirm({
-                                title: t("common.confirm.title"),
-                                body: t("common.confirm.deleteBody"),
-                                tone: "danger",
-                                confirmLabel: t("common.actions.delete"),
-                                onConfirm: () => {
-                                  removeItem("reviews", r.id);
-                                  toast.success(t("common.toast.deleted"));
-                                },
-                              }),
-                          },
-                        ]}
-                      />
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm">“{r.comment}”</p>
-                  <p className="mt-2 text-xs text-muted-foreground">{r.name} · {formatDate(r.createdAt, lang)}</p>
-                </Card>
-              ))
-            ) : (
-              <Card className="md:col-span-2"><EmptyState title={t("site.companies.noReviews")} /></Card>
-            )}
-          </div>
+          <DataTable
+            data={allReviews}
+            columns={reviewColumns}
+            initialSort={[{ id: "date", desc: true }]}
+            search={(r) => `${r.name} ${r.comment} ${r.offerId ?? ""}`}
+            searchPlaceholder={tp("reviewsSearchPh")}
+            wideSearch
+            filters={[
+              { id: "stars", label: tp("rating"), options: [5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: tp("starsN", { n }) })), get: (r) => String(r.stars) },
+              { id: "status", label: t("common.fields.status"), options: (["pending", "approved", "rejected"] as const).map((x) => ({ value: x, label: t(`common.status.${x}`) })), get: (r) => r.status },
+            ]}
+            emptyState={<EmptyState title={t("site.companies.noReviews")} />}
+          />
         </TabsContent>
 
         <TabsContent value="files">

@@ -424,7 +424,10 @@ export const admin: Built<typeof Def> = {
     openPortal: "Im Partnerportal öffnen",
     walletUpdated: "Wallet aktualisiert",
     adminEditsHint: "Kompass kann jedes Feld bearbeiten. Die Firma selbst kann nur ihre Telefonnummer ändern.",
-    allRatings: "Alle Bewertungen",
+    rating: "Bewertung",
+    review: "Rezension",
+    reviewer: "Verfasser",
+    reviewsSearchPh: "Verfasser, Text oder Anfrage suchen…",
     starsN: "{n, plural, one {# Stern} other {# Sterne}}",
     tabs: {
       overview: "Übersicht",

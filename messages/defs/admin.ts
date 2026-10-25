@@ -421,7 +421,10 @@ export const admin = {
     openPortal: "Open in partner portal",
     walletUpdated: "Wallet updated",
     adminEditsHint: "Kompass can edit every field. The company itself can only change its phone number.",
-    allRatings: "All ratings",
+    rating: "Rating",
+    review: "Review",
+    reviewer: "Reviewer",
+    reviewsSearchPh: "Search reviewer, text or offer…",
     starsN: "{n, plural, one {# star} other {# stars}}",
     tabs: {
       overview: "Overview",
