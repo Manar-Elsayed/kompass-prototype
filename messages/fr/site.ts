@@ -297,7 +297,7 @@ export const site: Built<typeof Def> = {
     point2: "Comment l’entreprise a travaillé",
     point3: "Comment Kompass vous a aidé",
     cta: "Commencer le questionnaire",
-    footer: "Vous décidez si votre avis apparaît sur notre site. Si vous le partagez, nous n’affichons que votre prénom et votre initiale.",
+    footer: "Vos avis sont publiés avec votre prénom et votre initiale, après vérification.",
   },
   job: {
     title: "À propos de la prestation",

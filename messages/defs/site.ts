@@ -294,7 +294,7 @@ export const site = {
     point2: "How the company did",
     point3: "How Kompass did",
     cta: "Start the survey",
-    footer: "You decide whether your review appears on our website. If you share it, we show only your first name and initial.",
+    footer: "Your reviews are published with your first name and initial, after a check.",
   },
   job: {
     title: "About the job",
