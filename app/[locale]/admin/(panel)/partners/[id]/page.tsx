@@ -244,7 +244,7 @@ function PartnerDetail() {
       />
 
       <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label={tp("wallet")} value={formatCHF(p.wallet, lang)} icon={<Wallet />} footer={<button className="font-semibold text-primary hover:underline" onClick={() => setTopUp(true)}>{t("admin.wallets.topUp")}</button>} />
+        <KpiCard label={tp("wallet")} value={formatCHF(p.wallet, lang)} icon={<Wallet />} />
         <KpiCard label={tp("leadsBought")} value={ledger.leads} icon={<CheckCircle2 />} tone="info" footer={fakeBookings.length ? tb("fakeCount", { count: fakeBookings.length }) : undefined} />
         <KpiCard label={tp("spent")} value={formatCHF(ledger.spent, lang)} icon={<Wallet />} tone="accent" footer={ledger.creditDue ? `${t("admin.wallets.creditDue")}: ${formatCHF(ledger.creditDue, lang)}` : undefined} />
         <KpiCard label={tp("avgRating")} value={ratings[p.id]?.avg.toFixed(1) ?? "–"} icon={<Star />} tone="warning" footer={`${ratings[p.id]?.count ?? 0} ${tp("reviews")}`} />
@@ -368,8 +368,9 @@ function PartnerDetail() {
               description={`${t("admin.wallets.toppedUp")} ${formatCHF(ledger.toppedUp, lang)} · ${t("admin.wallets.credit")} ${formatCHF(ledger.credit, lang)} · ${t("admin.wallets.refunded")} ${formatCHF(ledger.refunded, lang)}`}
               action={
                 <div className="flex gap-1.5">
-                  <Button size="sm" variant="outline" onClick={() => setTopUp(true)}><Plus /> {t("admin.wallets.topUp")}</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setCredit(true)}><HandCoins /> {t("admin.wallets.addCredit")}</Button>
+                  <Button size="sm" variant="outline" onClick={() => setCredit(true)}><HandCoins /> {t("admin.wallets.addCredit")}</Button>
+                  {/* rare: money that reached Kompass outside the partner dashboard (cash, a transfer without a receipt) */}
+                  <Button size="sm" variant="ghost" onClick={() => setTopUp(true)}><Plus /> {t("admin.wallets.topUp")}</Button>
                 </div>
               }
             />
