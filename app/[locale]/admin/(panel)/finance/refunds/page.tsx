@@ -150,7 +150,9 @@ export default function CompanyRefundsPage() {
       <DataTable
         data={refunds}
         columns={columns}
-        search={(r) => `${r.id} ${partnerMap[r.partnerId]?.name ?? ""} ${r.note} ${offerOf(r) ?? ""}`}
+        search={(r) => `${r.id} ${partnerMap[r.partnerId]?.name ?? ""} ${r.note} ${offerOf(r) ?? ""} ${tr(`reasons.${r.reason}`)}`}
+        searchPlaceholder={tr("searchPh")}
+        wideSearch
         initialSort={[{ id: "status", desc: false }]}
         onRowClick={(r) => setOpenId(r.id)}
         filters={[
@@ -211,7 +213,7 @@ export default function CompanyRefundsPage() {
   );
 }
 
-/** The exception path: refund any company, with the reason written down. */
+/** The exception path: refund any company, with the reason written down, after a confirmation. */
 function ManualRefundDialog({ onClose }: { onClose: () => void }) {
   const t = useTranslations();
   const tr = useTranslations("admin.refunds");
@@ -219,6 +221,7 @@ function ManualRefundDialog({ onClose }: { onClose: () => void }) {
   const partners = useStore((s) => s.partners).filter((p) => p.status === "approved");
   const orders = useStore((s) => s.orders);
   const issueRefund = useStore((s) => s.issueRefund);
+  const { confirm, dialog } = useConfirm();
   const [partnerId, setPartnerId] = useState(partners[0]?.id ?? "");
   const [orderId, setOrderId] = useState(NO_LEAD);
   const [amount, setAmount] = useState("");
@@ -226,6 +229,29 @@ function ManualRefundDialog({ onClose }: { onClose: () => void }) {
   const partner = partners.find((p) => p.id === partnerId);
   const value = Number(amount) || 0;
   const valid = !!partner && value > 0 && note.trim().length > 0;
+
+  // money reaches the wallet at once, so the admin checks company, amount and reason once more
+  const review = () => {
+    if (!valid) return;
+    const offerId = orders.find((o) => o.id === orderId)?.offerId;
+    confirm({
+      title: tr("approveTitle", { amount: value, name: partner!.name }),
+      body: (
+        <span className="block space-y-2">
+          <span className="block">{tr("approveWallet")}</span>
+          <span className="block rounded-lg bg-surface-2 p-3 text-ink">
+            <span className="block font-semibold">{tr("walletChange", { before: partner!.wallet, after: partner!.wallet + value })}</span>
+            {offerId && <span className="block text-xs text-muted-foreground">{tr("lead")}: {offerId}</span>}
+            <span className="mt-1 block">“{note.trim()}”</span>
+          </span>
+          <span className="block text-xs">{tr("noUndo")}</span>
+        </span>
+      ),
+      tone: "success",
+      confirmLabel: tr("confirmRefund", { amount: value }),
+      onConfirm: submit,
+    });
+  };
 
   const submit = () => {
     if (!valid) return;
@@ -261,8 +287,9 @@ function ManualRefundDialog({ onClose }: { onClose: () => void }) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t("common.actions.cancel")}</Button>
-          <Button onClick={submit} disabled={!valid}><RotateCcw /> {tr("issue")} · {formatCHF(value, lang)}</Button>
+          <Button onClick={review} disabled={!valid}><RotateCcw /> {tr("issue")} · {formatCHF(value, lang)}</Button>
         </DialogFooter>
+        {dialog}
       </DialogContent>
     </Dialog>
   );
