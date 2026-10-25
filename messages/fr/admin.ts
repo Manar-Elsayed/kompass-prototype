@@ -424,7 +424,10 @@ export const admin: Built<typeof Def> = {
     openPortal: "Ouvrir dans le portail partenaires",
     walletUpdated: "Portefeuille mis à jour",
     adminEditsHint: "Kompass peut modifier chaque champ. L’entreprise elle-même ne peut changer que son numéro de téléphone.",
-    allRatings: "Toutes les notes",
+    rating: "Note",
+    review: "Avis",
+    reviewer: "Auteur",
+    reviewsSearchPh: "Rechercher un auteur, un texte ou une demande…",
     starsN: "{n, plural, one {# étoile} other {# étoiles}}",
     tabs: {
       overview: "Aperçu",
@@ -590,6 +593,7 @@ export const admin: Built<typeof Def> = {
     dormant: "Inactif",
   },
   dues: {
+    summaryTitle: "Paiement",
     uploaded: "Téléversé le",
     payment: "Paiement",
     title: "Paiements partenaires",

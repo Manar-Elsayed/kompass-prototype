@@ -1,62 +1,34 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Building2, Check, CheckCircle2, Clock, Receipt, X } from "lucide-react";
-import { toast } from "sonner";
-import { Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import type { PartnerDue } from "@/lib/types";
 import { formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang, usePartnerMap } from "@/lib/mock/hooks";
 import { inLastDays } from "@/lib/mock/selectors";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/controls";
-import { useConfirm } from "@/components/shared/bits";
 import { DueStatusBadge } from "@/components/shared/due-status";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
-import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
-import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
-import { PaymentProof } from "@/components/shared/payment-proof";
+import { RowActions, actionsColumn } from "@/components/admin/row-actions";
+import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { useDueDecision } from "@/components/admin/due-actions";
 
 export default function PartnerDuesPage() {
   const t = useTranslations();
   const td = useTranslations("admin.dues");
   const lang = useLang();
   const dues = useStore((s) => s.dues);
-  const decideDue = useStore((s) => s.decideDue);
   const partnerMap = usePartnerMap();
-  const { confirm, dialog } = useConfirm();
-  const [receipt, setReceipt] = useState<PartnerDue | null>(null);
+  const router = useRouter();
+  const { approve, reject, dialog } = useDueDecision();
+  const href = (d: PartnerDue) => `/admin/finance/partner-dues/${d.id}`;
 
   const pending = dues.filter((d) => d.status === "pending");
   // approved in the last 30 days (by the decision date, not the upload date)
   const confirmed30 = dues.filter((d) => d.status === "confirmed" && inLastDays(d.decidedAt ?? d.createdAt, 30));
-
-  const approve = (d: PartnerDue) =>
-    confirm({
-      title: td("confirmTitle", { amount: d.amount, name: partnerMap[d.partnerId]?.name ?? "" }),
-      // an invoice payment marks the invoice paid; a top-up credits the wallet
-      body: d.invoiceId ? td("confirmInvoiceBody", { id: d.invoiceId }) : td("confirmBody"),
-      tone: "success",
-      confirmLabel: t("common.actions.approve"),
-      onConfirm: () => {
-        decideDue(d.id, "confirmed");
-        toast.success(d.invoiceId ? td("confirmedInvoice", { id: d.invoiceId }) : td("confirmed"));
-      },
-    });
-  const cancel = (d: PartnerDue) =>
-    confirm({
-      title: t("common.confirm.title"),
-      body: `${d.id} · ${formatCHF(d.amount, lang)}`,
-      tone: "danger",
-      confirmLabel: t("common.actions.reject"),
-      onConfirm: () => {
-        decideDue(d.id, "canceled");
-        toast.success(td("canceled"));
-      },
-    });
 
   const columns: ColumnDef<PartnerDue, unknown>[] = [
     { id: "id", header: td("payment"), accessorFn: (d) => d.id, cell: (c) => <Mono>{c.getValue() as string}</Mono> },
@@ -93,16 +65,15 @@ export default function PartnerDuesPage() {
     },
     actionsColumn<PartnerDue>((d) => (
       <RowActions
-        onView={() => setReceipt(d)}
+        viewHref={href(d)}
         actions={[
           { label: t("common.actions.approve"), icon: <Check />, onSelect: () => approve(d), hidden: d.status !== "pending" },
-          { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => cancel(d), hidden: d.status !== "pending" },
+          { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => reject(d), hidden: d.status !== "pending" },
           { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${d.partnerId}`, separated: d.status === "pending" },
         ]}
       />
     )),
   ];
-  const partner = receipt ? partnerMap[receipt.partnerId] : undefined;
 
   return (
     <>
@@ -119,74 +90,10 @@ export default function PartnerDuesPage() {
         searchPlaceholder={td("searchPh")}
         wideSearch
         filters={[{ id: "status", label: t("common.fields.status"), options: (["pending", "confirmed", "canceled"] as const).map((s) => ({ value: s, label: t(`common.dueStatus.${s}`) })), get: (d) => d.status }]}
-        onRowClick={setReceipt}
+        onRowClick={(d) => router.push(href(d))}
         rowClassName={(d) => (d.status === "pending" ? "bg-warning-soft/25" : undefined)}
       />
 
-      <DetailSheet
-        wide
-        open={!!receipt}
-        onOpenChange={(v) => !v && setReceipt(null)}
-        title={<Mono className="text-lg">{receipt?.id}</Mono>}
-        badge={receipt && <DueStatusBadge status={receipt.status} />}
-        subtitle={receipt && `${partner?.name ?? "–"} · ${formatDate(receipt.createdAt, lang)}`}
-        footer={
-          receipt?.status === "pending" ? (
-            <>
-              <Button variant="danger-soft" onClick={() => { setReceipt(null); cancel(receipt); }}><X /> {t("common.actions.reject")}</Button>
-              <Button variant="success" className="flex-1" onClick={() => { setReceipt(null); approve(receipt); }}><Check /> {t("common.actions.approve")}</Button>
-            </>
-          ) : undefined
-        }
-      >
-        {receipt && (
-          <>
-            {/* what the company uploaded as proof */}
-            <PaymentProof due={receipt} partner={partner} />
-            <SheetSection>
-              <DL
-                items={[
-                  { label: t("common.fields.amount"), value: <span className="font-bold">{formatCHF(receipt.amount, lang)}</span> },
-                  { label: td("forLabel"), value: receipt.invoiceId ? td("forInvoice", { id: receipt.invoiceId }) : td("forWallet") },
-                  { label: td("method"), value: td(receipt.method) },
-                  { label: t("common.fields.reference"), value: <Mono>{receipt.reference}</Mono> },
-                  { label: td("uploaded"), value: formatDate(receipt.createdAt, lang) },
-                ]}
-              />
-            </SheetSection>
-            {/* where the check stands */}
-            {receipt.status === "pending" ? (
-              <p className="flex items-start gap-2 rounded-lg bg-warning-soft/50 p-3 text-xs text-ink"><Clock className="mt-0.5 size-3.5 shrink-0 text-warning" /> {td("noteWaiting")}</p>
-            ) : (
-              <p className={receipt.status === "confirmed" ? "flex items-center gap-2 text-sm font-semibold text-success" : "flex items-center gap-2 text-sm font-semibold text-danger"}>
-                {receipt.status === "confirmed" ? <CheckCircle2 className="size-4" /> : <X className="size-4" />}
-                {td(receipt.status === "confirmed" ? "noteApproved" : "noteRejected", { date: formatDate(receipt.decidedAt ?? receipt.createdAt, lang) })}
-              </p>
-            )}
-            {partner && (
-              <SheetSection title={t("admin.rows.walletImpact")}>
-                <DL
-                  items={[
-                    { label: t("common.fields.company"), value: <Link href={`/admin/partners/${partner.id}`} className="font-semibold text-primary hover:underline">{partner.name}</Link> },
-                    { label: t("admin.rows.walletNow"), value: formatCHF(partner.wallet, lang) },
-                    {
-                      label: receipt.status === "pending" ? t("admin.rows.walletAfter") : t("common.fields.status"),
-                      value:
-                        receipt.status !== "pending" ? (
-                          <DueStatusBadge status={receipt.status} />
-                        ) : receipt.invoiceId ? (
-                          <span className="text-muted-foreground">{formatCHF(partner.wallet, lang)} · {td("walletUnchanged")}</span>
-                        ) : (
-                          <span className="font-bold text-success">{formatCHF(partner.wallet + receipt.amount, lang)}</span>
-                        ),
-                    },
-                  ]}
-                />
-              </SheetSection>
-            )}
-          </>
-        )}
-      </DetailSheet>
       {dialog}
     </>
   );
