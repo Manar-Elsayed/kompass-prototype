@@ -73,15 +73,15 @@ export function EditorFrame({
 
       {/* sticky save bar */}
       <div
-        className={`sticky bottom-4 z-20 mt-4 flex items-center justify-between gap-3 rounded-2xl border bg-ink px-4 py-3 text-white shadow-float transition-all duration-200 ${dirty ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"}`}
+        className={`sticky bottom-4 z-20 mt-4 flex items-center justify-between gap-3 rounded-2xl border bg-surface px-4 py-3 text-ink shadow-float transition-all duration-200 ${dirty ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"}`}
         role="status"
       >
         <span className="flex items-center gap-2 text-sm font-medium">
           <span className="size-2 rounded-full bg-accent" /> {t("unsaved")}
         </span>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" className="text-white hover:bg-white/10" onClick={onDiscard}>{t("discard")}</Button>
-          <Button variant="accent" size="sm" onClick={onSave} loading={saving}>{tc("actions.save")}</Button>
+          <Button variant="outline" onClick={onDiscard}>{t("discard")}</Button>
+          <Button onClick={onSave} loading={saving}>{tc("actions.save")}</Button>
         </div>
       </div>
     </>
