@@ -665,6 +665,7 @@ export const admin: Built<typeof Def> = {
     },
   },
   wallets: {
+    searchPh: "Firma oder Ort suchen…",
     title: "Wallets",
     subtitle: "Das Guthaben jeder Firma und alle Bewegungen: Aufladungen, Kredit, Anfragekäufe und Rückerstattungen.",
     total: "Guthaben auf Firmen-Wallets",

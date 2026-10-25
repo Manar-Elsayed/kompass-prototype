@@ -665,6 +665,7 @@ export const admin: Built<typeof Def> = {
     },
   },
   wallets: {
+    searchPh: "Rechercher une entreprise ou une ville…",
     title: "Portefeuilles",
     subtitle: "Le solde de chaque entreprise et tous ses mouvements : recharges, crédit, achats de demandes et remboursements.",
     total: "Sur les portefeuilles",
