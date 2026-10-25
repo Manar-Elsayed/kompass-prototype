@@ -951,9 +951,9 @@ export const messages: CompanyMessage[] = [
 
 /* ---------- payouts ---------- */
 export const payouts: Payout[] = [
-  { id: "PO-0001", partnerId: "p-001", amount: 200, iban: partners[0].bank.iban, status: "paid", reference: "UBS-7781-2209", byUserId: "u-1", createdAt: daysAgo(34), decidedAt: daysAgo(32) },
-  { id: "PO-0002", partnerId: "p-003", amount: Math.max(50, partners[2].wallet - (partners[2].wallet % 10)), iban: partners[2].bank.iban, status: "requested", createdAt: daysAgo(1, 3) },
-  { id: "PO-0003", partnerId: "p-006", amount: 150, iban: partners[5].bank.iban, status: "rejected", reference: "Open credit invoice must be paid first.", byUserId: "u-3", createdAt: daysAgo(12), decidedAt: daysAgo(11) },
+  { id: "PO-0001", partnerId: "p-001", amount: 200, iban: partners[0].bank.iban, status: "paid", reason: "overpaid", reference: "UBS-7781-2209", byUserId: "u-1", createdAt: daysAgo(34), decidedAt: daysAgo(32) },
+  { id: "PO-0002", partnerId: "p-003", amount: Math.max(50, partners[2].wallet - (partners[2].wallet % 10)), iban: partners[2].bank.iban, status: "requested", reason: "other", reasonNote: "Winter is quiet for us, we need the money for salaries until March.", createdAt: daysAgo(1, 3) },
+  { id: "PO-0003", partnerId: "p-006", amount: 150, iban: partners[5].bank.iban, status: "rejected", reason: "cash", reference: "Open credit invoice must be paid first.", byUserId: "u-3", createdAt: daysAgo(12), decidedAt: daysAgo(11) },
 ];
 
 // an urgent request admin assigned to the demo company by phone, with the agreed price and a note

@@ -17,6 +17,7 @@ import type {
   Partner,
   PartnerDue,
   Payout,
+  PayoutReason,
   Invoice,
   PayMethod,
   Refund,
@@ -64,7 +65,7 @@ interface Actions {
   /** Company pays a credit invoice by card / TWINT in the portal. */
   payInvoiceOnline: (id: string, payMethod: "card" | "twint") => void;
   /** Company asks for unused wallet money to be paid to its bank account (Kompass approves). */
-  requestPayout: (partnerId: string, amount: number) => { ok: true; payout: Payout } | { ok: false; error: "minimum" | "available" };
+  requestPayout: (partnerId: string, amount: number, reason: PayoutReason, reasonNote?: string) => { ok: true; payout: Payout } | { ok: false; error: "minimum" | "available" };
   /** Paid takes the amount out of the wallet; rejected leaves the wallet as it was. */
   decidePayout: (id: string, status: "paid" | "rejected", reference: string, byUserId?: string) => void;
 
@@ -365,13 +366,13 @@ export const useStore = create<Store>()(
         }));
       },
 
-      requestPayout: (partnerId, amount) => {
+      requestPayout: (partnerId, amount, reason, reasonNote) => {
         const s = get();
         const partner = s.partners.find((p) => p.id === partnerId);
         if (amount < MIN_PAYOUT) return { ok: false, error: "minimum" };
         if (!partner || amount > withdrawable(s, partnerId).available) return { ok: false, error: "available" };
         const next = Math.max(0, ...s.payouts.map((x) => Number(x.id.slice(3)) || 0)) + 1;
-        const payout: Payout = { id: `PO-${String(next).padStart(4, "0")}`, partnerId, amount, iban: partner.bank.iban, status: "requested", createdAt: nowIso() };
+        const payout: Payout = { id: `PO-${String(next).padStart(4, "0")}`, partnerId, amount, iban: partner.bank.iban, status: "requested", reason, reasonNote: reasonNote?.trim() || undefined, createdAt: nowIso() };
         set({
           payouts: [payout, ...s.payouts],
           notifications: notify(s, {
@@ -757,11 +758,11 @@ export const useStore = create<Store>()(
       // companies and no-shows; v9 the partner portal flows (onboarding contract, message threads,
       // payouts, service areas); v10 two booking types (same / other person); v11 no-shows removed
       // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address; v14 fake-offer reports whose
-      // status matches the refunds; v15 paused company services. Older saves start again from the current seed,
+      // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout. Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 15,
+      version: 16,
       migrate: (persisted, version) => {
-        if (version >= 15) return persisted as Store;
+        if (version >= 16) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

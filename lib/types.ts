@@ -243,12 +243,19 @@ export interface Invoice {
  * until Kompass pays it; while requested, the amount is held back from further payout requests.
  */
 export type PayoutStatus = "requested" | "paid" | "rejected";
+/** Why the company withdraws: picked when it requests the payout. "other" comes with a note. */
+export const PAYOUT_REASONS = ["overpaid", "break", "closing", "cash", "other"] as const;
+export type PayoutReason = (typeof PAYOUT_REASONS)[number];
 export interface Payout {
   id: ID; // PO-0001
   partnerId: ID;
   amount: number;
   iban: string;
   status: PayoutStatus;
+  /** Why the company asks for the money. */
+  reason?: PayoutReason;
+  /** The company's own words, required for "other". */
+  reasonNote?: string;
   /** Bank reference when paid, or the reason when rejected. */
   reference?: string;
   byUserId?: ID; // admin who decided it

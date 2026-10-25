@@ -192,6 +192,13 @@ export const common: Built<typeof Def> = {
     hintAdmin: "Sospenda un servizio quando l’azienda per un periodo non può accettare lavori. Non riceve nuove richieste ma resta sulla pagina aziendale. Solo l’azienda aggiunge o rimuove servizi, dal suo portale.",
     hintPartner: "Per un periodo non può accettare lavori per un servizio? Lo sospenda: non riceve nuove richieste finché non lo riattiva. Resta sulla Sua pagina aziendale.",
   },
+  payoutReasons: {
+    overpaid: "Ricaricato più del necessario",
+    break: "Pausa dagli incarichi",
+    closing: "Lasciare Kompass",
+    cash: "Serve il denaro per l’azienda",
+    other: "Altro motivo",
+  },
   dueStatus: {
     pending: "In attesa di verifica",
     confirmed: "Approvato",
