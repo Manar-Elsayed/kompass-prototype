@@ -18,7 +18,6 @@ import { DueStatusBadge } from "@/components/shared/due-status";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
-import { MoneyDocument } from "@/components/shared/money-doc";
 import { PaymentProof } from "@/components/shared/payment-proof";
 
 export default function PartnerDuesPage() {
@@ -142,35 +141,28 @@ export default function PartnerDuesPage() {
       >
         {receipt && (
           <>
-            {/* the payment as a Kompass document */}
-            {partner && (
-              <MoneyDocument
-                doc={{
-                  kind: "payment",
-                  id: receipt.id,
-                  date: receipt.createdAt,
-                  partner,
-                  line: receipt.invoiceId ? td("forInvoice", { id: receipt.invoiceId }) : td("forWallet"),
-                  amount: receipt.amount,
-                  method: td(receipt.method),
-                  reference: receipt.reference,
-                  badge: <DueStatusBadge status={receipt.status} />,
-                  note:
-                    receipt.status === "pending" ? (
-                      <p className="flex items-start gap-2 rounded-lg bg-warning-soft/50 p-3 text-xs text-ink"><Clock className="mt-0.5 size-3.5 shrink-0 text-warning" /> {td("noteWaiting")}</p>
-                    ) : (
-                      <p className={receipt.status === "confirmed" ? "flex items-center gap-2 font-semibold text-success" : "flex items-center gap-2 font-semibold text-danger"}>
-                        {receipt.status === "confirmed" ? <CheckCircle2 className="size-4" /> : <X className="size-4" />}
-                        {td(receipt.status === "confirmed" ? "noteApproved" : "noteRejected", { date: formatDate(receipt.decidedAt ?? receipt.createdAt, lang) })}
-                      </p>
-                    ),
-                }}
-              />
-            )}
             {/* what the company uploaded as proof */}
-            <SheetSection title={td("proofTitle")}>
-              <PaymentProof due={receipt} partner={partner} />
+            <PaymentProof due={receipt} partner={partner} />
+            <SheetSection>
+              <DL
+                items={[
+                  { label: t("common.fields.amount"), value: <span className="font-bold">{formatCHF(receipt.amount, lang)}</span> },
+                  { label: td("forLabel"), value: receipt.invoiceId ? td("forInvoice", { id: receipt.invoiceId }) : td("forWallet") },
+                  { label: td("method"), value: td(receipt.method) },
+                  { label: t("common.fields.reference"), value: <Mono>{receipt.reference}</Mono> },
+                  { label: td("uploaded"), value: formatDate(receipt.createdAt, lang) },
+                ]}
+              />
             </SheetSection>
+            {/* where the check stands */}
+            {receipt.status === "pending" ? (
+              <p className="flex items-start gap-2 rounded-lg bg-warning-soft/50 p-3 text-xs text-ink"><Clock className="mt-0.5 size-3.5 shrink-0 text-warning" /> {td("noteWaiting")}</p>
+            ) : (
+              <p className={receipt.status === "confirmed" ? "flex items-center gap-2 text-sm font-semibold text-success" : "flex items-center gap-2 text-sm font-semibold text-danger"}>
+                {receipt.status === "confirmed" ? <CheckCircle2 className="size-4" /> : <X className="size-4" />}
+                {td(receipt.status === "confirmed" ? "noteApproved" : "noteRejected", { date: formatDate(receipt.decidedAt ?? receipt.createdAt, lang) })}
+              </p>
+            )}
             {partner && (
               <SheetSection title={t("admin.rows.walletImpact")}>
                 <DL

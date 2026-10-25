@@ -590,6 +590,7 @@ export const admin: Built<typeof Def> = {
     dormant: "Inattivo",
   },
   dues: {
+    uploaded: "Caricato il",
     payment: "Pagamento",
     title: "Pagamenti partner",
     subtitle: "Ricevute di pagamento caricate dalle aziende. Approvare una ricarica accredita il portafoglio; approvare il pagamento di una fattura la segna come pagata.",
@@ -758,9 +759,6 @@ export const admin: Built<typeof Def> = {
     paidReceipt: "Pagato, grazie.",
     thanks: "Grazie per lavorare con Kompass.",
     questions: "Domande su questo documento?",
-    paymentTitle: "Pagamento",
-    paymentDate: "Caricato il",
-    paidWith: "Pagato con",
   },
   files: {
     title: "File",

@@ -590,6 +590,7 @@ export const admin: Built<typeof Def> = {
     dormant: "Inaktiv",
   },
   dues: {
+    uploaded: "Hochgeladen",
     payment: "Zahlung",
     title: "Partnerzahlungen",
     subtitle: "Von Firmen hochgeladene Zahlungsbelege. Eine freigegebene Aufladung wird dem Wallet gutgeschrieben, eine freigegebene Rechnungszahlung markiert die Rechnung als bezahlt.",
@@ -758,9 +759,6 @@ export const admin: Built<typeof Def> = {
     paidReceipt: "Bezahlt, vielen Dank.",
     thanks: "Vielen Dank für die Zusammenarbeit mit Kompass.",
     questions: "Fragen zu diesem Dokument?",
-    paymentTitle: "Zahlung",
-    paymentDate: "Hochgeladen",
-    paidWith: "Bezahlt mit",
   },
   files: {
     title: "Dateien",

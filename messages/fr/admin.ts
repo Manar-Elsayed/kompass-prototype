@@ -590,6 +590,7 @@ export const admin: Built<typeof Def> = {
     dormant: "Inactif",
   },
   dues: {
+    uploaded: "Téléversé le",
     payment: "Paiement",
     title: "Paiements partenaires",
     subtitle: "Justificatifs de paiement téléversés par les entreprises. Approuver une recharge crédite le portefeuille ; approuver le paiement d’une facture la marque comme payée.",
@@ -758,9 +759,6 @@ export const admin: Built<typeof Def> = {
     paidReceipt: "Payé, merci.",
     thanks: "Merci de travailler avec Kompass.",
     questions: "Des questions sur ce document ?",
-    paymentTitle: "Paiement",
-    paymentDate: "Téléversé le",
-    paidWith: "Payé par",
   },
   files: {
     title: "Fichiers",

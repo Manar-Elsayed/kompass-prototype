@@ -21,8 +21,7 @@ const KOMPASS = {
 };
 
 export interface MoneyDoc {
-  /** payment: a transfer a company reported with a proof, waiting for or after Kompass's check */
-  kind: "receipt" | "invoice" | "payment";
+  kind: "receipt" | "invoice";
   id: string;
   date: string;
   partner: Pick<Partner, "name" | "address" | "zip" | "city"> & Partial<Pick<Partner, "id" | "regNumber">>;
@@ -32,13 +31,6 @@ export interface MoneyDoc {
   status?: "due" | "paid" | "overdue";
   dueAt?: string;
   paidAt?: string;
-  /** payments: how it was paid and the company's own reference */
-  method?: string;
-  reference?: string;
-  /** replaces the status badge (e.g. a payment's check state) */
-  badge?: React.ReactNode;
-  /** replaces the closing line under the totals */
-  note?: React.ReactNode;
 }
 
 /** A credit invoice or a receipt in a dialog with a print button. Printing prints only the document. */
@@ -63,8 +55,7 @@ export function MoneyDocDialog({ doc, onClose }: { doc: MoneyDoc; onClose: () =>
 
 /**
  * The document as the company receives it: Kompass as the sender, the company, one line with VAT
- * shown, and how to pay while an invoice is open. Amounts include VAT. A payment shows what the
- * company reported (method, its reference) and where Kompass's check stands.
+ * shown, and how to pay while an invoice is open. Amounts include VAT.
  */
 export function MoneyDocument({ doc }: { doc: MoneyDoc }) {
   const t = useTranslations("admin.invoices");
@@ -73,20 +64,17 @@ export function MoneyDocument({ doc }: { doc: MoneyDoc }) {
   const billingEmail = useStore((s) => s.config.supportEmail);
   const phone = useStore((s) => s.site.general.phone);
   const invoice = doc.kind === "invoice";
-  const payment = doc.kind === "payment";
   const net = doc.amount / (1 + vatRate / 100);
   const vat = doc.amount - net;
   const open = invoice && doc.status !== "paid";
   const chf = (n: number) => formatCHF(n, lang, 2);
 
   const meta: { label: string; value: string }[] = [
-    { label: t(invoice ? "invoiceDate" : payment ? "paymentDate" : "receiptDate"), value: formatDate(doc.date, lang) },
+    { label: t(invoice ? "invoiceDate" : "receiptDate"), value: formatDate(doc.date, lang) },
     ...(invoice && doc.dueAt ? [{ label: t("due"), value: formatDate(doc.dueAt, lang) }] : []),
-    ...(doc.method ? [{ label: t("paidWith"), value: doc.method }] : []),
     ...(doc.partner.id ? [{ label: t("customerNo"), value: doc.partner.id.toUpperCase() }] : []),
-    { label: t("referenceLabel"), value: doc.reference ?? doc.id },
+    { label: t("referenceLabel"), value: doc.id },
   ];
-  const title = invoice ? "invoiceTitle" : payment ? "paymentTitle" : "receiptTitle";
 
   return (
     <article className="print-doc min-w-0 rounded-xl border bg-surface p-4 text-sm sm:p-8">
@@ -105,9 +93,9 @@ export function MoneyDocument({ doc }: { doc: MoneyDoc }) {
           </address>
         </div>
         <div className="text-end">
-          <p className="text-2xl font-bold tracking-tight text-ink">{t(title)}</p>
+          <p className="text-2xl font-bold tracking-tight text-ink">{t(invoice ? "invoiceTitle" : "receiptTitle")}</p>
           <p className="font-mono text-sm font-semibold text-muted-foreground" dir="ltr">{doc.id}</p>
-          {doc.badge ? <div className="mt-2">{doc.badge}</div> : doc.status && <StatusBadge status={doc.status} className="mt-2" />}
+          {doc.status && <StatusBadge status={doc.status} className="mt-2" />}
         </div>
       </header>
 
@@ -169,9 +157,7 @@ export function MoneyDocument({ doc }: { doc: MoneyDoc }) {
       </dl>
 
       {/* how to pay, or proof that it is paid */}
-      {doc.note !== undefined ? (
-        doc.note && <div className="mt-6">{doc.note}</div>
-      ) : open && doc.dueAt ? (
+      {open && doc.dueAt ? (
         <section className="mt-6 rounded-xl border border-primary/20 bg-primary-soft/40 p-4">
           <p className="mb-3 font-bold text-ink">{t("payTitle")}</p>
           <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">

@@ -587,6 +587,7 @@ export const admin = {
     dormant: "Dormant",
   },
   dues: {
+    uploaded: "Uploaded",
     payment: "Payment",
     title: "Partner payments",
     subtitle: "Payment receipts uploaded by companies. Approving a top-up credits the wallet; approving an invoice payment marks the invoice paid.",
@@ -755,9 +756,6 @@ export const admin = {
     paidReceipt: "Paid, thank you.",
     thanks: "Thank you for working with Kompass.",
     questions: "Questions about this document?",
-    paymentTitle: "Payment",
-    paymentDate: "Uploaded",
-    paidWith: "Paid with",
   },
   files: {
     title: "Files",
