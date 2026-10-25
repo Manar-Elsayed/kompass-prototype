@@ -359,6 +359,8 @@ export const admin = {
     revenue: "Revenue",
   },
   fake: {
+    refundCol: "Refund",
+    refundState: { refunded: "Refunded", pending: "Waiting", rejected: "Rejected", none: "Not refunded" },
     report: "Report",
     searchPh: "Search report, offer, customer, company or reason…",
     title: "Fake-offer reports",

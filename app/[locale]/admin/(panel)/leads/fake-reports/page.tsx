@@ -3,11 +3,12 @@
 import { useTranslations } from "next-intl";
 import { Building2, ShieldCheck, XCircle } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
-import type { FakeReport } from "@/lib/types";
+import type { FakeReport, RefundStatus } from "@/lib/types";
 import { formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang, usePartnerMap } from "@/lib/mock/hooks";
 import { Avatar } from "@/components/ui/controls";
+import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { FAKE_FLOW, FakeStatusSelect, isFinalReport, useFakeReportStatus } from "@/components/admin/fake-report-status";
@@ -21,6 +22,7 @@ export default function FakeReportsPage() {
   const reports = useStore((s) => s.fakeReports);
   const orders = useStore((s) => s.orders);
   const offers = useStore((s) => s.offers);
+  const refunds = useStore((s) => s.refunds);
   const partnerMap = usePartnerMap();
   const { setStatus, dialog } = useFakeReportStatus();
   const orderMap = Object.fromEntries(orders.map((o) => [o.id, o]));
@@ -30,6 +32,9 @@ export default function FakeReportsPage() {
     return order ? `/admin/leads/${order.offerId}#fake-reports` : undefined;
   };
   const companyOf = (r: FakeReport) => partnerMap[orderMap[r.orderId]?.partnerId]?.name ?? "–";
+  // the refund of the reported purchase, if Kompass made or decided one
+  const refundOf = (r: FakeReport) => refunds.find((x) => x.orderId === r.orderId && x.status === "refunded") ?? refunds.find((x) => x.orderId === r.orderId);
+  const REFUND_TONE: Record<RefundStatus | "none", "success" | "warning" | "danger" | "neutral"> = { refunded: "success", pending: "warning", rejected: "danger", none: "neutral" };
 
   const columns: ColumnDef<FakeReport, unknown>[] = [
     {
@@ -68,8 +73,25 @@ export default function FakeReportsPage() {
         </span>
       ),
     },
-    { id: "reason", header: t("admin.fake.reason"), accessorFn: (r) => r.reason, cell: (c) => <span className="line-clamp-2 min-w-32 text-muted-foreground">{c.getValue() as string}</span> },
-    { id: "amount", header: t("common.fields.amount"), accessorFn: (r) => orderMap[r.orderId]?.price ?? 0, cell: (c) => <span className="whitespace-nowrap font-semibold">{formatCHF(c.getValue() as number, lang)}</span> },
+    { id: "reason", header: t("admin.fake.reason"), accessorFn: (r) => r.reason, cell: (c) => <span className="line-clamp-2 min-w-28 text-muted-foreground">{c.getValue() as string}</span> },
+    {
+      id: "refund",
+      header: t("admin.fake.refundCol"),
+      accessorFn: (r) => refundOf(r)?.status ?? "none",
+      // the price the company paid, and whether it got it back
+      cell: ({ row: { original: r } }) => {
+        const x = refundOf(r);
+        const state = x?.status ?? "none";
+        return (
+          <div className="whitespace-nowrap">
+            <p className="font-semibold">{formatCHF(orderMap[r.orderId]?.price ?? 0, lang)}</p>
+            <Badge tone={REFUND_TONE[state]} dot className="mt-0.5" title={x ? formatDate(x.decidedAt ?? x.createdAt, lang) : undefined}>
+              {t(`admin.fake.refundState.${state}`)}
+            </Badge>
+          </div>
+        );
+      },
+    },
     {
       id: "status",
       header: t("common.fields.status"),
@@ -110,7 +132,10 @@ export default function FakeReportsPage() {
         }}
         searchPlaceholder={t("admin.fake.searchPh")}
         wideSearch
-        filters={[{ id: "status", label: t("common.fields.status"), options: FAKE_FLOW.map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (r) => r.status }]}
+        filters={[
+          { id: "status", label: t("common.fields.status"), options: FAKE_FLOW.map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (r) => r.status },
+          { id: "refund", label: t("admin.fake.refundCol"), options: (["refunded", "pending", "rejected", "none"] as const).map((s) => ({ value: s, label: t(`admin.fake.refundState.${s}`) })), get: (r) => refundOf(r)?.status ?? "none" },
+        ]}
       />
       {dialog}
     </>

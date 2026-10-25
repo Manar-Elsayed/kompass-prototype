@@ -362,6 +362,8 @@ export const admin: Built<typeof Def> = {
     revenue: "Chiffre d’affaires",
   },
   fake: {
+    refundCol: "Remboursement",
+    refundState: { refunded: "Remboursé", pending: "En attente", rejected: "Refusé", none: "Non remboursé" },
     report: "Signalement",
     searchPh: "Rechercher un signalement, une demande, un client, une entreprise ou un motif…",
     title: "Signalements de fausses demandes",
