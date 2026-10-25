@@ -745,6 +745,8 @@ export const admin: Built<typeof Def> = {
     invoiceNo: "Fattura {id}",
     view: "Vedi",
     print: "Stampa",
+    downloadPdf: "Scarica PDF",
+    pdfFailed: "Non è stato possibile creare il PDF. Scelga Stampa e poi «Salva come PDF».",
     billedTo: "Fatturato a",
     description: "Descrizione",
     total: "Totale",

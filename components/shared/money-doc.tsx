@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, Printer } from "lucide-react";
+import { CheckCircle2, Download, Printer } from "lucide-react";
+import { toast } from "sonner";
 import type { Partner } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
@@ -33,17 +35,55 @@ export interface MoneyDoc {
   paidAt?: string;
 }
 
-/** A credit invoice or a receipt in a dialog with a print button. Printing prints only the document. */
+/**
+ * A credit invoice or a receipt in a dialog. Download PDF saves the document as an A4 file named
+ * after its number; Print prints only the document.
+ */
 export function MoneyDocDialog({ doc, onClose }: { doc: MoneyDoc; onClose: () => void }) {
   const t = useTranslations("admin.invoices");
+  const ref = useRef<HTMLDivElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const downloadPdf = async () => {
+    const node = ref.current?.firstElementChild as HTMLElement | null;
+    if (!node) return;
+    setBusy(true);
+    try {
+      // loaded on demand, so the libraries only reach people who download
+      const [{ toJpeg }, { jsPDF }] = await Promise.all([import("html-to-image"), import("jspdf")]);
+      const img = await toJpeg(node, { quality: 0.92, pixelRatio: 2, backgroundColor: "#ffffff", style: { border: "none", borderRadius: "0" } });
+      const pdf = new jsPDF({ unit: "mm", format: "a4", compress: true });
+      // fit the page width with a 12 mm margin; a very long document shrinks to stay on one page
+      const margin = 12;
+      let w = 210 - margin * 2;
+      let h = (node.offsetHeight / node.offsetWidth) * w;
+      const maxH = 297 - margin * 2;
+      if (h > maxH) {
+        w *= maxH / h;
+        h = maxH;
+      }
+      pdf.addImage(img, "JPEG", (210 - w) / 2, margin, w, h);
+      pdf.save(`${doc.id}.pdf`);
+    } catch {
+      toast.error(t("pdfFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t(doc.kind === "invoice" ? "invoiceNo" : "receiptNo", { id: doc.id })}</DialogTitle>
         </DialogHeader>
-        <MoneyDocument doc={doc} />
-        <div className="flex justify-end">
+        <div ref={ref}>
+          <MoneyDocument doc={doc} />
+        </div>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button variant="outline" onClick={downloadPdf} loading={busy}>
+            <Download /> {t("downloadPdf")}
+          </Button>
           <Button variant="outline" onClick={() => window.print()}>
             <Printer /> {t("print")}
           </Button>
