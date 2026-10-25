@@ -579,8 +579,6 @@ export const admin = {
     rejectedToast: "Payout to {name} rejected",
     none: "No payout requests.",
     companyReason: "Company’s reason",
-    bankRef: "Ref. {ref}",
-    whyRejected: "Why: {reason}",
     decidedBy: "Decided by",
     bankAccount: "Bank account",
     decision: "Decision",

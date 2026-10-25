@@ -56,16 +56,8 @@ export default function PayoutsPage() {
       id: "status",
       header: t("common.fields.status"),
       accessorFn: (p) => p.status,
-      // the status, with what the admin recorded underneath: the bank reference (paid) or why it was rejected
-      cell: ({ row: { original: p } }) => {
-        const note = p.reference ? tp(p.status === "paid" ? "bankRef" : "whyRejected", { ref: p.reference, reason: p.reference }) : undefined;
-        return (
-          <span className="flex flex-col items-start gap-0.5">
-            <StatusBadge status={p.status} />
-            {note && <span className="max-w-48 truncate text-xs text-muted-foreground" title={note}>{note}</span>}
-          </span>
-        );
-      },
+      // the bank reference or the reason for rejecting is in the View popup
+      cell: (c) => <StatusBadge status={c.getValue() as string} />,
     },
     actionsColumn<Payout>((p) => (
       <RowActions
@@ -90,7 +82,7 @@ export default function PayoutsPage() {
       <DataTable
         data={payouts}
         columns={columns}
-        search={(p) => `${p.id} ${p.iban} ${partnerMap[p.partnerId]?.name} ${p.reason ? tReason(p.reason) : ""} ${p.reasonNote ?? ""}`}
+        search={(p) => `${p.id} ${p.iban} ${p.reference ?? ""} ${partnerMap[p.partnerId]?.name} ${p.reason ? tReason(p.reason) : ""} ${p.reasonNote ?? ""}`}
         searchPlaceholder={tp("searchPh")}
         wideSearch
         initialSort={[{ id: "date", desc: true }]}

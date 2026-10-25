@@ -582,8 +582,6 @@ export const admin: Built<typeof Def> = {
     rejectedToast: "Versamento a {name} rifiutato",
     none: "Nessuna richiesta di versamento.",
     companyReason: "Motivo dell’azienda",
-    bankRef: "Rif. {ref}",
-    whyRejected: "Perché: {reason}",
     decidedBy: "Deciso da",
     bankAccount: "Conto bancario",
     decision: "Decisione",
