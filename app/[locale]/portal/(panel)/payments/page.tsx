@@ -22,6 +22,8 @@ import { RadioCards } from "@/components/ui/controls";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge } from "@/components/shared/bits";
+import { DueStatusBadge } from "@/components/shared/due-status";
+import { PaymentProof } from "@/components/shared/payment-proof";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 import { DetailSheet, SheetSection } from "@/components/admin/row-actions";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
@@ -136,7 +138,7 @@ function Payments() {
                       <Mono>{d.reference}</Mono>
                       <span className="flex-1 text-muted-foreground">{td(d.method)}</span>
                       <span className="font-bold">{formatCHF(d.amount, lang)}</span>
-                      <StatusBadge status={d.status} />
+                      <DueStatusBadge status={d.status} />
                       <span className="w-24 text-end text-xs text-muted-foreground">{formatDate(d.createdAt, lang)}</span>
                     </button>
                   ))
@@ -238,14 +240,12 @@ function Payments() {
         open={!!due}
         onOpenChange={(v) => !v && setDueId(null)}
         title={<Mono className="text-lg">{due?.reference}</Mono>}
-        badge={due && <StatusBadge status={due.status} />}
+        badge={due && <DueStatusBadge status={due.status} />}
         subtitle={due && formatDate(due.createdAt, lang)}
       >
         {due && (
           <>
-            <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-surface-2">
-              <Image src={due.receipt} alt={t("receipt")} fill className="object-contain" sizes="440px" />
-            </div>
+            <PaymentProof due={due} partner={partner} />
             <SheetSection>
               <DL
                 items={[
