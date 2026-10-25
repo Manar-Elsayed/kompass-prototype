@@ -18,7 +18,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { Avatar, Switch } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
 import { EmptyState, Stars, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
 import { MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
@@ -181,68 +181,75 @@ function PartnerDetail() {
       },
     });
 
-  const bookingTable = (rows: Order[], fake: boolean) =>
-    rows.length ? (
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-surface-2/60 text-xs text-muted-foreground">
-            <tr>
-              <th className="px-4 py-2.5 text-start">{t("admin.shop.order")}</th>
-              <th className="px-4 py-2.5 text-start">{t("admin.leads.id")}</th>
-              <th className="px-4 py-2.5 text-start">{t("admin.leads.route")}</th>
-              <th className="px-4 py-2.5 text-start">{t("admin.shop.channel")}</th>
-              <th className="px-4 py-2.5 text-start">{t("common.fields.price")}</th>
-              <th className="px-4 py-2.5 text-start">{t("common.fields.date")}</th>
-              <th className="px-4 py-2.5 text-start">{t("common.fields.status")}</th>
-              {fake && <th className="px-4 py-2.5 text-end">{tb("refundCol")}</th>}
-              <th className="w-px px-2 py-2.5" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((o) => {
-              const offer = offerMap[o.offerId];
-              const confirmedFake = offer?.cancelReason === "fake";
-              const r = refundOf(o);
-              return (
-                <tr key={o.id} className="border-t">
-                  <td className="px-4 py-2.5"><Mono>{o.id}</Mono></td>
-                  <td className="px-4 py-2.5"><Link href={`/admin/leads/${o.offerId}`} className="font-mono text-[13px] font-semibold text-primary hover:underline">{o.offerId}</Link></td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{offer ? routeText(offer) : "–"}</td>
-                  <td className="px-4 py-2.5">{t(`admin.shop.${o.channel}`)}</td>
-                  <td className="px-4 py-2.5 font-semibold">{formatCHF(o.price, lang)}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{formatDate(o.createdAt, lang)}</td>
-                  <td className="px-4 py-2.5">{offer && <StatusBadge status={offer.status} />}</td>
-                  {fake && (
-                    <td className="px-4 py-2.5 text-end">
-                      {r?.status === "refunded" ? (
-                        <Badge tone="success"><CheckCircle2 /> {tb("refunded")}</Badge>
-                      ) : r?.status === "pending" && !confirmedFake ? (
-                        <span className="text-xs text-warning">{t("admin.refunds.notFakeYet")}</span>
-                      ) : confirmedFake ? (
-                        <Button size="sm" variant="success" onClick={() => refund(o)}><RotateCcw /> {tb("refund")}</Button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground" title={tb("refundHint")}>{tb("notConfirmed")}</span>
-                      )}
-                    </td>
-                  )}
-                  <td className="px-2 py-2.5">
-                    <RowActions
-                      viewHref={`/admin/leads/${o.offerId}`}
-                      actions={[
-                        { label: t(o.executed ? "admin.rows.markNotDone" : "admin.rows.markDone"), icon: o.executed ? <RotateCcw /> : <CheckCircle2 />, onSelect: () => setExecuted(o, !o.executed) },
-                        { label: t("admin.leads.survey.openSurvey"), icon: <ExternalLink />, href: `/requests/${o.offerId}` },
-                      ]}
-                    />
-                  </td>
-                </tr>
+  /** Where a fake booking's refund stands: paid, ready to pay (offer confirmed fake) or not confirmed yet. */
+  const refundState = (o: Order) => (refundOf(o)?.status === "refunded" ? "refunded" : offerMap[o.offerId]?.cancelReason === "fake" ? "ready" : "notConfirmed");
+  const bookingColumns = (fake: boolean): ColumnDef<Order, unknown>[] => [
+    { id: "order", header: t("admin.shop.order"), accessorFn: (o) => o.id, cell: (c) => <Mono>{c.getValue() as string}</Mono> },
+    {
+      id: "offer",
+      header: t("admin.leads.id"),
+      accessorFn: (o) => o.offerId,
+      cell: (c) => (
+        <Link href={`/admin/leads/${c.getValue() as string}`} onClick={(e) => e.stopPropagation()} className="whitespace-nowrap font-mono text-[13px] font-semibold text-primary hover:underline">
+          {c.getValue() as string}
+        </Link>
+      ),
+    },
+    {
+      id: "route",
+      header: t("admin.leads.route"),
+      enableSorting: false,
+      accessorFn: (o) => (offerMap[o.offerId] ? routeText(offerMap[o.offerId]) : "–"),
+      cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{c.getValue() as string}</span>,
+    },
+    { id: "channel", header: t("admin.shop.channel"), accessorFn: (o) => o.channel, cell: (c) => t(`admin.shop.${c.getValue() as Order["channel"]}`) },
+    { id: "price", header: t("common.fields.price"), accessorFn: (o) => o.price, cell: (c) => <span className="font-semibold">{formatCHF(c.getValue() as number, lang)}</span> },
+    { id: "date", header: t("common.fields.date"), accessorFn: (o) => o.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
+    {
+      id: "status",
+      header: t("common.fields.status"),
+      accessorFn: (o) => offerMap[o.offerId]?.status ?? "",
+      cell: (c) => (c.getValue() ? <StatusBadge status={c.getValue() as string} /> : "–"),
+    },
+    ...(fake
+      ? [
+          {
+            id: "refund",
+            header: tb("refundCol"),
+            accessorFn: (o: Order) => refundState(o),
+            cell: ({ row: { original: o } }: { row: { original: Order } }) => {
+              const state = refundState(o);
+              return state === "refunded" ? (
+                <Badge tone="success"><CheckCircle2 /> {tb("refunded")}</Badge>
+              ) : state === "ready" ? (
+                <Button size="sm" variant="success" onClick={(e) => { e.stopPropagation(); refund(o); }}><RotateCcw /> {tb("refund")}</Button>
+              ) : (
+                <span className="whitespace-nowrap text-xs text-muted-foreground" title={tb("refundHint")}>{tb("notConfirmed")}</span>
               );
-            })}
-          </tbody>
-        </table>
-      </div>
-    ) : (
-      <EmptyState title={fake ? tb("noFake") : t("common.table.noResults")} className="py-8" />
-    );
+            },
+          } satisfies ColumnDef<Order, unknown>,
+        ]
+      : []),
+    actionsColumn<Order>((o) => (
+      <RowActions
+        viewHref={`/admin/leads/${o.offerId}`}
+        actions={[
+          { label: t(o.executed ? "admin.rows.markNotDone" : "admin.rows.markDone"), icon: o.executed ? <RotateCcw /> : <CheckCircle2 />, onSelect: () => setExecuted(o, !o.executed) },
+          { label: t("admin.leads.survey.openSurvey"), icon: <ExternalLink />, href: `/requests/${o.offerId}` },
+        ]}
+      />
+    )),
+  ];
+  // filter options only list what this company's bookings actually have
+  const statusOptions = (rows: Order[]) =>
+    [...new Set(rows.map((o) => offerMap[o.offerId]?.status).filter(Boolean) as string[])].map((x) => ({ value: x, label: t(`common.status.${x}`) }));
+  const channelFilter = {
+    id: "channel",
+    label: t("admin.shop.channel"),
+    options: (["dynamic", "shop", "manual"] as const).map((c) => ({ value: c, label: t(`admin.shop.${c}`) })),
+    get: (o: Order) => o.channel,
+  };
+  const bookingSearch = (o: Order) => `${o.id} ${o.offerId} ${offerMap[o.offerId] ? routeText(offerMap[o.offerId]) : ""}`;
 
   return (
     <>
@@ -385,15 +392,45 @@ function PartnerDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="bookings" className="space-y-4">
-          <Card className="overflow-hidden">
-            <CardHeader title={tb("title")} description={tb("count", { count: bookings.length })} />
-            <div className="mt-4 border-t">{bookingTable(bookings, false)}</div>
-          </Card>
-          <Card className="overflow-hidden">
-            <CardHeader title={<span className="flex items-center gap-2"><AlertTriangle className="size-4 text-danger" /> {tb("fakeTitle")}</span>} description={tb("refundHint")} />
-            <div className="mt-4 border-t">{bookingTable(fakeBookings, true)}</div>
-          </Card>
+        <TabsContent value="bookings">
+          {/* one table at a time: the company's normal bookings, or the ones reported or confirmed as fake */}
+          <Tabs defaultValue="offers">
+            <TabsList className="mb-3">
+              <TabsTrigger value="offers">{tb("title")} <span className="ms-1.5 rounded-full bg-surface-2 px-1.5 text-xs">{bookings.length}</span></TabsTrigger>
+              <TabsTrigger value="fake">
+                <AlertTriangle className="size-3.5 text-danger" /> {tb("fakeTitle")} <span className="ms-1.5 rounded-full bg-surface-2 px-1.5 text-xs">{fakeBookings.length}</span>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="offers">
+              <DataTable
+                data={bookings}
+                columns={bookingColumns(false)}
+                search={bookingSearch}
+                searchPlaceholder={tb("searchPh")}
+                wideSearch
+                initialSort={[{ id: "date", desc: true }]}
+                onRowClick={(o) => router.push(`/admin/leads/${o.offerId}`)}
+                filters={[channelFilter, { id: "status", label: t("common.fields.status"), options: statusOptions(bookings), get: (o) => offerMap[o.offerId]?.status ?? "" }]}
+              />
+            </TabsContent>
+            <TabsContent value="fake">
+              <p className="mb-3 text-sm text-muted-foreground">{tb("refundHint")}</p>
+              <DataTable
+                data={fakeBookings}
+                columns={bookingColumns(true)}
+                search={bookingSearch}
+                searchPlaceholder={tb("searchPh")}
+                wideSearch
+                initialSort={[{ id: "date", desc: true }]}
+                onRowClick={(o) => router.push(`/admin/leads/${o.offerId}`)}
+                filters={[
+                  { id: "refund", label: tb("refundCol"), options: (["ready", "refunded", "notConfirmed"] as const).map((x) => ({ value: x, label: tb(x === "ready" ? "readyToRefund" : x) })), get: refundState },
+                  channelFilter,
+                ]}
+                emptyState={<EmptyState title={tb("noFake")} />}
+              />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="wallet" className="grid gap-4 xl:grid-cols-[1fr_400px]">
