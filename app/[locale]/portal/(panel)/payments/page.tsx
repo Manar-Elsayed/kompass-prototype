@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ArrowDownToLine, Check, Clock, Copy, CreditCard, Download, FileText, HandCoins, ImageUp, Landmark, Upload, Wallet } from "lucide-react";
 import { toast } from "sonner";
-import type { Invoice, PartnerDue } from "@/lib/types";
+import { PAYOUT_REASONS, type Invoice, type PartnerDue, type PayoutReason } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { isOverdue, LEDGER_KINDS, MIN_PAYOUT, walletLedger, withdrawable, type LedgerKind } from "@/lib/mock/selectors";
 import { useStore } from "@/lib/mock/store";
@@ -15,7 +15,7 @@ import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { RadioCards } from "@/components/ui/controls";
@@ -49,6 +49,7 @@ function Payments() {
   const t = useTranslations("portal.payments");
   const td = useTranslations("admin.dues");
   const ti = useTranslations("admin.invoices");
+  const tReason = useTranslations("common.payoutReasons");
   const lang = useLang();
   const params = useSearchParams();
   const partner = useCurrentPartner()!;
@@ -203,6 +204,7 @@ function Payments() {
                     <Mono>{p.id}</Mono>
                     <span className="min-w-32 flex-1 text-muted-foreground">
                       {t("requestedOn", { date: formatDate(p.createdAt, lang) })}
+                      {p.reason && <span className="block text-xs">{tReason(p.reason)}</span>}
                       {p.reference && <span className="block text-xs">{p.status === "rejected" ? `“${p.reference}”` : <span className="font-mono" dir="ltr">{p.reference}</span>}</span>}
                     </span>
                     <span className="font-bold">{formatCHF(p.amount, lang)}</span>
@@ -303,6 +305,7 @@ function Statement({ entries }: { entries: ReturnType<typeof walletLedger>["entr
 /** Ask Kompass to pay unused balance to the bank. Shows what is held back and why. */
 function PayoutDialog({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const t = useTranslations("portal.payments");
+  const tr = useTranslations("common.payoutReasons");
   const tc = useTranslations("common.actions");
   const lang = useLang();
   const partner = useCurrentPartner()!;
@@ -313,13 +316,17 @@ function PayoutDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
   const { compose, dialog } = useCompose();
   const money = withdrawable({ partners, payouts, invoices }, partner.id);
   const [amount, setAmount] = useState(String(Math.floor(money.available / 10) * 10 || ""));
+  const [reason, setReason] = useState<PayoutReason | "">("");
+  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const value = Number(amount) || 0;
+  // "other" needs the company's own words
+  const reasonReady = !!reason && (reason !== "other" || note.trim().length >= 10);
   const error = value > money.available ? t("payoutTooHigh", { amount: formatCHF(money.available, lang) }) : value > 0 && value < MIN_PAYOUT ? t("payoutMinimum", { amount: formatCHF(MIN_PAYOUT, lang) }) : undefined;
 
   const submit = async () => {
     setBusy(true);
-    const res = await mock(() => request(partner.id, value), 700);
+    const res = await mock(() => request(partner.id, value, reason as PayoutReason, reason === "other" ? note : undefined), 700);
     setBusy(false);
     if (!res.ok) return toast.error(res.error === "minimum" ? t("payoutMinimum", { amount: formatCHF(MIN_PAYOUT, lang) }) : t("payoutTooHigh", { amount: formatCHF(money.available, lang) }));
     toast.success(t("payoutRequested", { amount: formatCHF(value, lang) }));
@@ -343,6 +350,14 @@ function PayoutDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
         <Field label={`${t("payoutAmount")} (CHF)`} error={error}>
           <Input type="number" min={MIN_PAYOUT} max={money.available} value={amount} onChange={(e) => setAmount(e.target.value)} />
         </Field>
+        <Field label={t("payoutReason")} hint={t("payoutReasonHint")} required>
+          <Select value={reason} onValueChange={(v) => setReason(v as PayoutReason)} placeholder={t("payoutReasonPh")} options={PAYOUT_REASONS.map((r) => ({ value: r, label: tr(r) }))} />
+        </Field>
+        {reason === "other" && (
+          <Field label={t("payoutReasonNote")} hint={t("payoutReasonNoteHint")} required>
+            <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} autoFocus />
+          </Field>
+        )}
         <div className="rounded-xl border p-3 text-sm">
           <p className="text-xs text-muted-foreground">{t("payoutBank")}</p>
           <p className="font-semibold text-ink">{partner.bank.name} · {partner.bank.owner}</p>
@@ -354,7 +369,7 @@ function PayoutDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
         <p className="text-xs text-muted-foreground">{t("payoutTiming")}</p>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{tc("cancel")}</Button>
-          <Button onClick={submit} disabled={!value || !!error} loading={busy}><ArrowDownToLine /> {t("requestPayout")}</Button>
+          <Button onClick={submit} disabled={!value || !!error || !reasonReady} loading={busy}><ArrowDownToLine /> {t("requestPayout")}</Button>
         </DialogFooter>
         {dialog}
       </DialogContent>

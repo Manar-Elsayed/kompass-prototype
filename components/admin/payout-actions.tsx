@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 export function PayoutDecisionDialog({ payout, decision, onClose }: { payout: Payout; decision: "paid" | "rejected"; onClose: () => void }) {
   const t = useTranslations("admin.payouts");
   const tc = useTranslations("common.actions");
+  const tr = useTranslations("common.payoutReasons");
   const lang = useLang();
   const { user } = useCurrentUser();
   const partner = useStore((s) => s.partners.find((p) => p.id === payout.partnerId));
@@ -48,6 +49,12 @@ export function PayoutDecisionDialog({ payout, decision, onClose }: { payout: Pa
           <DialogDescription>{t(decision === "paid" ? "payBody" : "rejectBody")}</DialogDescription>
         </DialogHeader>
         <dl className="grid grid-cols-2 gap-2 rounded-xl bg-surface-2 p-3 text-sm">
+          {payout.reason && (
+            <>
+              <dt className="text-muted-foreground">{t("companyReason")}</dt>
+              <dd className="font-semibold">{tr(payout.reason)}</dd>
+            </>
+          )}
           <dt className="text-muted-foreground">IBAN</dt>
           <dd className="font-mono text-xs" dir="ltr">{payout.iban}</dd>
           <dt className="text-muted-foreground">{t("wallet")}</dt>
