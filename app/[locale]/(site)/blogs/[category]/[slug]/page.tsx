@@ -6,7 +6,8 @@ import { useTranslations } from "next-intl";
 import { Clock } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
-import { useL, useLang, useServiceMap } from "@/lib/mock/hooks";
+import { useHydrated, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
+import { PageSkeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BlogCard, Prose, SectionHeading } from "@/components/site/sections";
@@ -18,8 +19,13 @@ export default function BlogArticlePage() {
   const lang = useLang();
   const blogs = useStore((s) => s.blogs);
   const serviceMap = useServiceMap();
+  const hydrated = useHydrated();
   const blog = blogs.find((b) => b.slug === slug);
-  if (!blog || !blog.published) notFound();
+  // pages added in the admin live only in the browser: wait for the saved data before calling it missing
+  if (!blog || !blog.published) {
+    if (!hydrated) return <PageSkeleton />;
+    notFound();
+  }
   const category = serviceMap[blog.serviceId];
   const related = blogs.filter((b) => b.published && b.id !== blog.id).slice(0, 3);
 
