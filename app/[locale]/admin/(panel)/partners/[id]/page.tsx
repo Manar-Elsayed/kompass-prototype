@@ -210,7 +210,7 @@ function PartnerDetail() {
             <Avatar name={p.name} square className="size-11 rounded-xl text-sm" />
             {p.name}
             <StatusBadge status={p.banned ? "banned" : p.status} />
-            <DocStateBadge partner={p} />
+            <DocStateBadge partner={p} standalone />
           </span>
         }
         subtitle={`${p.address}, ${p.zip} ${p.city} (${p.canton}) · ${p.regNumber}`}

@@ -68,12 +68,15 @@ export default function PartnersPage() {
       accessorFn: (p) => ratings[p.id]?.avg ?? 0,
       cell: ({ row: { original: p } }) =>
         ratings[p.id] ? (
-          <span className="flex items-center gap-1 font-semibold">
-            <Star className="size-4 fill-amber-400 text-amber-400" /> {ratings[p.id].avg.toFixed(1)}
-            <span className="text-xs font-normal text-muted-foreground">({ratings[p.id].count})</span>
-          </span>
+          // the average and how many published reviews it is based on
+          <div className="whitespace-nowrap">
+            <span className="flex items-center gap-1 font-semibold">
+              <Star className="size-4 fill-amber-400 text-amber-400" /> {ratings[p.id].avg.toFixed(1)}
+            </span>
+            <span className="text-xs text-muted-foreground">{t("admin.partners.reviewsN", { count: ratings[p.id].count })}</span>
+          </div>
         ) : (
-          <span className="text-muted-foreground">–</span>
+          <span className="whitespace-nowrap text-xs text-muted-foreground">{t("admin.partners.noReviews")}</span>
         ),
     },
     {

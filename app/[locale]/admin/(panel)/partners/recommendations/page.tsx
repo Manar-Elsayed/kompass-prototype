@@ -93,7 +93,7 @@ export default function RecommendationsPage() {
                         <span>{t("active", { days: p.idleDays })}</span>
                       </p>
                     </div>
-                    {!canBuyLeads(p) && <DocStateBadge partner={p} />}
+                    {!canBuyLeads(p) && <DocStateBadge partner={p} standalone />}
                     {nominated && <Badge tone="primary"><Pin /> {t("nominated")}</Badge>}
                     <span className="w-16 text-end text-sm font-bold text-ink" title={t("score")}>{p.score}</span>
                     <div className="flex gap-1">
