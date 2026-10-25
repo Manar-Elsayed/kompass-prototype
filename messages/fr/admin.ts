@@ -634,6 +634,7 @@ export const admin: Built<typeof Def> = {
     title: "Codes promo",
     subtitle: "Codes de réduction que les partenaires peuvent utiliser à l’achat de demandes.",
     add: "Nouveau code promo",
+    searchPh: "Rechercher un code ou un service…",
     edit: "Modifier le code promo",
     discount: "Réduction",
     type: "Type",
