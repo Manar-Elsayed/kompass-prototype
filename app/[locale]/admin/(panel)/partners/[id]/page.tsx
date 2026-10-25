@@ -28,7 +28,7 @@ import { DL, KpiCard, Mono, ProfileHeader } from "@/components/admin/ui";
 import { CreditDialog, TopUpDialog } from "@/components/admin/wallet-actions";
 import { DocStateBadge } from "@/components/admin/doc-state";
 import { PartnerServices } from "@/components/shared/partner-services";
-import { CompanyDocuments, ContactCompanyDialog } from "@/components/admin/company-docs";
+import { CompanyDocuments } from "@/components/admin/company-docs";
 import { FileManager } from "@/components/admin/file-manager";
 import { PayoutDecisionDialog } from "@/components/admin/payout-actions";
 import { MessageCenter } from "@/components/shared/message-thread";
@@ -69,7 +69,6 @@ function PartnerDetail() {
   const router = useRouter();
   const ratings = usePartnerRatings();
   const { confirm, dialog } = useConfirm();
-  const [contact, setContact] = useState(false);
   const [topUp, setTopUp] = useState(false);
   const [credit, setCredit] = useState(false);
   const [doc, setDoc] = useState<MoneyDoc | null>(null);
@@ -247,7 +246,6 @@ function PartnerDetail() {
         }
         secondary={
           <>
-            <Button variant="outline" onClick={() => setContact(true)}><Mail /> {tp("contactCo.button")}</Button>
             <Button asChild variant="outline">
               <Link href={`/companies/${p.id}`} target="_blank"><ExternalLink /> {t("admin.cms.viewOnSite")}</Link>
             </Button>
@@ -489,7 +487,6 @@ function PartnerDetail() {
         </TabsContent>
       </Tabs>
 
-      {contact && <ContactCompanyDialog partner={p} onClose={() => setContact(false)} />}
       {topUp && <TopUpDialog partner={p} onClose={() => setTopUp(false)} />}
       {credit && <CreditDialog partner={p} onClose={() => setCredit(false)} />}
       {doc && <MoneyDocDialog doc={doc} onClose={() => setDoc(null)} />}
