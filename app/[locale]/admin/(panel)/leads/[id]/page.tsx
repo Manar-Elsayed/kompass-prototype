@@ -42,6 +42,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { Icon } from "@/components/shared/icon";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
+import { canSendSurvey, useSendSurvey } from "@/components/admin/survey-send";
 import { FakeStatusSelect, isFinalReport, useFakeReportStatus } from "@/components/admin/fake-report-status";
 import { SurveyEmail } from "@/components/site/request-bits";
 import { JobFacts, JobPlaces } from "@/components/shared/job-details";
@@ -592,6 +593,7 @@ function SurveyCard({ offer, orders }: { offer: Offer; orders: Order[] }) {
   const reviews = useStore((s) => s.reviews);
   const partnerMap = usePartnerMap();
   const [preview, setPreview] = useState(false);
+  const { ask, dialog } = useSendSurvey();
   const answers = reviews.filter((r) => r.offerId === offer.id);
   const companyReview = answers.find((r) => r.target !== "kompass");
   const kompassReview = answers.find((r) => r.target === "kompass");
@@ -625,8 +627,17 @@ function SurveyCard({ offer, orders }: { offer: Offer; orders: Order[] }) {
         ) : (
           !cancelled && !noBuyers && <p className="text-muted-foreground">{t(sent ? "noAnswer" : "notYet")}</p>
         )}
+        {offer.surveyComplaint && (
+          <div className="rounded-xl border border-danger/20 bg-danger-soft/40 p-3">
+            <p className="mb-1 flex items-center gap-1.5 font-semibold text-ink"><AlertTriangle className="size-4 text-danger" /> {t("complaint")}</p>
+            <p className="text-ink">“{offer.surveyComplaint}”</p>
+          </div>
+        )}
         {!cancelled && !noBuyers && (
           <div className="flex flex-wrap gap-2">
+            {canSendSurvey(offer, orders.length, answers.length > 0) && (
+              <Button size="sm" onClick={() => ask(offer)}><Send /> {t(sent ? "resend" : "send")}</Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => setPreview(true)}><Mail /> {t("previewEmail")}</Button>
             <Button asChild size="sm" variant="ghost">
               <Link href={`/requests/${offer.id}`} target="_blank"><ArrowRight /> {t("openSurvey")}</Link>
@@ -634,6 +645,7 @@ function SurveyCard({ offer, orders }: { offer: Offer; orders: Order[] }) {
           </div>
         )}
       </CardBody>
+      {dialog}
       <Dialog open={preview} onOpenChange={setPreview}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
