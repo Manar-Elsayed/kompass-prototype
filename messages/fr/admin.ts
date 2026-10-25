@@ -590,6 +590,7 @@ export const admin: Built<typeof Def> = {
     dormant: "Inactif",
   },
   dues: {
+    summaryTitle: "Paiement",
     uploaded: "Téléversé le",
     payment: "Paiement",
     title: "Paiements partenaires",

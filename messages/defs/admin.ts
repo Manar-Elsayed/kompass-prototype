@@ -587,6 +587,7 @@ export const admin = {
     dormant: "Dormant",
   },
   dues: {
+    summaryTitle: "Payment",
     uploaded: "Uploaded",
     payment: "Payment",
     title: "Partner payments",
