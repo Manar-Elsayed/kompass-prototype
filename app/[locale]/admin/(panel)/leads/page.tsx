@@ -3,12 +3,12 @@
 import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Ban, ExternalLink, Plus, RotateCcw, ShieldCheck, UserPlus } from "lucide-react";
+import { AlertTriangle, Ban, Plus, RotateCcw, Send, ShieldCheck, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { Offer } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
-import { daysLeft, isExpiringSoon } from "@/lib/mock/selectors";
+import { daysLeft, isExpiringSoon, surveySent } from "@/lib/mock/selectors";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import { StatusBadge, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { Mono, PageHeader } from "@/components/admin/ui";
+import { canSendSurvey, useSendSurvey } from "@/components/admin/survey-send";
 import { routeFull, routeText } from "@/lib/jobs";
 
 const STATUSES = ["new", "in_progress", "completed", "expired", "cancelled"] as const;
@@ -45,6 +46,7 @@ function Leads() {
   const repostOffer = useStore((s) => s.repostOffer);
   const serviceMap = useServiceMap();
   const { confirm, dialog } = useConfirm();
+  const { ask: askSurvey, dialog: surveyDialog } = useSendSurvey();
 
   const sold = useMemo(() => {
     const m: Record<string, number> = {};
@@ -182,7 +184,7 @@ function Leads() {
               },
             },
             { label: t("admin.rows.assignCompany"), icon: <UserPlus />, href: `/admin/leads/${o.id}#assign`, hidden: !open || full },
-            { label: t("admin.leads.survey.openSurvey"), icon: <ExternalLink />, href: `/requests/${o.id}` },
+            { label: t(surveySent(o) ? "admin.leads.survey.resend" : "admin.leads.survey.send"), icon: <Send />, hidden: !canSendSurvey(o, sold[o.id] ?? 0), onSelect: () => askSurvey(o) },
             { label: t("admin.leads.detail.cancel"), icon: <Ban />, tone: "danger", href: `/admin/leads/${o.id}#cancel`, hidden: o.status === "cancelled", separated: true },
           ]}
         />
@@ -227,6 +229,7 @@ function Leads() {
         rowClassName={(o) => (o.status === "cancelled" ? "opacity-60" : o.status === "new" ? "bg-warning-soft/25" : isExpiringSoon(o) ? "bg-warning-soft/15" : undefined)}
       />
       {dialog}
+      {surveyDialog}
     </>
   );
 }

@@ -105,6 +105,8 @@ interface Actions {
   assignLead: (offerId: string, partnerId: string, price: number, note?: string) => BuyResult;
   /** Records that the customer was emailed the names of the companies that bought the offer. */
   notifyCustomerOfBuyers: (offerId: string) => void;
+  /** Admin sends the review survey now instead of waiting for the day after the move. */
+  sendSurvey: (offerId: string) => void;
   /** Offers on sale whose deadline has passed become Expired. Run on load. */
   sweepExpired: () => void;
 
@@ -679,6 +681,9 @@ export const useStore = create<Store>()(
 
       notifyCustomerOfBuyers: (offerId) =>
         set((s) => ({ offers: s.offers.map((o) => (o.id === offerId ? { ...o, buyersNotifiedAt: nowIso() } : o)) })),
+
+      sendSurvey: (offerId) =>
+        set((s) => ({ offers: s.offers.map((o) => (o.id === offerId && o.status !== "cancelled" ? { ...o, surveySentAt: nowIso() } : o)) })),
 
       sweepExpired: () =>
         set((s) => {

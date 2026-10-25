@@ -111,6 +111,8 @@ export interface Offer {
   repostedAt?: string;
   /** When the customer was emailed the names of the companies that bought the offer. */
   buyersNotifiedAt?: string;
+  /** Admin sent the review survey by hand (otherwise it goes out the day after the move). */
+  surveySentAt?: string;
   source: "website" | "admin";
   createdAt: string;
 }

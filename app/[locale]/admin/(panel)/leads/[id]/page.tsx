@@ -42,6 +42,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { Icon } from "@/components/shared/icon";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
+import { canSendSurvey, useSendSurvey } from "@/components/admin/survey-send";
 import { FakeStatusSelect, isFinalReport, useFakeReportStatus } from "@/components/admin/fake-report-status";
 import { SurveyEmail } from "@/components/site/request-bits";
 import { JobFacts, JobPlaces } from "@/components/shared/job-details";
@@ -592,6 +593,7 @@ function SurveyCard({ offer, orders }: { offer: Offer; orders: Order[] }) {
   const reviews = useStore((s) => s.reviews);
   const partnerMap = usePartnerMap();
   const [preview, setPreview] = useState(false);
+  const { ask, dialog } = useSendSurvey();
   const answers = reviews.filter((r) => r.offerId === offer.id);
   const companyReview = answers.find((r) => r.target !== "kompass");
   const kompassReview = answers.find((r) => r.target === "kompass");
@@ -627,6 +629,9 @@ function SurveyCard({ offer, orders }: { offer: Offer; orders: Order[] }) {
         )}
         {!cancelled && !noBuyers && (
           <div className="flex flex-wrap gap-2">
+            {canSendSurvey(offer, orders.length) && (
+              <Button size="sm" onClick={() => ask(offer)}><Send /> {t(sent ? "resend" : "send")}</Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => setPreview(true)}><Mail /> {t("previewEmail")}</Button>
             <Button asChild size="sm" variant="ghost">
               <Link href={`/requests/${offer.id}`} target="_blank"><ArrowRight /> {t("openSurvey")}</Link>
@@ -634,6 +639,7 @@ function SurveyCard({ offer, orders }: { offer: Offer; orders: Order[] }) {
           </div>
         )}
       </CardBody>
+      {dialog}
       <Dialog open={preview} onOpenChange={setPreview}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
