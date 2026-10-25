@@ -665,6 +665,7 @@ export const admin: Built<typeof Def> = {
     },
   },
   wallets: {
+    searchPh: "Cerca azienda o località…",
     title: "Portafogli",
     subtitle: "Il saldo di ogni ditta e tutti i movimenti: ricariche, credito, acquisti di richieste e rimborsi.",
     total: "Sui portafogli delle ditte",

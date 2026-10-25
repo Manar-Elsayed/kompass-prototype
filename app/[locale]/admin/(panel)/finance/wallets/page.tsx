@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowDownLeft, HandCoins, Plus, Wallet } from "lucide-react";
+import { ArrowDownLeft, Building2, HandCoins, Plus, Wallet } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import type { Partner } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
@@ -14,6 +14,7 @@ import { Avatar } from "@/components/ui/controls";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { KpiCard, PageHeader } from "@/components/admin/ui";
+import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { CreditDialog, TopUpDialog } from "@/components/admin/wallet-actions";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
 
@@ -38,7 +39,7 @@ export default function WalletsPage() {
   const rows: Row[] = useMemo(() => partners.filter((p) => p.status === "approved").map((p) => ({ ...p, ...walletLedger(db, p.id) })), [partners, db]);
   const total = rows.reduce((a, r) => a + r.wallet, 0);
   const topped30 =
-    dues.filter((d) => d.status === "confirmed" && inLastDays(d.createdAt, 30)).reduce((a, d) => a + d.amount, 0) +
+    dues.filter((d) => d.status === "confirmed" && !d.invoiceId && inLastDays(d.decidedAt ?? d.createdAt, 30)).reduce((a, d) => a + d.amount, 0) +
     topups.filter((x) => x.method !== "credit" && inLastDays(x.createdAt, 30)).reduce((a, x) => a + x.amount, 0);
   const creditDue = rows.reduce((a, r) => a + r.creditDue, 0);
   const overdue = rows.reduce((a, r) => a + r.creditOverdue, 0);
@@ -50,9 +51,9 @@ export default function WalletsPage() {
       header: t("common.fields.company"),
       accessorFn: (r) => r.name,
       cell: ({ row: { original: r } }) => (
-        <span className="flex items-center gap-2 font-semibold text-ink">
-          <Avatar name={r.name} square className="size-8" />
-          {r.name}
+        <span className="flex min-w-0 items-center gap-2 font-semibold text-ink">
+          <Avatar name={r.name} square className="size-8 shrink-0" />
+          <span className="max-w-48 truncate" title={r.name}>{r.name}</span>
         </span>
       ),
     },
@@ -72,17 +73,18 @@ export default function WalletsPage() {
         ),
     },
     { id: "last", header: tw("lastMove"), accessorFn: (r) => r.lastAt ?? "", cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{c.getValue() ? formatDate(c.getValue() as string, lang) : "–"}</span> },
-    {
-      id: "actions",
-      header: "",
-      enableSorting: false,
-      cell: ({ row: { original: r } }) => (
-        <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-          <Button size="sm" variant="outline" onClick={() => setTopUp(r.id)}><Plus /> {tw("topUp")}</Button>
-          <Button size="sm" variant="ghost" onClick={() => setCredit(r.id)}><HandCoins /> {tw("addCredit")}</Button>
-        </div>
-      ),
-    },
+    // the same row menu as every table: open the history, then what can be done to the wallet
+    actionsColumn<Row>((r) => (
+      <RowActions
+        onView={() => setHistory(r.id)}
+        viewLabel={t("admin.rows.walletHistory")}
+        actions={[
+          { label: tw("addCredit"), icon: <HandCoins />, onSelect: () => setCredit(r.id) },
+          { label: tw("topUp"), icon: <Plus />, onSelect: () => setTopUp(r.id) },
+          { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${r.id}`, separated: true },
+        ]}
+      />
+    )),
   ];
 
   const open = byId(history);
@@ -104,7 +106,15 @@ export default function WalletsPage() {
           footer={overdue ? tw("overdue", { amount: formatCHF(overdue, lang) }) : undefined}
         />
       </div>
-      <DataTable data={rows} columns={columns} search={(r) => r.name} initialSort={[{ id: "balance", desc: true }]} onRowClick={(r) => setHistory(r.id)} />
+      <DataTable
+        data={rows}
+        columns={columns}
+        search={(r) => `${r.name} ${r.city}`}
+        searchPlaceholder={tw("searchPh")}
+        wideSearch
+        initialSort={[{ id: "balance", desc: true }]}
+        onRowClick={(r) => setHistory(r.id)}
+      />
 
       {open && (
         <Dialog open onOpenChange={(v) => !v && setHistory(null)}>
@@ -116,8 +126,8 @@ export default function WalletsPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="flex gap-2 px-6">
-              <Button size="sm" variant="outline" onClick={() => setTopUp(open.id)}><Plus /> {tw("topUp")}</Button>
-              <Button size="sm" variant="ghost" onClick={() => setCredit(open.id)}><HandCoins /> {tw("addCredit")}</Button>
+              <Button size="sm" variant="outline" onClick={() => setCredit(open.id)}><HandCoins /> {tw("addCredit")}</Button>
+              <Button size="sm" variant="ghost" onClick={() => setTopUp(open.id)}><Plus /> {tw("topUp")}</Button>
               <Button asChild size="sm" variant="link" className="ms-auto">
                 <Link href={`/admin/partners/${open.id}`}>{t("admin.nav.partners")}</Link>
               </Button>

@@ -662,6 +662,7 @@ export const admin = {
     },
   },
   wallets: {
+    searchPh: "Search company or city…",
     title: "Wallets",
     subtitle: "Every company’s balance and how it moved: top-ups, credit, offer purchases and refunds.",
     total: "On company wallets",
