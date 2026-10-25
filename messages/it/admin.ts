@@ -612,6 +612,11 @@ export const admin: Built<typeof Def> = {
     walletUnchanged: "invariato",
     searchPh: "Cerca pagamento, azienda, riferimento o fattura…",
     receiptsCount: "{count, plural, one {# ricevuta} other {# ricevute}}",
+    noteWaiting: "In attesa della Sua verifica: cerchi l’importo sul conto bancario di Kompass, poi lo approvi o lo rifiuti.",
+    noteApproved: "Approvato il {date}",
+    noteRejected: "Rifiutato il {date}",
+    proofTitle: "Ricevuta caricata dall’azienda",
+    proofOpen: "Apri a grandezza intera",
   },
   coupons: {
     title: "Coupon",
@@ -753,6 +758,9 @@ export const admin: Built<typeof Def> = {
     paidReceipt: "Pagato, grazie.",
     thanks: "Grazie per lavorare con Kompass.",
     questions: "Domande su questo documento?",
+    paymentTitle: "Pagamento",
+    paymentDate: "Caricato il",
+    paidWith: "Pagato con",
   },
   files: {
     title: "File",

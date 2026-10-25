@@ -19,6 +19,7 @@ import { DueStatusBadge } from "@/components/shared/due-status";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { MoneyDocument } from "@/components/shared/money-doc";
 
 export default function PartnerDuesPage() {
   const t = useTranslations();
@@ -65,11 +66,11 @@ export default function PartnerDuesPage() {
       id: "amount",
       header: t("common.fields.amount"),
       accessorFn: (d) => d.amount,
-      // the amount, and what it pays: a wallet top-up or a credit invoice
+      // a top-up is the usual case; only a payment for a credit invoice is tagged
       cell: ({ row: { original: d } }) => (
         <div className="whitespace-nowrap">
           <p className="font-bold">{formatCHF(d.amount, lang)}</p>
-          {d.invoiceId ? <Badge tone="info" className="mt-0.5">{td("forInvoice", { id: d.invoiceId })}</Badge> : <Badge tone="neutral" className="mt-0.5">{td("forWallet")}</Badge>}
+          {d.invoiceId && <Badge tone="info" className="mt-0.5">{td("forInvoice", { id: d.invoiceId })}</Badge>}
         </div>
       ),
     },
@@ -141,24 +142,43 @@ export default function PartnerDuesPage() {
       >
         {receipt && (
           <>
-            <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-surface-2">
-              <Image src={receipt.receipt} alt={td("receipt")} fill className="object-contain" sizes="560px" />
-            </div>
-            <SheetSection>
-              <DL
-                items={[
-                  { label: t("common.fields.amount"), value: <span className="font-bold">{formatCHF(receipt.amount, lang)}</span> },
-                  { label: td("forLabel"), value: receipt.invoiceId ? td("forInvoice", { id: receipt.invoiceId }) : td("forWallet") },
-                  { label: td("method"), value: td(receipt.method) },
-                  { label: t("common.fields.reference"), value: <Mono>{receipt.reference}</Mono> },
-                  { label: t("common.fields.company"), value: partner ? <Link href={`/admin/partners/${partner.id}`} className="font-semibold text-primary hover:underline">{partner.name}</Link> : "–" },
-                ]}
+            {/* the payment as a Kompass document */}
+            {partner && (
+              <MoneyDocument
+                doc={{
+                  kind: "payment",
+                  id: receipt.id,
+                  date: receipt.createdAt,
+                  partner,
+                  line: receipt.invoiceId ? td("forInvoice", { id: receipt.invoiceId }) : td("forWallet"),
+                  amount: receipt.amount,
+                  method: td(receipt.method),
+                  reference: receipt.reference,
+                  badge: <DueStatusBadge status={receipt.status} />,
+                  note:
+                    receipt.status === "pending" ? (
+                      <p className="flex items-start gap-2 rounded-lg bg-warning-soft/50 p-3 text-xs text-ink"><Clock className="mt-0.5 size-3.5 shrink-0 text-warning" /> {td("noteWaiting")}</p>
+                    ) : (
+                      <p className={receipt.status === "confirmed" ? "flex items-center gap-2 font-semibold text-success" : "flex items-center gap-2 font-semibold text-danger"}>
+                        {receipt.status === "confirmed" ? <CheckCircle2 className="size-4" /> : <X className="size-4" />}
+                        {td(receipt.status === "confirmed" ? "noteApproved" : "noteRejected", { date: formatDate(receipt.decidedAt ?? receipt.createdAt, lang) })}
+                      </p>
+                    ),
+                }}
               />
+            )}
+            {/* what the company uploaded as proof */}
+            <SheetSection title={td("proofTitle")}>
+              <a href={receipt.receipt} target="_blank" rel="noreferrer" className="group relative block aspect-[4/3] overflow-hidden rounded-xl border bg-surface-2" aria-label={td("proofOpen")}>
+                <Image src={receipt.receipt} alt={td("proofTitle")} fill className="object-contain transition group-hover:scale-[1.02]" sizes="560px" />
+                <span className="absolute bottom-2 end-2 rounded-md bg-surface/90 px-2 py-1 text-xs font-semibold text-ink shadow-sm">{td("proofOpen")}</span>
+              </a>
             </SheetSection>
             {partner && (
               <SheetSection title={t("admin.rows.walletImpact")}>
                 <DL
                   items={[
+                    { label: t("common.fields.company"), value: <Link href={`/admin/partners/${partner.id}`} className="font-semibold text-primary hover:underline">{partner.name}</Link> },
                     { label: t("admin.rows.walletNow"), value: formatCHF(partner.wallet, lang) },
                     {
                       label: receipt.status === "pending" ? t("admin.rows.walletAfter") : t("common.fields.status"),

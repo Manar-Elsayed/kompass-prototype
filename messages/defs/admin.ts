@@ -609,6 +609,11 @@ export const admin = {
     walletUnchanged: "unchanged",
     searchPh: "Search payment, company, reference or invoice…",
     receiptsCount: "{count, plural, one {# receipt} other {# receipts}}",
+    noteWaiting: "Waiting for your check: find this amount on Kompass’s bank account, then approve or reject it.",
+    noteApproved: "Approved on {date}",
+    noteRejected: "Rejected on {date}",
+    proofTitle: "Proof uploaded by the company",
+    proofOpen: "Open full size",
   },
   coupons: {
     title: "Coupons",
@@ -750,6 +755,9 @@ export const admin = {
     paidReceipt: "Paid, thank you.",
     thanks: "Thank you for working with Kompass.",
     questions: "Questions about this document?",
+    paymentTitle: "Payment",
+    paymentDate: "Uploaded",
+    paidWith: "Paid with",
   },
   files: {
     title: "Files",

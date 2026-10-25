@@ -612,6 +612,11 @@ export const admin: Built<typeof Def> = {
     walletUnchanged: "unverändert",
     searchPh: "Zahlung, Firma, Referenz oder Rechnung suchen…",
     receiptsCount: "{count, plural, one {# Beleg} other {# Belege}}",
+    noteWaiting: "Wartet auf Ihre Prüfung: Suchen Sie den Betrag auf dem Bankkonto von Kompass und geben Sie ihn frei oder lehnen Sie ihn ab.",
+    noteApproved: "Freigegeben am {date}",
+    noteRejected: "Abgelehnt am {date}",
+    proofTitle: "Von der Firma hochgeladener Beleg",
+    proofOpen: "In voller Grösse öffnen",
   },
   coupons: {
     title: "Gutscheine",
@@ -753,6 +758,9 @@ export const admin: Built<typeof Def> = {
     paidReceipt: "Bezahlt, vielen Dank.",
     thanks: "Vielen Dank für die Zusammenarbeit mit Kompass.",
     questions: "Fragen zu diesem Dokument?",
+    paymentTitle: "Zahlung",
+    paymentDate: "Hochgeladen",
+    paidWith: "Bezahlt mit",
   },
   files: {
     title: "Dateien",
