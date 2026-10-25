@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Banknote, Building2, CheckCircle2, ClipboardList, Headset, RotateCcw, ShoppingCart, Store as StoreIcon, Zap } from "lucide-react";
-import { toast } from "sonner";
+import { Banknote, Building2, ClipboardList, Headset, ShoppingCart, Store as StoreIcon, Zap } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import type { Order } from "@/lib/types";
 import { formatCHF, formatDateTime } from "@/lib/utils";
+import { jobKind } from "@/lib/jobs";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, usePartnerMap, useServiceMap } from "@/lib/mock/hooks";
 import { Badge } from "@/components/ui/badge";
@@ -26,13 +26,18 @@ export default function ShopPage() {
   const partnerMap = usePartnerMap();
   const serviceMap = useServiceMap();
   const offerMap = Object.fromEntries(offers.map((o) => [o.id, o]));
-  const patch = useStore((s) => s.patch);
+  const services = useStore((s) => s.services);
   const [openId, setOpenId] = useState<string | null>(null);
   const open = orders.find((x) => x.id === openId);
-  const setExecuted = (x: Order, executed: boolean) => {
-    patch("orders", x.id, { executed });
-    toast.success(t(executed ? "admin.rows.markedDone" : "admin.rows.markedNotDone", { id: x.offerId }));
-  };
+  // filter choices: only services and companies that have orders
+  const serviceOf = (x: Order) => offerMap[x.offerId]?.serviceId ?? "";
+  const serviceOptions = [...services]
+    .sort((a, b) => a.order - b.order)
+    .filter((sv) => orders.some((x) => serviceOf(x) === sv.id))
+    .map((sv) => ({ value: sv.id, label: L(sv.name) }));
+  const companyOptions = [...new Set(orders.map((x) => x.partnerId))]
+    .map((id) => ({ value: id, label: partnerMap[id]?.name ?? id }))
+    .sort((a, b) => a.label.localeCompare(b.label, lang));
 
   const shopRev = orders.filter((o) => o.channel === "shop").reduce((a, o) => a + o.price, 0);
   const dynRev = orders.filter((o) => o.channel === "dynamic").reduce((a, o) => a + o.price, 0);
@@ -74,7 +79,7 @@ export default function ShopPage() {
         </span>
       ),
     },
-    { id: "service", meta: { className: "hidden 2xl:table-cell" }, header: t("common.fields.service"), accessorFn: (o) => L(serviceMap[offerMap[o.offerId]?.serviceId]?.name) },
+    { id: "service", meta: { className: "hidden xl:table-cell" }, header: t("common.fields.service"), accessorFn: (o) => L(serviceMap[offerMap[o.offerId]?.serviceId]?.name) },
     {
       id: "channel",
       header: t("admin.shop.channel"),
@@ -99,17 +104,10 @@ export default function ShopPage() {
         </div>
       ),
     },
-    {
-      id: "done",
-      header: t("common.fields.status"),
-      accessorFn: (o) => (o.executed ? 1 : 0),
-      cell: ({ row: { original: x } }) => (x.executed ? <Badge tone="success" dot>{t("admin.shop.executed")}</Badge> : <Badge dot>{t("admin.shop.notExecuted")}</Badge>),
-    },
     actionsColumn<Order>((x) => (
       <RowActions
         onView={() => setOpenId(x.id)}
         actions={[
-          { label: t(x.executed ? "admin.rows.markNotDone" : "admin.rows.markDone"), icon: x.executed ? <RotateCcw /> : <CheckCircle2 />, onSelect: () => setExecuted(x, !x.executed) },
           { label: t("admin.rows.openLead"), icon: <ClipboardList />, href: `/admin/leads/${x.offerId}`, separated: true },
           { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${x.partnerId}` },
         ]}
@@ -125,18 +123,24 @@ export default function ShopPage() {
       <PageHeader title={t("admin.shop.title")} subtitle={t("admin.shop.subtitle")} />
       <div className="mb-4 grid gap-4 sm:grid-cols-3">
         <KpiCard label={t("admin.shop.revenue")} value={formatCHF(shopRev + dynRev, lang)} icon={<Banknote />} />
-        <KpiCard label={t("admin.shop.shop")} value={formatCHF(shopRev, lang)} icon={<StoreIcon />} tone="info" footer={`${orders.filter((x) => x.channel === "shop").length} ${t("admin.shop.order")}`} />
-        <KpiCard label={t("admin.shop.dynamic")} value={formatCHF(dynRev, lang)} icon={<Zap />} tone="accent" footer={`${orders.filter((x) => x.channel === "dynamic").length} ${t("admin.shop.order")}`} />
+        <KpiCard label={t("admin.shop.shop")} value={formatCHF(shopRev, lang)} icon={<StoreIcon />} tone="info" footer={t("admin.shop.ordersCount", { count: orders.filter((x) => x.channel === "shop").length })} />
+        <KpiCard label={t("admin.shop.dynamic")} value={formatCHF(dynRev, lang)} icon={<Zap />} tone="accent" footer={t("admin.shop.ordersCount", { count: orders.filter((x) => x.channel === "dynamic").length })} />
       </div>
       <DataTable
         data={orders}
         columns={columns}
-        search={(x) => `${x.id} ${x.offerId} ${partnerMap[x.partnerId]?.name}`}
+        search={(x) => {
+          const c = offerMap[x.offerId];
+          return `${x.id} ${x.offerId} ${partnerMap[x.partnerId]?.name} ${c ? `${c.firstName} ${c.lastName}` : ""}`;
+        }}
+        searchPlaceholder={t("admin.shop.searchPh")}
+        wideSearch
         onRowClick={(x) => setOpenId(x.id)}
         initialSort={[{ id: "order", desc: true }]}
         filters={[
           { id: "channel", label: t("admin.shop.channel"), options: (["shop", "dynamic", "manual"] as const).map((c) => ({ value: c, label: t(`admin.shop.${c}`) })), get: (x) => x.channel },
-          { id: "done", label: t("common.fields.status"), options: [{ value: "yes", label: t("admin.shop.executed") }, { value: "no", label: t("admin.shop.notExecuted") }], get: (x) => (x.executed ? "yes" : "no") },
+          { id: "service", label: t("common.fields.service"), options: serviceOptions, get: serviceOf },
+          { id: "company", label: t("admin.shop.company"), options: companyOptions, get: (x) => x.partnerId },
         ]}
       />
 
@@ -149,10 +153,8 @@ export default function ShopPage() {
         footer={
           open ? (
             <>
-              <Button asChild variant="outline"><Link href={`/admin/leads/${open.offerId}`}><ClipboardList /> {t("admin.rows.openLead")}</Link></Button>
-              <Button variant={open.executed ? "outline" : "success"} className="flex-1" onClick={() => setExecuted(open, !open.executed)}>
-                {open.executed ? <RotateCcw /> : <CheckCircle2 />} {t(open.executed ? "admin.rows.markNotDone" : "admin.rows.markDone")}
-              </Button>
+              <Button asChild variant="outline" className="flex-1"><Link href={`/admin/partners/${open.partnerId}`}><Building2 /> {t("admin.rows.openCompany")}</Link></Button>
+              <Button asChild className="flex-1"><Link href={`/admin/leads/${open.offerId}`}><ClipboardList /> {t("admin.rows.openLead")}</Link></Button>
             </>
           ) : undefined
         }
@@ -166,7 +168,6 @@ export default function ShopPage() {
                     { label: t("admin.shop.channel"), value: t(`admin.shop.${open.channel}`) },
                     { label: t("common.fields.date"), value: formatDateTime(open.createdAt, lang) },
                     { label: t("admin.shop.coupon"), value: open.couponCode ?? "–" },
-                    { label: t("common.fields.status"), value: open.executed ? t("admin.shop.executed") : t("admin.shop.notExecuted") },
                   ]}
                 />
               </SheetSection>
@@ -182,8 +183,8 @@ export default function ShopPage() {
                       { label: t("common.fields.phone"), value: o.phone, ltr: true },
                       { label: t("common.fields.email"), value: o.email, ltr: true },
                       { label: t("common.fields.service"), value: L(serviceMap[o.serviceId]?.name) },
-                      { label: t("site.offerForm.movingFrom"), value: `${o.from.zip} ${o.from.city}` },
-                      ...(o.to ? [{ label: t("site.offerForm.movingTo"), value: `${o.to.zip} ${o.to.city}` }] : []),
+                      { label: t(`site.job.from.${jobKind(serviceMap[o.serviceId])}`), value: `${o.from.zip} ${o.from.city}` },
+                      ...(o.to ? [{ label: t(`site.job.to.${jobKind(serviceMap[o.serviceId])}`), value: `${o.to.zip} ${o.to.city}` }] : []),
                     ]}
                   />
                   <Link href={`/admin/leads/${o.id}`} className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">
