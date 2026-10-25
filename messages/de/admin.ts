@@ -311,6 +311,8 @@ export const admin: Built<typeof Def> = {
       sendBody: "Wir senden {email} eine kurze Umfrage, um die Firma und Kompass zu bewerten. Sonst geht sie am {date} automatisch raus, am Tag nach dem Umzug.",
       resendBody: "Sie wurde am {date} gesendet. Wir senden {email} dieselbe Umfrage noch einmal.",
       sentTo: "Bewertungsumfrage an {email} gesendet",
+      previewNote: "Vorschau: So sieht die Umfrage für den Kunden aus. Ihre Eingaben hier werden nicht gespeichert.",
+      complaint: "Beschwerde des Kunden",
     },
     viewOffer: "Anfrage ansehen",
   },

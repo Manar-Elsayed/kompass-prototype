@@ -279,6 +279,12 @@ export const site: Built<typeof Def> = {
     send: "Antworten senden",
     thanksTitle: "Danke für Ihre Antworten",
     thanksBody: "Ihre Bewertungen werden vor der Veröffentlichung geprüft.",
+    q3NoCompany: "2. Bewerten Sie Kompass",
+    q4: "4. Ist etwas schiefgelaufen?",
+    q4NoCompany: "3. Ist etwas schiefgelaufen?",
+    q4Hint: "Optional. Nur das Kompass-Team liest dies, und wir melden uns bei Ihnen.",
+    complaint: "Ihre Beschwerde",
+    complaintPh: "z. B. Die Zügelmänner kamen drei Stunden zu spät und ein Tisch wurde zerkratzt.",
   },
   surveyEmail: {
     label: "E-Mail mit Bewertungsumfrage",

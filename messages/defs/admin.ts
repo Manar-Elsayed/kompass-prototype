@@ -308,6 +308,8 @@ export const admin = {
       sendBody: "We email {email} a short survey to rate the company and Kompass. Otherwise it goes out automatically on {date}, the day after the move.",
       resendBody: "It was sent on {date}. We email {email} the same survey again.",
       sentTo: "Review survey sent to {email}",
+      previewNote: "Preview: this is the survey the customer receives. Nothing you enter here is saved.",
+      complaint: "Complaint from the customer",
     },
     viewOffer: "View offer",
   },

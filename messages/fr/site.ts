@@ -279,6 +279,12 @@ export const site: Built<typeof Def> = {
     send: "Envoyer mes réponses",
     thanksTitle: "Merci pour vos réponses",
     thanksBody: "Vos avis sont vérifiés avant d’être publiés.",
+    q3NoCompany: "2. Évaluez Kompass",
+    q4: "4. Un problème est-il survenu ?",
+    q4NoCompany: "3. Un problème est-il survenu ?",
+    q4Hint: "Facultatif. Seule l’équipe Kompass le lit, et nous revenons vers vous.",
+    complaint: "Votre réclamation",
+    complaintPh: "p. ex. Les déménageurs sont arrivés avec trois heures de retard et une table a été rayée.",
   },
   surveyEmail: {
     label: "E-mail du questionnaire d’avis",

@@ -627,9 +627,15 @@ function SurveyCard({ offer, orders }: { offer: Offer; orders: Order[] }) {
         ) : (
           !cancelled && !noBuyers && <p className="text-muted-foreground">{t(sent ? "noAnswer" : "notYet")}</p>
         )}
+        {offer.surveyComplaint && (
+          <div className="rounded-xl border border-danger/20 bg-danger-soft/40 p-3">
+            <p className="mb-1 flex items-center gap-1.5 font-semibold text-ink"><AlertTriangle className="size-4 text-danger" /> {t("complaint")}</p>
+            <p className="text-ink">“{offer.surveyComplaint}”</p>
+          </div>
+        )}
         {!cancelled && !noBuyers && (
           <div className="flex flex-wrap gap-2">
-            {canSendSurvey(offer, orders.length) && (
+            {canSendSurvey(offer, orders.length, answers.length > 0) && (
               <Button size="sm" onClick={() => ask(offer)}><Send /> {t(sent ? "resend" : "send")}</Button>
             )}
             <Button size="sm" variant="outline" onClick={() => setPreview(true)}><Mail /> {t("previewEmail")}</Button>

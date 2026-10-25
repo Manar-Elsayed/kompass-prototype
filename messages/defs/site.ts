@@ -276,6 +276,12 @@ export const site = {
     send: "Send my answers",
     thanksTitle: "Thank you for your answers",
     thanksBody: "Your reviews are checked before they are published.",
+    q3NoCompany: "2. Rate Kompass",
+    q4: "4. Did anything go wrong?",
+    q4NoCompany: "3. Did anything go wrong?",
+    q4Hint: "Optional. Only the Kompass team reads this, and we get back to you.",
+    complaint: "Your complaint",
+    complaintPh: "e.g. The movers came three hours late and a table was scratched.",
   },
   surveyEmail: {
     label: "Review survey email",

@@ -311,6 +311,8 @@ export const admin: Built<typeof Def> = {
       sendBody: "Nous envoyons à {email} un court questionnaire pour évaluer l’entreprise et Kompass. Sinon, il part automatiquement le {date}, le lendemain du déménagement.",
       resendBody: "Il a été envoyé le {date}. Nous renvoyons le même questionnaire à {email}.",
       sentTo: "Questionnaire d’avis envoyé à {email}",
+      previewNote: "Aperçu : voici le questionnaire que reçoit le client. Rien de ce que vous saisissez ici n’est enregistré.",
+      complaint: "Réclamation du client",
     },
     viewOffer: "Voir la demande",
   },

@@ -113,6 +113,8 @@ export interface Offer {
   buyersNotifiedAt?: string;
   /** Admin sent the review survey by hand (otherwise it goes out the day after the move). */
   surveySentAt?: string;
+  /** A complaint the customer wrote in the review survey (only the Kompass team sees it). */
+  surveyComplaint?: string;
   source: "website" | "admin";
   createdAt: string;
 }

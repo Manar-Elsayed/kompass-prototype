@@ -47,6 +47,8 @@ function Leads() {
   const serviceMap = useServiceMap();
   const { confirm, dialog } = useConfirm();
   const { ask: askSurvey, dialog: surveyDialog } = useSendSurvey();
+  const reviews = useStore((s) => s.reviews);
+  const answeredIds = useMemo(() => new Set(reviews.map((r) => r.offerId)), [reviews]);
 
   const sold = useMemo(() => {
     const m: Record<string, number> = {};
@@ -184,7 +186,7 @@ function Leads() {
               },
             },
             { label: t("admin.rows.assignCompany"), icon: <UserPlus />, href: `/admin/leads/${o.id}#assign`, hidden: !open || full },
-            { label: t(surveySent(o) ? "admin.leads.survey.resend" : "admin.leads.survey.send"), icon: <Send />, hidden: !canSendSurvey(o, sold[o.id] ?? 0), onSelect: () => askSurvey(o) },
+            { label: t(surveySent(o) ? "admin.leads.survey.resend" : "admin.leads.survey.send"), icon: <Send />, hidden: !canSendSurvey(o, sold[o.id] ?? 0, answeredIds.has(o.id)), onSelect: () => askSurvey(o) },
             { label: t("admin.leads.detail.cancel"), icon: <Ban />, tone: "danger", href: `/admin/leads/${o.id}#cancel`, hidden: o.status === "cancelled", separated: true },
           ]}
         />
