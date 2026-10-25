@@ -54,10 +54,8 @@ export default function ReviewSurveyPage() {
 
   const submit = async (a: SurveyAnswers) => {
     await mock(() => {
-      if (a.companyId) {
-        chooseCompany(offer.id, a.companyId);
-        submitReview({ target: a.companyId, offerId: offer.id, name: shownAs, email: person.email, stars: a.companyStars, comment: a.companyComment });
-      }
+      chooseCompany(offer.id, a.companyId);
+      submitReview({ target: a.companyId, offerId: offer.id, name: shownAs, email: person.email, stars: a.companyStars, comment: a.companyComment });
       submitReview({ target: "kompass", offerId: offer.id, name: shownAs, email: person.email, stars: a.kompassStars, comment: a.kompassComment });
       // a complaint stays private: the team sees it on the offer
       if (a.complaint) patch("offers", offer.id, { surveyComplaint: a.complaint });
