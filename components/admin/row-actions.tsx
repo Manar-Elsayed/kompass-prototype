@@ -24,8 +24,9 @@ export type RowAction = {
 
 /**
  * The same end-of-row control on every admin table: one "…" menu whose first item opens the record
- * (the row itself opens it too), followed by what can be done to it. Clicks here never trigger the
- * row's own click.
+ * (the row itself opens it too), followed by what can be done to it. When opening the record is the
+ * only thing to do, it is a single eye button instead of a menu with one item. Clicks here never
+ * trigger the row's own click.
  */
 export function RowActions({
   onView,
@@ -42,9 +43,20 @@ export function RowActions({
   const t = useTranslations("common.actions");
   const view: RowAction[] = viewHref || onView ? [{ label: viewLabel ?? t("view"), icon: <Eye />, href: viewHref, onSelect: viewHref ? undefined : onView }] : [];
   const shown = [...view, ...actions.filter((a) => !a.hidden)];
+  const only = shown.length === 1 && view.length === 1 ? view[0] : null;
   return (
     <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
-      {shown.length > 0 && (
+      {only ? (
+        only.href ? (
+          <Button asChild variant="ghost" size="icon-sm" aria-label={only.label} title={only.label}>
+            <Link href={only.href}><Eye /></Link>
+          </Button>
+        ) : (
+          <Button variant="ghost" size="icon-sm" aria-label={only.label} title={only.label} onClick={only.onSelect}>
+            <Eye />
+          </Button>
+        )
+      ) : shown.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon-sm" aria-label={t("more")}>
