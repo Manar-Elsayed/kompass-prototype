@@ -362,6 +362,8 @@ export const admin: Built<typeof Def> = {
     revenue: "Umsatz",
   },
   fake: {
+    refundCol: "Rückerstattung",
+    refundState: { refunded: "Erstattet", pending: "Ausstehend", rejected: "Abgelehnt", none: "Nicht erstattet" },
     report: "Meldung",
     searchPh: "Meldung, Anfrage, Kunde, Firma oder Grund suchen…",
     title: "Meldungen gefälschter Anfragen",

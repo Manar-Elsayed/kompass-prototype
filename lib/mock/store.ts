@@ -739,11 +739,12 @@ export const useStore = create<Store>()(
       // offer-form sessions and contact follow-up; v8 the six services, booking types, chosen
       // companies and no-shows; v9 the partner portal flows (onboarding contract, message threads,
       // payouts, service areas); v10 two booking types (same / other person); v11 no-shows removed
-      // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address. Older saves start again from the current seed,
+      // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address; v14 fake-offer reports whose
+      // status matches the refunds. Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 13,
+      version: 14,
       migrate: (persisted, version) => {
-        if (version >= 13) return persisted as Store;
+        if (version >= 14) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

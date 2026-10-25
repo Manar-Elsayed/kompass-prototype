@@ -441,7 +441,7 @@ for (const o of offers) {
   }
 }
 
-export const fakeReports: FakeReport[] = rng.sample(orders, 9).map((o, i) => ({
+const sampledReports: FakeReport[] = rng.sample(orders, 9).map((o, i) => ({
   id: `FR-${pad(i + 101, 3)}`,
   orderId: o.id,
   reason: rng.pick([
@@ -453,6 +453,27 @@ export const fakeReports: FakeReport[] = rng.sample(orders, 9).map((o, i) => ({
   status: (["open", "open", "testing", "pending", "confirmed", "canceled", "open", "pending", "testing"] as const)[i],
   createdAt: daysAgo(rng.int(0, 25)),
 }));
+
+// Keep each report's status true to the money: a confirmed report sits on an offer cancelled as
+// fake (its buyers were refunded); any other report sits on an offer that is still real. The
+// replacement purchases are picked in list order, so no random stream moves.
+const fakeCancelled = (orderId: string) => {
+  const offer = offers.find((x) => x.id === orders.find((o) => o.id === orderId)?.offerId);
+  return offer?.status === "cancelled" && offer.cancelReason === "fake";
+};
+const reportedOrders = new Set<string>();
+export const fakeReports: FakeReport[] = sampledReports.map((r) => {
+  const wantFake = r.status === "confirmed";
+  let orderId = r.orderId;
+  if (fakeCancelled(orderId) !== wantFake || reportedOrders.has(orderId)) {
+    orderId = orders.find((o) => fakeCancelled(o.id) === wantFake && !reportedOrders.has(o.id) && !sampledReports.some((x) => x.orderId === o.id))?.id ?? orderId;
+  }
+  reportedOrders.add(orderId);
+  const offer = offers.find((x) => x.id === orders.find((o) => o.id === orderId)?.offerId);
+  // a report comes before the decision it led to
+  const createdAt = wantFake && offer?.cancelledAt && offer.cancelledAt < r.createdAt ? offer.cancelledAt : r.createdAt;
+  return { ...r, orderId, createdAt };
+});
 
 /* ---------- partner dues (payments with receipts) ---------- */
 export const dues: PartnerDue[] = Array.from({ length: 22 }, (_, i) => {
