@@ -23,7 +23,8 @@ export default function AdminLogin() {
   const L = useL();
   const router = useRouter();
   const hydrated = useHydrated();
-  const users = useStore((s) => s.users);
+  // deactivated members can't sign in
+  const users = useStore((s) => s.users).filter((u) => u.active);
   const roles = useStore((s) => s.roles);
   const session = useStore((s) => s.session);
   const login = useStore((s) => s.login);

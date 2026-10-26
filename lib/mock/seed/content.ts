@@ -733,4 +733,5 @@ export const users: AdminUser[] = [
   { id: "u-2", name: "Omar Haddad", email: "omar@kompassumzug.ch", phone: "+41 78 222 33 44", roleId: "role-editor", active: true, lastLogin: daysAgo(1) },
   { id: "u-3", name: "Sandra Keller", email: "sandra@kompassumzug.ch", phone: "+41 76 333 44 55", roleId: "role-finance", active: true, lastLogin: daysAgo(2) },
   { id: "u-4", name: "Nadia Rossi", email: "nadia@kompassumzug.ch", phone: "+41 77 444 55 66", roleId: "role-support", active: false, lastLogin: daysAgo(40) },
+  { id: "u-5", name: "Jonas Weber", email: "jonas@kompassumzug.ch", phone: "+41 79 555 66 77", roleId: "role-support", active: true, lastLogin: "", invitedAt: daysAgo(3) },
 ];

@@ -557,7 +557,7 @@ export const useStore = create<Store>()(
       login: (userId) =>
         set((s) => ({
           session: { userId },
-          users: s.users.map((u) => (u.id === userId ? { ...u, lastLogin: nowIso() } : u)),
+          users: s.users.map((u) => (u.id === userId ? { ...u, lastLogin: nowIso(), invitedAt: undefined } : u)),
         })),
       logout: () => set({ session: null }),
       partnerLogin: (partnerId) =>
@@ -763,11 +763,11 @@ export const useStore = create<Store>()(
       // companies and no-shows; v9 the partner portal flows (onboarding contract, message threads,
       // payouts, service areas); v10 two booking types (same / other person); v11 no-shows removed
       // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address; v14 fake-offer reports whose
-      // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout. Older saves start again from the current seed,
+      // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout; v17 team invitations (an invited member who hasn't signed in yet). Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 16,
+      version: 17,
       migrate: (persisted, version) => {
-        if (version >= 16) return persisted as Store;
+        if (version >= 17) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

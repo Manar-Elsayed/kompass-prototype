@@ -59,6 +59,7 @@ export default function RolesPage() {
                         size="icon-sm"
                         className="text-muted-foreground hover:text-danger"
                         aria-label={t("common.actions.delete")}
+                        title={users.some((u) => u.roleId === r.id) ? tr("deleteBlocked", { count: users.filter((u) => u.roleId === r.id).length }) : t("admin.del.role.button")}
                         disabled={users.some((u) => u.roleId === r.id)}
                         onClick={() =>
                           confirm({
