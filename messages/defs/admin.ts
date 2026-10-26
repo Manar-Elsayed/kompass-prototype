@@ -1227,7 +1227,7 @@ export const admin = {
     module: "Module",
     edit: "Edit role",
     systemHint: "Super admin always has every module and can’t be changed or deleted.",
-    deleteRule: "Only people with Settings & access can manage roles. A custom role can be deleted from its ⋯ menu once nobody holds it (invited and inactive members count): give its members another role in Team first.",
+    deleteRule: "Anyone with Settings & access can edit roles. Only a Super admin can delete a custom role, from its ⋯ menu, once nobody holds it (invited and inactive members count): give its members another role in Team first.",
     addBody: "A new role starts with Dashboard only. Tick the modules it needs after creating it.",
     nameTaken: "A role with this name already exists.",
     description: "Description",

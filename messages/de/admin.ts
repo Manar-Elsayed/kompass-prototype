@@ -1230,7 +1230,7 @@ export const admin: Built<typeof Def> = {
     module: "Modul",
     edit: "Rolle bearbeiten",
     systemHint: "Der Super-Admin hat immer alle Module und kann weder geändert noch gelöscht werden.",
-    deleteRule: "Nur Personen mit „Einstellungen & Zugriff“ verwalten Rollen. Eine eigene Rolle lässt sich über ihr ⋯-Menü löschen, sobald niemand sie hat (auch eingeladene und inaktive Mitglieder zählen): Weisen Sie ihren Mitgliedern zuerst im Team eine andere Rolle zu.",
+    deleteRule: "Alle mit „Einstellungen & Zugriff“ können Rollen bearbeiten. Löschen kann eine eigene Rolle nur ein Super-Admin, über ihr ⋯-Menü und erst, wenn niemand sie hat (auch eingeladene und inaktive Mitglieder zählen): Weisen Sie ihren Mitgliedern zuerst im Team eine andere Rolle zu.",
     addBody: "Eine neue Rolle startet nur mit dem Dashboard. Haken Sie nach dem Erstellen die benötigten Module an.",
     nameTaken: "Eine Rolle mit diesem Namen gibt es bereits.",
     description: "Beschreibung",

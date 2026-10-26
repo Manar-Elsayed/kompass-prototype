@@ -1230,7 +1230,7 @@ export const admin: Built<typeof Def> = {
     module: "Modulo",
     edit: "Modifica ruolo",
     systemHint: "Il super amministratore ha sempre tutti i moduli e non può essere modificato né eliminato.",
-    deleteRule: "Solo chi ha «Impostazioni e accesso» gestisce i ruoli. Un ruolo personalizzato si elimina dal suo menu ⋯ quando nessuno lo ha (contano anche i membri invitati e inattivi): assegni prima un altro ruolo ai suoi membri nel team.",
+    deleteRule: "Chi ha «Impostazioni e accesso» può modificare i ruoli. Solo un super amministratore può eliminare un ruolo personalizzato, dal suo menu ⋯, quando nessuno lo ha (contano anche i membri invitati e inattivi): assegni prima un altro ruolo ai suoi membri nel team.",
     addBody: "Un nuovo ruolo parte solo con la dashboard. Dopo averlo creato, spunti i moduli necessari.",
     nameTaken: "Esiste già un ruolo con questo nome.",
     description: "Descrizione",

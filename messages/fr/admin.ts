@@ -1230,7 +1230,7 @@ export const admin: Built<typeof Def> = {
     module: "Module",
     edit: "Modifier le rôle",
     systemHint: "Le super-administrateur a toujours tous les modules et ne peut être ni modifié ni supprimé.",
-    deleteRule: "Seules les personnes avec « Paramètres et accès » gèrent les rôles. Un rôle personnalisé se supprime depuis son menu ⋯ dès que personne ne l’a (les membres invités et inactifs comptent) : attribuez d’abord un autre rôle à ses membres dans l’équipe.",
+    deleteRule: "Toute personne avec « Paramètres et accès » peut modifier les rôles. Seul un super-administrateur peut supprimer un rôle personnalisé, depuis son menu ⋯, une fois que personne ne l’a (les membres invités et inactifs comptent) : attribuez d’abord un autre rôle à ses membres dans l’équipe.",
     addBody: "Un nouveau rôle commence avec le seul tableau de bord. Cochez les modules nécessaires après l’avoir créé.",
     nameTaken: "Un rôle porte déjà ce nom.",
     description: "Description",

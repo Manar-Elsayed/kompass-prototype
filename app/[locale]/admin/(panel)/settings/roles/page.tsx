@@ -20,8 +20,9 @@ import { RowActions } from "@/components/admin/row-actions";
 import { PageHeader } from "@/components/admin/ui";
 
 /**
- * Which modules each role can open. Super admin is a locked system role. A custom role can be renamed
- * at any time and deleted only once nobody holds it (invited and inactive members count too).
+ * Which modules each role can open. Super admin is a locked system role. Anyone with Settings & access
+ * can rename a custom role and tick its modules; only a Super admin can delete one, and only once
+ * nobody holds it (invited and inactive members count too), after a confirmation.
  */
 export default function RolesPage() {
   const t = useTranslations();
@@ -33,6 +34,7 @@ export default function RolesPage() {
   const add = useStore((s) => s.add);
   const remove = useStore((s) => s.remove);
   const { user: me } = useCurrentUser();
+  const canDelete = !!roles.find((r) => r.id === me?.roleId)?.system;
   const { confirm, dialog } = useConfirm();
   // one form for a new role (no id) and for renaming an existing one
   const [draft, setDraft] = useState<null | { id?: string; name: L10n; description: L10n }>(null);
@@ -98,12 +100,12 @@ export default function RolesPage() {
                         <p className="mt-0.5 text-xs font-normal text-muted-foreground">{tr("members", { count })}</p>
                         {L(r.description) && <p className="mt-1 line-clamp-2 text-xs font-normal text-muted-foreground" title={L(r.description)}>{L(r.description)}</p>}
                       </div>
-                      {/* custom roles only: rename always, delete once nobody holds the role */}
+                      {/* custom roles only: rename always; delete for a Super admin, once nobody holds the role */}
                       {!r.system && (
                         <RowActions
                           actions={[
                             { label: tr("edit"), icon: <Pencil />, onSelect: () => setDraft({ id: r.id, name: { ...r.name }, description: { ...r.description } }) },
-                            { label: t("admin.del.role.button"), icon: <Trash2 />, tone: "danger", separated: true, onSelect: () => del(r), hidden: count > 0 },
+                            { label: t("admin.del.role.button"), icon: <Trash2 />, tone: "danger", separated: true, onSelect: () => del(r), hidden: count > 0 || !canDelete },
                           ]}
                         />
                       )}
