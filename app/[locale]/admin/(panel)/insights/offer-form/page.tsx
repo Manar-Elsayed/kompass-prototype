@@ -127,24 +127,24 @@ export default function OfferFormInsights() {
           <Funnel steps={s.visitors.funnel} className="mt-0" />
         </CardBody>
       </Card>
-      <section>
-        <div className="mb-3">
-          <h2 className="flex items-center gap-2 font-bold text-ink"><XCircle className="size-4 text-warning" /> {t("needsCompletion")}</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">{t("needsCompletionHint")}</p>
-        </div>
-        <DataTable
-          data={followUp}
-          columns={columns}
-          search={(x) => `${x.name ?? ""} ${x.email ?? ""} ${x.phone ?? ""}`}
-          searchPlaceholder={t("searchPh")}
-          onRowClick={(x) => setOpenId(x.id)}
-          rowClassName={(x) => (followUpOf(x) === "completed" ? "opacity-70" : undefined)}
-          filters={[
-            { id: "followUp", label: t("followUp"), options: FOLLOW_UPS.map((v) => ({ value: v, label: t(`followUps.${v}`) })), get: followUpOf },
-            { id: "service", label: tf("service"), options: Object.values(serviceMap).map((sv) => ({ value: sv.id, label: L(sv.name) })), get: (x) => x.serviceId ?? "" },
-          ]}
-        />
-      </section>
+      <DataTable
+        heading={
+          <>
+            <h2 className="flex items-center gap-2 font-bold text-ink"><XCircle className="size-4 text-warning" /> {t("needsCompletion")}</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">{t("needsCompletionHint")}</p>
+          </>
+        }
+        data={followUp}
+        columns={columns}
+        search={(x) => `${x.name ?? ""} ${x.email ?? ""} ${x.phone ?? ""}`}
+        searchPlaceholder={t("searchPh")}
+        onRowClick={(x) => setOpenId(x.id)}
+        rowClassName={(x) => (followUpOf(x) === "completed" ? "opacity-70" : undefined)}
+        filters={[
+          { id: "followUp", label: t("followUp"), options: FOLLOW_UPS.map((v) => ({ value: v, label: t(`followUps.${v}`) })), get: followUpOf },
+          { id: "service", label: tf("service"), options: Object.values(serviceMap).map((sv) => ({ value: sv.id, label: L(sv.name) })), get: (x) => x.serviceId ?? "" },
+        ]}
+      />
       <DetailSheet
         open={!!open}
         onOpenChange={(v) => !v && setOpenId(null)}
