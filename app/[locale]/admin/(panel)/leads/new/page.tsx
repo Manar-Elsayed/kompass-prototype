@@ -43,7 +43,7 @@ function NewLead() {
         defaultServiceId={session?.serviceId}
         defaultContact={session ? { firstName, lastName: rest.join(" "), email: session.email, phone: session.phone } : undefined}
         onCreated={(o) => {
-          if (session) trackFormSession(session.id, { step: "submitted", offerId: o.id });
+          if (session) trackFormSession(session.id, { step: "submitted", offerId: o.id, followUp: "completed" });
           toast.success(t("leads.created", { id: o.id }));
           router.push(`/admin/leads/${o.id}`);
         }}
