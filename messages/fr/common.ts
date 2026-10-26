@@ -151,14 +151,9 @@ export const common: Built<typeof Def> = {
   toast: {
     saved: "Modifications enregistrées",
     created: "Créé avec succès",
-    deleted: "Supprimé",
     updated: "Mis à jour",
     copied: "Copié dans le presse-papiers",
     resetDone: "Données de démo restaurées",
-  },
-  confirm: {
-    title: "Êtes-vous sûr(e) ?",
-    deleteBody: "Cette action est irréversible.",
   },
   proto: {
     label: "Prototype",

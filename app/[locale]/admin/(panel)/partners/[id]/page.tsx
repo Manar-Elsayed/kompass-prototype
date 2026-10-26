@@ -131,13 +131,13 @@ function PartnerDetail() {
             separated: true,
             onSelect: () =>
               confirm({
-                title: t("common.confirm.title"),
-                body: t("common.confirm.deleteBody"),
+                title: t("admin.del.review.title"),
+                body: t("admin.del.review.body", { name: r.name }),
                 tone: "danger",
-                confirmLabel: t("common.actions.delete"),
+                confirmLabel: t("admin.del.review.button"),
                 onConfirm: () => {
                   removeItem("reviews", r.id);
-                  toast.success(t("common.toast.deleted"));
+                  toast.success(t("admin.del.review.done"));
                 },
               }),
           },

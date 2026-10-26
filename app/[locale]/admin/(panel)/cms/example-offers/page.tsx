@@ -46,7 +46,7 @@ export default function ExampleOffersAdmin() {
         <div className="flex items-center justify-end gap-1">
           <Switch checked={m.active} onCheckedChange={(v) => patch("modelOffers", m.id, { active: v })} className="me-2" aria-label={t("common.status.active")} />
           <Button variant="ghost" size="icon-sm" onClick={() => setDraft(m)} aria-label={t("common.actions.edit")}><Pencil /></Button>
-          <Button variant="ghost" size="icon-sm" className="text-danger hover:bg-danger-soft" aria-label={t("common.actions.delete")} onClick={() => confirm({ title: t("common.confirm.title"), body: L(m.title), tone: "danger", onConfirm: () => { remove("modelOffers", m.id); toast.success(t("common.toast.deleted")); } })}><Trash2 /></Button>
+          <Button variant="ghost" size="icon-sm" className="text-danger hover:bg-danger-soft" aria-label={t("common.actions.delete")} onClick={() => confirm({ title: t("admin.del.example.title"), body: t("admin.del.example.body", { title: L(m.title) }), tone: "danger", confirmLabel: t("admin.del.example.button"), onConfirm: () => { remove("modelOffers", m.id); toast.success(t("admin.del.example.done")); } })}><Trash2 /></Button>
         </div>
       ),
     },

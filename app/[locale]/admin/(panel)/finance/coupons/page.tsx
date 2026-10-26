@@ -111,12 +111,12 @@ export default function CouponsPage() {
             onClick={() =>
               confirm({
                 title: tc("deleteTitle", { code: c.code }),
-                body: t("common.confirm.deleteBody"),
+                body: t("admin.del.coupon.body"),
                 tone: "danger",
-                confirmLabel: t("common.actions.delete"),
+                confirmLabel: t("admin.del.coupon.button"),
                 onConfirm: () => {
                   remove("coupons", c.id);
-                  toast.success(t("common.toast.deleted"));
+                  toast.success(t("admin.del.coupon.done", { code: c.code }));
                 },
               })
             }

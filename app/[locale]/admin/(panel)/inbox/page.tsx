@@ -191,13 +191,13 @@ export default function InboxPage() {
                       separated: true,
                       onSelect: () =>
                         confirm({
-                          title: t("common.confirm.title"),
-                          body: q.question,
+                          title: t("admin.del.question.title"),
+                          body: t("admin.del.question.body", { question: q.question }),
                           tone: "danger",
-                          confirmLabel: t("common.actions.delete"),
+                          confirmLabel: t("admin.del.question.button"),
                           onConfirm: () => {
                             remove("faqQuestions", q.id);
-                            toast.success(t("common.toast.deleted"));
+                            toast.success(t("admin.del.question.done"));
                           },
                         }),
                     },

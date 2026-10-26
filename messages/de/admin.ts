@@ -560,6 +560,62 @@ export const admin: Built<typeof Def> = {
     readyAll: "Alles ist da. Sie können freigeben.",
     sendContractHint: "Senden Sie zuerst den Vertrag: Die Firma unterschreibt ihn im Partnerportal, danach erscheint er hier als unterschrieben.",
   },
+  del: {
+    review: {
+      title: "Diese Bewertung löschen?",
+      body: "Die Bewertung von {name} wird endgültig entfernt, auch von der Website und aus der Durchschnittsbewertung. Das lässt sich nicht rückgängig machen.",
+      button: "Bewertung löschen",
+      done: "Bewertung gelöscht",
+    },
+    article: {
+      title: "„{title}“ löschen?",
+      body: "Der Artikel verschwindet aus dem Blog, und sein Link funktioniert nicht mehr. Das lässt sich nicht rückgängig machen. Um ihn vorübergehend offline zu nehmen, heben Sie stattdessen die Veröffentlichung auf.",
+      button: "Artikel löschen",
+      done: "Artikel gelöscht",
+    },
+    example: {
+      title: "Dieses Beispielangebot löschen?",
+      body: "„{title}“ wird von der Startseite entfernt. Das lässt sich nicht rückgängig machen.",
+      button: "Beispiel löschen",
+      done: "Beispielangebot gelöscht",
+    },
+    faq: {
+      title: "Diese FAQ löschen?",
+      body: "„{question}“ wird von der FAQ-Seite entfernt. Das lässt sich nicht rückgängig machen.",
+      button: "FAQ löschen",
+      done: "FAQ gelöscht",
+    },
+    question: {
+      title: "Diese Frage löschen?",
+      body: "„{question}“ wird aus dem Posteingang entfernt. Das lässt sich nicht rückgängig machen.",
+      button: "Frage löschen",
+      done: "Frage gelöscht",
+    },
+    coupon: {
+      body: "Partner können ihn nicht mehr verwenden. Bereits damit gekaufte Anfragen behalten ihren Rabatt. Das lässt sich nicht rückgängig machen. Um ihn nur zu pausieren, schalten Sie ihn aus.",
+      button: "Gutschein löschen",
+      done: "Gutschein {code} gelöscht",
+    },
+    role: {
+      title: "Rolle „{name}“ löschen?",
+      body: "Niemand hat diese Rolle, also verliert niemand Zugriff. Das lässt sich nicht rückgängig machen.",
+      button: "Rolle löschen",
+      done: "Rolle gelöscht",
+    },
+    member: {
+      done: "{name} aus dem Team entfernt",
+    },
+    removal: {
+      title: "Diese Bewertung entfernen?",
+      body: "Wie von {company} beantragt, wird die Bewertung von der Firmenseite und aus der Durchschnittsbewertung gelöscht. Das lässt sich nicht rückgängig machen.",
+      button: "Bewertung entfernen",
+    },
+    payment: {
+      title: "Diese Zahlung ablehnen?",
+      body: "{id} · {amount} von {name}. Das Wallet bleibt unverändert, und die Firma sieht die Zahlung als abgelehnt.",
+      button: "Zahlung ablehnen",
+    },
+  },
   payouts: {
     searchPh: "Auszahlung, Firma oder IBAN suchen…",
     title: "Auszahlungen",
@@ -808,7 +864,7 @@ export const admin: Built<typeof Def> = {
     open: "Öffnen",
     delete: "Löschen",
     deleteTitle: "{name} löschen?",
-    deleteBody: "Die Datei wird für alle entfernt.",
+    deleteBody: "Die Datei wird für alle entfernt. Das lässt sich nicht rückgängig machen.",
     deleted: "Datei gelöscht",
     uploaded: "Datei hochgeladen",
     empty: "Noch keine Dateien.",
@@ -1010,7 +1066,6 @@ export const admin: Built<typeof Def> = {
       excerpt: "Auszug",
       body: "Inhalt",
       published: "Veröffentlicht",
-      deleteTitle: "Diesen Artikel löschen?",
     },
     faq: {
       title: "FAQ",

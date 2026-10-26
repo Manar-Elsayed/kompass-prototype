@@ -126,13 +126,13 @@ export default function BlogEditor() {
                 className="w-full"
                 onClick={() =>
                   confirm({
-                    title: tb("deleteTitle"),
-                    body: t("common.confirm.deleteBody"),
+                    title: t("admin.del.article.title", { title: L(draft.title) }),
+                    body: t("admin.del.article.body"),
                     tone: "danger",
-                    confirmLabel: t("common.actions.delete"),
+                    confirmLabel: t("admin.del.article.button"),
                     onConfirm: () => {
                       remove("blogs", draft.id);
-                      toast.success(t("common.toast.deleted"));
+                      toast.success(t("admin.del.article.done"));
                       router.replace("/admin/cms/blog");
                     },
                   })

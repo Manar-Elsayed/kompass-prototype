@@ -557,6 +557,62 @@ export const admin = {
     readyAll: "Everything is in. You can approve.",
     sendContractHint: "Send the contract first: the applicant signs it in the partner portal, then it shows as signed here.",
   },
+  del: {
+    review: {
+      title: "Delete this review?",
+      body: "The review by {name} is removed for good, including from the website and the average rating. You can’t undo this.",
+      button: "Delete review",
+      done: "Review deleted",
+    },
+    article: {
+      title: "Delete “{title}”?",
+      body: "The article leaves the blog and its link stops working. You can’t undo this. To take it offline for now, unpublish it instead.",
+      button: "Delete article",
+      done: "Article deleted",
+    },
+    example: {
+      title: "Delete this example offer?",
+      body: "“{title}” is removed from the homepage. You can’t undo this.",
+      button: "Delete example",
+      done: "Example offer deleted",
+    },
+    faq: {
+      title: "Delete this FAQ?",
+      body: "“{question}” is removed from the FAQ page. You can’t undo this.",
+      button: "Delete FAQ",
+      done: "FAQ deleted",
+    },
+    question: {
+      title: "Delete this question?",
+      body: "“{question}” is removed from the inbox. You can’t undo this.",
+      button: "Delete question",
+      done: "Question deleted",
+    },
+    coupon: {
+      body: "Partners can’t use it any more. Offers already bought with it keep their discount. You can’t undo this. To pause it instead, switch it off.",
+      button: "Delete coupon",
+      done: "Coupon {code} deleted",
+    },
+    role: {
+      title: "Delete the role “{name}”?",
+      body: "Nobody has this role, so no one loses access. You can’t undo this.",
+      button: "Delete role",
+      done: "Role deleted",
+    },
+    member: {
+      done: "{name} removed from the team",
+    },
+    removal: {
+      title: "Remove this review?",
+      body: "As {company} asked, the review is deleted from its page and its average rating. You can’t undo this.",
+      button: "Remove review",
+    },
+    payment: {
+      title: "Reject this payment?",
+      body: "{id} · {amount} from {name}. The wallet doesn’t change, and the company sees the payment as rejected.",
+      button: "Reject payment",
+    },
+  },
   payouts: {
     searchPh: "Search payout, company or IBAN…",
     title: "Payouts",
@@ -805,7 +861,7 @@ export const admin = {
     open: "Open",
     delete: "Delete",
     deleteTitle: "Delete {name}?",
-    deleteBody: "The file is removed for everyone.",
+    deleteBody: "The file is removed for everyone. You can’t undo this.",
     deleted: "File deleted",
     uploaded: "File uploaded",
     empty: "No files yet.",
@@ -1007,7 +1063,6 @@ export const admin = {
       excerpt: "Excerpt",
       body: "Body",
       published: "Published",
-      deleteTitle: "Delete this article?",
     },
     faq: {
       title: "FAQs",
