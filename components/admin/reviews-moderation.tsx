@@ -148,7 +148,6 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
         columns={columns}
         search={(r) => `${r.name} ${r.email} ${r.comment} ${partnerMap[r.target]?.name ?? ""}`}
         searchPlaceholder={tr(scope === "kompass" ? "kompassSearchPh" : "partnerSearchPh")}
-        wideSearch
         onRowClick={(r) => setOpenId(r.id)}
         rowClassName={(r) => (r.status === "pending" ? "bg-warning-soft/25" : undefined)}
         filters={[

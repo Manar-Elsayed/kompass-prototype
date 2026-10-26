@@ -57,7 +57,6 @@ export function DataTable<T>({
   emptyState,
   dense,
   initialFilters,
-  wideSearch,
 }: {
   data: T[];
   columns: ColumnDef<T, unknown>[];
@@ -73,8 +72,6 @@ export function DataTable<T>({
   dense?: boolean;
   /** Filter values to start with, e.g. from the URL so a dashboard link opens a filtered list. */
   initialFilters?: Record<string, string>;
-  /** The search box takes the toolbar width the filters leave free. */
-  wideSearch?: boolean;
 }) {
   const t = useTranslations("common");
   const [q, setQ] = React.useState("");
@@ -161,13 +158,13 @@ export function DataTable<T>({
       <div className="flex flex-col gap-3 border-b p-3 lg:flex-row lg:items-center">
         <div className="flex flex-1 flex-wrap items-center gap-2">
           {search && (
-            <div className={cn("relative w-full", wideSearch ? "sm:min-w-40 sm:flex-1" : "sm:w-64")}>
+            <div className="relative w-full sm:min-w-48 sm:flex-1">
               <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={searchPlaceholder ?? t("actions.search")} className="h-9 ps-9" />
             </div>
           )}
           {filters.map((f) => (
-            <div key={f.id} className={cn("w-[calc(50%-4px)]", wideSearch ? "sm:w-40" : "sm:w-44")}>
+            <div key={f.id} className="w-[calc(50%-4px)] sm:w-auto sm:max-w-60 sm:shrink-0">
               <Select
                 size="sm"
                 className="h-9"
@@ -195,7 +192,7 @@ export function DataTable<T>({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9">
-                <Columns3 /> <span className="hidden sm:inline">{t("actions.columns")}</span>
+                <Columns3 /> <span className="sr-only xl:not-sr-only">{t("actions.columns")}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

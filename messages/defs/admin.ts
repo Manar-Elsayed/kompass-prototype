@@ -162,6 +162,7 @@ export const admin = {
     },
   },
   leads: {
+    searchPh: "Search offer, customer, email or place…",
     title: "Offers",
     subtitle: "Every moving request submitted on the website or added by the team.",
     add: "Add offer",
@@ -383,6 +384,7 @@ export const admin = {
   },
   partners: {
     title: "Partners",
+    searchPh: "Search company, city, canton or email…",
     subtitle: "Approved companies that can buy offers.",
     wallet: "Wallet",
     leadsBought: "Offers bought",
@@ -1027,6 +1029,7 @@ export const admin = {
   },
   visitors: {
     title: "Visitors",
+    searchPh: "Search IP, city, country or browser…",
     subtitle: "Recent website sessions (anonymised).",
     browser: "Browser",
     location: "Location",
@@ -1076,6 +1079,7 @@ export const admin = {
     collections: "Collections",
     blog: {
       title: "Blog articles",
+      searchPh: "Search title or link…",
       subtitle: "Guides published under /blogs, grouped by service.",
       add: "New article",
       category: "Category",

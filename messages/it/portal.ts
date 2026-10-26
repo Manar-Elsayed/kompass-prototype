@@ -123,6 +123,7 @@ export const portal: Built<typeof Def> = {
   },
   leads: {
     title: "Le mie richieste",
+    searchPh: "Cerca richiesta, cliente o località…",
     subtitle: "I clienti che ha acquistato. Li contatti in fretta: stanno confrontando le offerte.",
     bought: "Acquistato",
     paid: "Pagato",

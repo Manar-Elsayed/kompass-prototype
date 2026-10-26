@@ -165,6 +165,7 @@ export const admin: Built<typeof Def> = {
     },
   },
   leads: {
+    searchPh: "Anfrage, Kunde, E-Mail oder Ort suchen…",
     title: "Anfragen",
     subtitle: "Alle Umzugsanfragen, die über die Website eingereicht oder vom Team erfasst wurden.",
     add: "Anfrage hinzufügen",
@@ -386,6 +387,7 @@ export const admin: Built<typeof Def> = {
   },
   partners: {
     title: "Partner",
+    searchPh: "Firma, Ort, Kanton oder E-Mail suchen…",
     subtitle: "Zugelassene Firmen, die Anfragen kaufen können.",
     wallet: "Wallet",
     leadsBought: "Gekaufte Anfragen",
@@ -1030,6 +1032,7 @@ export const admin: Built<typeof Def> = {
   },
   visitors: {
     title: "Besucher",
+    searchPh: "IP, Ort, Land oder Browser suchen…",
     subtitle: "Letzte Website-Sitzungen (anonymisiert).",
     browser: "Browser",
     location: "Standort",
@@ -1079,6 +1082,7 @@ export const admin: Built<typeof Def> = {
     collections: "Sammlungen",
     blog: {
       title: "Blogartikel",
+      searchPh: "Titel oder Link suchen…",
       subtitle: "Unter /blogs veröffentlichte Ratgeber, nach Dienstleistung gruppiert.",
       add: "Neuer Artikel",
       category: "Kategorie",

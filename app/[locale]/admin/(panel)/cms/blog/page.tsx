@@ -106,6 +106,7 @@ export default function BlogAdmin() {
         data={blogs}
         columns={columns}
         search={(b) => `${LANGS.map((l) => b.title[l]).join(" ")} ${b.slug}`}
+        searchPlaceholder={tb("searchPh")}
         onRowClick={(b) => router.push(`/admin/cms/blog/${b.id}`)}
         filters={[
           { id: "cat", label: tb("category"), options: services.map((s) => ({ value: s.id, label: L(s.name) })), get: (b) => b.serviceId },

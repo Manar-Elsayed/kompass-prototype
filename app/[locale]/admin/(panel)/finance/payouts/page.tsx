@@ -84,7 +84,6 @@ export default function PayoutsPage() {
         columns={columns}
         search={(p) => `${p.id} ${p.iban} ${p.reference ?? ""} ${partnerMap[p.partnerId]?.name} ${p.reason ? tReason(p.reason) : ""} ${p.reasonNote ?? ""}`}
         searchPlaceholder={tp("searchPh")}
-        wideSearch
         initialSort={[{ id: "date", desc: true }]}
         onRowClick={(p) => setOpenId(p.id)}
         filters={[{ id: "status", label: t("common.fields.status"), options: (["requested", "paid", "rejected"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (p) => p.status }]}

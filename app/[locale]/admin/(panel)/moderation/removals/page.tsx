@@ -108,7 +108,6 @@ export default function RemovalsPage() {
           return `${partnerMap[rr.partnerId]?.name ?? ""} ${rr.reason} ${r?.name ?? ""} ${r?.comment ?? ""}`;
         }}
         searchPlaceholder={tr("removalsSearchPh")}
-        wideSearch
         initialSort={[{ id: "date", desc: true }]}
         onRowClick={(rr) => setOpenId(rr.id)}
         rowClassName={(rr) => (rr.status === "pending" ? "bg-warning-soft/25" : undefined)}

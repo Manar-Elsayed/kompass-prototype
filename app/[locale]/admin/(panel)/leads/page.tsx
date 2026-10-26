@@ -212,7 +212,7 @@ function Leads() {
         initialFilters={attention ? { attention } : undefined}
         columns={columns}
         search={(o) => `${o.id} ${o.firstName} ${o.lastName} ${o.email} ${o.from.city} ${o.to?.city ?? ""} ${o.from.zip} ${o.to?.zip ?? ""}`}
-        searchPlaceholder={t("admin.shell.search")}
+        searchPlaceholder={t("admin.leads.searchPh")}
         onRowClick={(o) => router.push(`/admin/leads/${o.id}`)}
         filters={[
           { id: "status", label: t("common.fields.status"), options: STATUSES.map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (o) => o.status },

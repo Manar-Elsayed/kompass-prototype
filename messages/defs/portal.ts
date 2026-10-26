@@ -120,6 +120,7 @@ export const portal = {
   },
   leads: {
     title: "My offers",
+    searchPh: "Search offer, customer or city…",
     subtitle: "Customers you bought. Contact them quickly — they are comparing offers.",
     bought: "Bought",
     paid: "Paid",

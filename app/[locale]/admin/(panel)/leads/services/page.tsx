@@ -145,7 +145,6 @@ export default function ServicesAdmin() {
         columns={columns}
         search={(s) => `${LANGS.map((l) => s.name[l]).join(" ")} ${s.slug}`}
         searchPlaceholder={t("admin.services.searchPh")}
-        wideSearch
         onRowClick={(s) => router.push(contentHref(s))}
       />
 

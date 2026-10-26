@@ -96,6 +96,7 @@ export default function PartnersPage() {
         data={partners}
         columns={columns}
         search={(p) => `${p.name} ${p.city} ${p.email} ${p.canton}`}
+        searchPlaceholder={t("admin.partners.searchPh")}
         onRowClick={(p) => router.push(`/admin/partners/${p.id}`)}
         rowClassName={(p) => (p.banned ? "bg-danger-soft/30" : undefined)}
         filters={[

@@ -409,7 +409,6 @@ function PartnerDetail() {
                 columns={bookingColumns(false)}
                 search={bookingSearch}
                 searchPlaceholder={tb("searchPh")}
-                wideSearch
                 initialSort={[{ id: "date", desc: true }]}
                 onRowClick={(o) => router.push(`/admin/leads/${o.offerId}`)}
                 filters={[channelFilter, { id: "status", label: t("common.fields.status"), options: statusOptions(bookings), get: (o) => offerMap[o.offerId]?.status ?? "" }]}
@@ -422,7 +421,6 @@ function PartnerDetail() {
                 columns={bookingColumns(true)}
                 search={bookingSearch}
                 searchPlaceholder={tb("searchPh")}
-                wideSearch
                 initialSort={[{ id: "date", desc: true }]}
                 onRowClick={(o) => router.push(`/admin/leads/${o.offerId}`)}
                 filters={[
@@ -506,7 +504,6 @@ function PartnerDetail() {
             initialSort={[{ id: "date", desc: true }]}
             search={(r) => `${r.name} ${r.comment} ${r.offerId ?? ""}`}
             searchPlaceholder={tp("reviewsSearchPh")}
-            wideSearch
             filters={[
               { id: "stars", label: tp("rating"), options: [5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: tp("starsN", { n }) })), get: (r) => String(r.stars) },
               { id: "status", label: t("common.fields.status"), options: (["pending", "approved", "rejected"] as const).map((x) => ({ value: x, label: t(`common.status.${x}`) })), get: (r) => r.status },

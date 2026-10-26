@@ -88,7 +88,6 @@ export default function PartnerDuesPage() {
         columns={columns}
         search={(d) => `${d.id} ${d.reference} ${d.invoiceId ?? ""} ${partnerMap[d.partnerId]?.name}`}
         searchPlaceholder={td("searchPh")}
-        wideSearch
         filters={[{ id: "status", label: t("common.fields.status"), options: (["pending", "confirmed", "canceled"] as const).map((s) => ({ value: s, label: t(`common.dueStatus.${s}`) })), get: (d) => d.status }]}
         onRowClick={(d) => router.push(href(d))}
         rowClassName={(d) => (d.status === "pending" ? "bg-warning-soft/25" : undefined)}
