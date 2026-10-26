@@ -152,7 +152,6 @@ export default function CompanyRefundsPage() {
         columns={columns}
         search={(r) => `${r.id} ${partnerMap[r.partnerId]?.name ?? ""} ${r.note} ${offerOf(r) ?? ""} ${tr(`reasons.${r.reason}`)}`}
         searchPlaceholder={tr("searchPh")}
-        wideSearch
         initialSort={[{ id: "status", desc: false }]}
         onRowClick={(r) => setOpenId(r.id)}
         filters={[

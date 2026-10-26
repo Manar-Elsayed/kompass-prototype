@@ -132,7 +132,6 @@ export default function InvoicesPage() {
             columns={invoiceCols}
             search={(i) => `${i.id} ${partnerMap[i.partnerId]?.name ?? ""}`}
             searchPlaceholder={ti("searchPh")}
-            wideSearch
             initialSort={[{ id: "due", desc: false }]}
             onRowClick={openInvoice}
             filters={[{ id: "status", label: t("common.fields.status"), options: (["due", "overdue", "paid"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: invStatus }]}
@@ -145,7 +144,6 @@ export default function InvoicesPage() {
             columns={receiptCols}
             search={(r) => `${r.id} ${r.ref} ${partnerMap[r.partnerId]?.name ?? ""}`}
             searchPlaceholder={ti("receiptsSearchPh")}
-            wideSearch
             onRowClick={openReceipt}
             filters={[{ id: "kind", label: ti("type"), options: (["receipt", "online", "admin", "purchase"] as const).map((k) => ({ value: k, label: tw(`kinds.${k}`, { ref: "" }).trim() })), get: (r) => r.kind }]}
           />

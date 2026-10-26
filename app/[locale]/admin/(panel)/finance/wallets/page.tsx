@@ -111,7 +111,6 @@ export default function WalletsPage() {
         columns={columns}
         search={(r) => `${r.name} ${r.city}`}
         searchPlaceholder={tw("searchPh")}
-        wideSearch
         initialSort={[{ id: "balance", desc: true }]}
         onRowClick={(r) => setHistory(r.id)}
       />

@@ -65,7 +65,6 @@ export default function ActivityPage() {
         columns={columns}
         search={(r) => `${r.name} ${r.city} ${r.canton}`}
         searchPlaceholder={t("admin.activity.searchPh")}
-        wideSearch
         initialSort={[{ id: "leads30", desc: true }]}
         onRowClick={(r) => router.push(`/admin/partners/${r.id}`)}
         filters={[{ id: "health", label: t("admin.activity.health"), options: (["healthy", "atRisk", "dormant"] as const).map((h) => ({ value: h, label: t(`admin.activity.${h}`) })), get: (r) => r.health }]}

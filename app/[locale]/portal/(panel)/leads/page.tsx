@@ -181,6 +181,7 @@ function MyLeads() {
         data={orders}
         columns={columns}
         search={(o) => `${o.offerId} ${offerMap[o.offerId]?.firstName} ${offerMap[o.offerId]?.lastName} ${offerMap[o.offerId]?.from.city}`}
+        searchPlaceholder={t("searchPh")}
         onRowClick={(o) => setOpenId(o.id)}
         initialSort={[{ id: "bought", desc: true }]}
         emptyState={<EmptyState icon={<ShoppingBag />} title={t("empty")} action={<Button asChild variant="accent"><Link href="/portal/shop">{tn("shop")}</Link></Button>} />}

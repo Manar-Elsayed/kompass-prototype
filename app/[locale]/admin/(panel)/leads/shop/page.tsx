@@ -134,7 +134,6 @@ export default function ShopPage() {
           return `${x.id} ${x.offerId} ${partnerMap[x.partnerId]?.name} ${c ? `${c.firstName} ${c.lastName}` : ""}`;
         }}
         searchPlaceholder={t("admin.shop.searchPh")}
-        wideSearch
         onRowClick={(x) => setOpenId(x.id)}
         initialSort={[{ id: "order", desc: true }]}
         filters={[

@@ -131,7 +131,6 @@ export default function FakeReportsPage() {
           return `${r.id} ${o?.id ?? ""} ${o ? `${o.firstName} ${o.lastName}` : ""} ${companyOf(r)} ${r.reason}`;
         }}
         searchPlaceholder={t("admin.fake.searchPh")}
-        wideSearch
         filters={[
           { id: "status", label: t("common.fields.status"), options: FAKE_FLOW.map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (r) => r.status },
           { id: "refund", label: t("admin.fake.refundCol"), options: (["refunded", "pending", "rejected", "none"] as const).map((s) => ({ value: s, label: t(`admin.fake.refundState.${s}`) })), get: (r) => refundOf(r)?.status ?? "none" },

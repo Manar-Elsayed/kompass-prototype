@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Monitor, MousePointerClick, Smartphone, Tablet, Users } from "lucide-react";
-import type { Visitor } from "@/lib/types";
+import { LANGS, type Visitor } from "@/lib/types";
 import { timeAgo } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang } from "@/lib/mock/hooks";
@@ -52,8 +52,10 @@ export default function VisitorsPage() {
         columns={columns}
         dense
         search={(v) => `${v.ip} ${v.city} ${v.country} ${v.browser}`}
+        searchPlaceholder={tv("searchPh")}
         filters={[
           { id: "device", label: t("common.fields.device"), options: (["desktop", "mobile", "tablet"] as const).map((d) => ({ value: d, label: t(`common.device.${d}`) })), get: (v) => v.device },
+          { id: "lang", label: t("common.fields.language"), options: LANGS.map((l) => ({ value: l, label: t(`common.lang.${l}`) })), get: (v) => v.lang },
           { id: "conv", label: tv("converted"), options: [{ value: "1", label: t("common.form.yes") }, { value: "0", label: t("common.form.no") }], get: (v) => (v.converted ? "1" : "0") },
         ]}
       />

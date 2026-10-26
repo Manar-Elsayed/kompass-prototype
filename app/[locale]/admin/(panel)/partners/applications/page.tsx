@@ -104,7 +104,6 @@ export default function ApplicationsPage() {
         initialSort={[{ id: "received", desc: true }]}
         search={(p) => `${p.name} ${p.ownerName} ${p.city} ${p.canton} ${p.email} ${p.regNumber}`}
         searchPlaceholder={ta("searchPh")}
-        wideSearch
         filters={[
           { id: "status", label: t("common.fields.status"), options: STATUSES.map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (p) => p.status },
           {
