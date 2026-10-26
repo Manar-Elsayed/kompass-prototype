@@ -544,6 +544,11 @@ export const useStore = create<Store>()(
       submitFaqQuestion: (input) =>
         set((s) => ({
           faqQuestions: [{ ...input, id: uid("fq"), answered: false, createdAt: nowIso() }, ...s.faqQuestions],
+          notifications: notify(s, {
+            kind: "question",
+            title: { en: `New question from ${input.name}`, de: `Neue Frage von ${input.name}`, fr: `Nouvelle question de ${input.name}`, it: `Nuova domanda da ${input.name}` },
+            href: "/admin/inbox?tab=questions",
+          }),
         })),
 
       markAllNotificationsRead: () =>

@@ -426,6 +426,11 @@ export interface FaqQuestion {
   email: string;
   question: string;
   answered: boolean;
+  /** How the asker got the answer: a personal email, or the FAQ entry (they are emailed the link). */
+  answeredVia?: "email" | "faq";
+  answeredAt?: string;
+  /** The text of the personal reply. */
+  reply?: string;
   createdAt: string;
 }
 
@@ -444,7 +449,7 @@ export interface Visitor {
 
 export interface Notification {
   id: ID;
-  kind: "lead" | "application" | "due" | "review" | "contact" | "report" | "payout";
+  kind: "lead" | "application" | "due" | "review" | "contact" | "question" | "report" | "payout";
   title: L10n;
   href: string;
   read: boolean;

@@ -645,7 +645,7 @@ export const contacts: ContactMessage[] = Array.from({ length: 14 }, (_, i) => {
 export const faqQuestions: FaqQuestion[] = [
   { id: "fq-1", name: "Mia Weber", email: "mia@mail.ch", question: "Do partners also offer weekend moves?", answered: false, createdAt: daysAgo(1) },
   { id: "fq-2", name: "Samir Kaya", email: "samir@mail.ch", question: "Can I request offers for a move from Germany?", answered: false, createdAt: daysAgo(3) },
-  { id: "fq-3", name: "Elena Frei", email: "elena@mail.ch", question: "Is the cleaning guarantee included automatically?", answered: true, createdAt: daysAgo(9) },
+  { id: "fq-3", name: "Elena Frei", email: "elena@mail.ch", question: "Is the cleaning guarantee included automatically?", answered: true, answeredVia: "faq", answeredAt: daysAgo(8), createdAt: daysAgo(9) },
 ];
 
 /* ---------- visitors ---------- */

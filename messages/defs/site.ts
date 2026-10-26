@@ -138,9 +138,9 @@ export const site = {
     },
   },
   faq: {
-    askBody: "Send us your question and we'll add the answer to the help centre.",
+    askBody: "Send us your question. We reply by email within one working day, and useful answers go into the help centre.",
     question: "Your question",
-    sent: "Question received — thank you!",
+    sent: "Question received. We’ll reply by email within one working day.",
     searchPh: "Search questions…",
   },
   partner: {

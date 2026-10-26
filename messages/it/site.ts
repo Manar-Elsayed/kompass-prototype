@@ -141,9 +141,9 @@ export const site: Built<typeof Def> = {
     },
   },
   faq: {
-    askBody: "Ci invii la Sua domanda e aggiungeremo la risposta al centro assistenza.",
+    askBody: "Ci invii la sua domanda. Rispondiamo via e-mail entro un giorno lavorativo e le risposte utili finiscono nel centro assistenza.",
     question: "La Sua domanda",
-    sent: "Domanda ricevuta, grazie!",
+    sent: "Domanda ricevuta. Le risponderemo via e-mail entro un giorno lavorativo.",
     searchPh: "Cerca nelle domande…",
   },
   partner: {

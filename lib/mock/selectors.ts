@@ -424,6 +424,8 @@ export function periodOptions() {
 /** Contact Us requests nobody has replied to or called back within 24 hours. */
 export const FOLLOW_UP_HOURS = 24;
 export const needsFollowUp = (c: { handledAt?: string; createdAt: string }) => !c.handledAt && refNow() - Date.parse(c.createdAt) > FOLLOW_UP_HOURS * 3_600_000;
+/** A help-centre question nobody answered within 24 hours. */
+export const questionNeedsFollowUp = (q: { answered: boolean; createdAt: string }) => !q.answered && refNow() - Date.parse(q.createdAt) > FOLLOW_UP_HOURS * 3_600_000;
 
 type StatsDB = Pick<DB, "offers" | "orders" | "partners" | "dues" | "topups" | "refunds" | "reviews" | "formSessions">;
 

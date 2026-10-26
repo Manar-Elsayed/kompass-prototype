@@ -141,9 +141,9 @@ export const site: Built<typeof Def> = {
     },
   },
   faq: {
-    askBody: "Senden Sie uns Ihre Frage – wir ergänzen die Antwort im Hilfecenter.",
+    askBody: "Senden Sie uns Ihre Frage. Wir antworten innert eines Arbeitstags per E-Mail, und hilfreiche Antworten kommen ins Hilfe-Center.",
     question: "Ihre Frage",
-    sent: "Frage erhalten – vielen Dank!",
+    sent: "Frage erhalten. Wir antworten innert eines Arbeitstags per E-Mail.",
     searchPh: "Fragen durchsuchen…",
   },
   partner: {
