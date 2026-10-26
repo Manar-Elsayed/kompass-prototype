@@ -490,7 +490,10 @@ export interface AdminUser {
   phone: string;
   roleId: ID;
   active: boolean;
+  /** Empty until the first sign-in. */
   lastLogin: string;
+  /** Set while the invitation is open; the first sign-in clears it. */
+  invitedAt?: string;
 }
 
 /* ---------- Content (CMS) ---------- */
