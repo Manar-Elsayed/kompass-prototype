@@ -50,6 +50,7 @@ export function DataTable<T>({
   searchPlaceholder,
   filters = [],
   toolbar,
+  heading,
   onRowClick,
   pageSize = 10,
   rowClassName,
@@ -64,6 +65,8 @@ export function DataTable<T>({
   searchPlaceholder?: string;
   filters?: TableFilter<T>[];
   toolbar?: React.ReactNode;
+  /** A title and hint shown inside the card, above the search and filters. */
+  heading?: React.ReactNode;
   onRowClick?: (row: T) => void;
   pageSize?: number;
   rowClassName?: (row: T) => string | undefined;
@@ -154,6 +157,7 @@ export function DataTable<T>({
 
   return (
     <Card className="overflow-hidden">
+      {heading && <div className="px-4 pt-4">{heading}</div>}
       {/* toolbar */}
       <div className="flex flex-col gap-3 border-b p-3 lg:flex-row lg:items-center">
         <div className="flex flex-1 flex-wrap items-center gap-2">
