@@ -54,10 +54,18 @@ export default function TeamPage() {
   const emailTaken = !!form && users.some((u) => u.id !== form.id && u.email.trim().toLowerCase() === form.email.trim().toLowerCase());
   const formValid = !!form && !!form.name.trim() && EMAIL.test(form.email.trim()) && !emailTaken;
 
-  const setActive = (u: AdminUser, active: boolean) => {
-    patch("users", u.id, { active });
-    toast.success(t(active ? "admin.rows.memberActivated" : "admin.rows.memberDeactivated", { name: u.name }));
-  };
+  // from the switch or the ⋯ menu: access changes only after a confirmation
+  const setActive = (u: AdminUser, active: boolean) =>
+    confirm({
+      title: tu(active ? "activateTitle" : "deactivateTitle", { name: u.name }),
+      body: active ? tu("activateBody", { role: roleName(u.roleId) }) : tu("deactivateBody"),
+      tone: active ? "success" : "danger",
+      confirmLabel: t(active ? "admin.rows.activate" : "admin.rows.deactivate"),
+      onConfirm: () => {
+        patch("users", u.id, { active });
+        toast.success(t(active ? "admin.rows.memberActivated" : "admin.rows.memberDeactivated", { name: u.name }));
+      },
+    });
   const resend = (u: AdminUser) => {
     patch("users", u.id, { invitedAt: new Date().toISOString() });
     toast.success(tu("resent", { email: u.email }));

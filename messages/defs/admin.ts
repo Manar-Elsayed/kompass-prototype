@@ -1213,6 +1213,10 @@ export const admin = {
     roleButton: "Change role",
     roleDone: "{name} is now {role}",
     lastSuper: "At least one active Super admin is needed, so this can’t be changed.",
+    deactivateTitle: "Deactivate {name}?",
+    deactivateBody: "They can’t sign in to the admin until you activate them again. What they did stays in the history.",
+    activateTitle: "Activate {name}?",
+    activateBody: "They can sign in again, with their {role} access.",
   },
   roles: {
     title: "Roles & permissions",

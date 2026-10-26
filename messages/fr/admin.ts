@@ -1216,6 +1216,10 @@ export const admin: Built<typeof Def> = {
     roleButton: "Changer le rôle",
     roleDone: "{name} est maintenant {role}",
     lastSuper: "Il faut au moins un super-administrateur actif : impossible de le modifier.",
+    deactivateTitle: "Désactiver {name} ?",
+    deactivateBody: "La personne ne peut plus se connecter à l’admin tant que vous ne la réactivez pas. Ses actions restent dans l’historique.",
+    activateTitle: "Activer {name} ?",
+    activateBody: "La personne peut se reconnecter, avec l’accès {role}.",
   },
   roles: {
     title: "Rôles et autorisations",
