@@ -230,7 +230,6 @@ export default function TeamPage() {
         searchPlaceholder={tu("searchPh")}
         onRowClick={edit}
         filters={[
-          { id: "role", label: t("common.fields.role"), options: roles.map((r) => ({ value: r.id, label: L(r.name) })), get: (u) => u.roleId },
           {
             id: "status",
             label: t("common.fields.status"),
