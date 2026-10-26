@@ -88,15 +88,8 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
       id: "status",
       header: t("common.fields.status"),
       accessorFn: (r) => r.status,
-      cell: ({ row: { original: r } }) =>
-        r.status === "pending" ? (
-          <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <Button size="sm" variant="success" onClick={() => decide(r, "approved")}><Check /> {t("common.actions.approve")}</Button>
-            <Button size="icon-sm" variant="danger-soft" onClick={() => decide(r, "rejected")} aria-label={t("common.actions.reject")}><X /></Button>
-          </div>
-        ) : (
-          <StatusBadge status={r.status} />
-        ),
+      // only the state here; Approve / Reject are in the ⋯ menu and the review popup
+      cell: (c) => <StatusBadge status={c.getValue() as string} />,
     },
     actionsColumn<Review>((r) => (
       <RowActions
@@ -124,6 +117,8 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
         data={reviews}
         columns={columns}
         search={(r) => `${r.name} ${r.email} ${r.comment} ${partnerMap[r.target]?.name ?? ""}`}
+        searchPlaceholder={tr(scope === "kompass" ? "kompassSearchPh" : "partnerSearchPh")}
+        wideSearch
         onRowClick={(r) => setOpenId(r.id)}
         rowClassName={(r) => (r.status === "pending" ? "bg-warning-soft/25" : undefined)}
         filters={[

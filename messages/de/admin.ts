@@ -903,6 +903,8 @@ export const admin: Built<typeof Def> = {
   },
   reviews: {
     kompassTitle: "Kompass-Bewertungen",
+    kompassSearchPh: "Name, E-Mail oder Kommentar suchen…",
+    partnerSearchPh: "Name, Firma oder Kommentar suchen…",
     kompassSub: "Bewertungen der Plattform. Freigegebene erscheinen auf der Startseite.",
     partnerTitle: "Partnerbewertungen",
     partnerSub: "Bewertungen von Kunden auf Firmenprofilen.",

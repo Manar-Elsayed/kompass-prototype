@@ -900,6 +900,8 @@ export const admin = {
   },
   reviews: {
     kompassTitle: "Kompass reviews",
+    kompassSearchPh: "Search name, email or comment…",
+    partnerSearchPh: "Search name, company or comment…",
     kompassSub: "Reviews about the platform. Approved ones appear on the homepage.",
     partnerTitle: "Partner reviews",
     partnerSub: "Reviews customers left on company profiles.",
