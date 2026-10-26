@@ -407,6 +407,9 @@ export interface ContactMessage {
  * addresses, date); contact = typed contact details on step 2; submitted = became an offer.
  */
 export type FormStep = "started" | "details" | "contact" | "submitted";
+/** What the team did about a visitor who left contact details: missing = not called yet. */
+export const FOLLOW_UPS = ["new", "noAnswer", "callBack", "notInterested", "completed"] as const;
+export type FollowUp = (typeof FOLLOW_UPS)[number];
 export interface FormSession {
   id: ID;
   step: FormStep;
@@ -415,6 +418,8 @@ export interface FormSession {
   email?: string;
   phone?: string;
   offerId?: ID;
+  /** Only for visitors who left contact details without submitting. */
+  followUp?: FollowUp;
   device: "desktop" | "mobile" | "tablet";
   startedAt: string;
   updatedAt: string;
