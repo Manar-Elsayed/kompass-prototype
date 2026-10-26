@@ -356,8 +356,12 @@ export interface Review {
   stars: number;
   comment: string;
   status: ModerationStatus;
+  /** Approved reviews show on the website unless admin switched them off. */
+  hidden?: boolean;
   createdAt: string;
 }
+/** Shown on the website and counted in ratings: approved and not switched off. */
+export const isLiveReview = (r: Pick<Review, "status" | "hidden">) => r.status === "approved" && !r.hidden;
 
 export interface RemovalRequest {
   id: ID;

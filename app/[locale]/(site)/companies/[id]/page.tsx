@@ -13,6 +13,7 @@ import { Icon } from "@/components/shared/icon";
 import { Stars, EmptyState } from "@/components/shared/bits";
 import { OfferForm } from "@/components/site/offer-form";
 import { ReviewCard } from "@/components/site/sections";
+import { isLiveReview } from "@/lib/types";
 
 export default function CompanyPage() {
   const { id } = useParams<{ id: string }>();
@@ -36,7 +37,7 @@ export default function CompanyPage() {
     notFound();
   }
 
-  const reviews = allReviews.filter((r) => r.target === partner.id && r.status === "approved");
+  const reviews = allReviews.filter((r) => r.target === partner.id && isLiveReview(r));
   const rating = ratings[partner.id];
   const jobs = orders.filter((o) => o.partnerId === partner.id).length;
   const svcs = services.filter((s) => partner.serviceIds.includes(s.id));

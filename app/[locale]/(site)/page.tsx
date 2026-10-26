@@ -18,6 +18,7 @@ import { Icon } from "@/components/shared/icon";
 import { Stars } from "@/components/shared/bits";
 import { OfferForm } from "@/components/site/offer-form";
 import { BlogCard, CtaBand, ReviewCard, SectionHeading, ServiceCard } from "@/components/site/sections";
+import { isLiveReview } from "@/lib/types";
 
 export default function HomePage() {
   const t = useTranslations("site");
@@ -39,10 +40,10 @@ export default function HomePage() {
   const active = services.filter((s) => s.active).sort((a, b) => a.order - b.order);
   const livePartners = partners.filter((p) => p.status === "approved" && !p.banned);
   const featured = livePartners.filter((p) => p.featured);
-  const kompassReviews = reviews.filter((r) => r.target === "kompass" && r.status === "approved").slice(0, 3);
+  const kompassReviews = reviews.filter((r) => r.target === "kompass" && isLiveReview(r)).slice(0, 3);
   const latestBlogs = blogs.filter((b) => b.published).slice(0, 3);
   const avgSite = useMemo(() => {
-    const k = reviews.filter((r) => r.target === "kompass" && r.status === "approved");
+    const k = reviews.filter((r) => r.target === "kompass" && isLiveReview(r));
     return k.length ? k.reduce((a, r) => a + r.stars, 0) / k.length : 5;
   }, [reviews]);
 
