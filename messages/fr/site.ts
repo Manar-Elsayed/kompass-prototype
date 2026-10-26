@@ -141,9 +141,9 @@ export const site: Built<typeof Def> = {
     },
   },
   faq: {
-    askBody: "Envoyez-nous votre question et nous ajouterons la réponse au centre d’aide.",
+    askBody: "Envoyez-nous votre question. Nous répondons par e-mail en un jour ouvrable, et les réponses utiles rejoignent le centre d’aide.",
     question: "Votre question",
-    sent: "Question reçue — merci !",
+    sent: "Question reçue. Nous vous répondrons par e-mail en un jour ouvrable.",
     searchPh: "Rechercher une question…",
   },
   partner: {
