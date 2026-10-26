@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Copy, Flag, MessageSquareQuote, Star } from "lucide-react";
 import { toast } from "sonner";
-import type { Review } from "@/lib/types";
+import { isLiveReview, type Review } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useLang, usePartnerRatings } from "@/lib/mock/hooks";
@@ -24,7 +24,7 @@ export default function PartnerReviews() {
   const tc = useTranslations("common");
   const lang = useLang();
   const partner = useCurrentPartner()!;
-  const reviews = useStore((s) => s.reviews).filter((r) => r.target === partner.id && r.status === "approved");
+  const reviews = useStore((s) => s.reviews).filter((r) => r.target === partner.id && isLiveReview(r));
   const removals = useStore((s) => s.removals).filter((r) => r.partnerId === partner.id);
   const request = useStore((s) => s.requestReviewRemoval);
   const rating = usePartnerRatings()[partner.id];

@@ -2,19 +2,41 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Building2, Check, ClipboardList, Clock, EyeOff, Star, Trash2, X } from "lucide-react";
+import { Building2, Check, ClipboardList, Clock, Star, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import type { Review } from "@/lib/types";
+import { isLiveReview, type Review } from "@/lib/types";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang, usePartnerMap } from "@/lib/mock/hooks";
 import { Button } from "@/components/ui/button";
-import { Avatar } from "@/components/ui/controls";
+import { Avatar, Switch } from "@/components/ui/controls";
 import { Stars, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "./data-table";
 import { DetailSheet, RowActions, SheetSection, actionsColumn } from "./row-actions";
 import { DL, KpiCard, PageHeader } from "./ui";
+
+/**
+ * The website switch of an approved review: on = shown on the website, off = hidden but kept.
+ * Pending and rejected reviews never show, so they get a dash.
+ */
+export function ReviewLiveSwitch({ review }: { review: Review }) {
+  const t = useTranslations("admin.rows");
+  const patch = useStore((s) => s.patch);
+  if (review.status !== "approved") return <span className="text-muted-foreground">–</span>;
+  return (
+    <span onClick={(e) => e.stopPropagation()} className="inline-flex">
+      <Switch
+        checked={!review.hidden}
+        aria-label={t("visibleOnWebsite")}
+        onCheckedChange={(on) => {
+          patch("reviews", review.id, { hidden: !on });
+          toast.success(t(on ? "reviewShown" : "reviewHidden"));
+        }}
+      />
+    </span>
+  );
+}
 
 /** Shared moderation view for platform reviews and partner reviews. */
 export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
@@ -29,11 +51,13 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = all.find((r) => r.id === openId);
   const reviews = all.filter((r) => (scope === "kompass" ? r.target === "kompass" : r.target !== "kompass"));
-  const approved = reviews.filter((r) => r.status === "approved");
-  const avg = approved.length ? approved.reduce((a, r) => a + r.stars, 0) / approved.length : 0;
+  // the average counts what visitors see
+  const live = reviews.filter(isLiveReview);
+  const avg = live.length ? live.reduce((a, r) => a + r.stars, 0) / live.length : 0;
 
+  // approving shows the review on the website straight away
   const decide = (r: Review, status: "approved" | "rejected") => {
-    patch("reviews", r.id, { status });
+    patch("reviews", r.id, { status, hidden: false });
     toast.success(t(`common.status.${status}`));
   };
   const del = (r: Review) =>
@@ -91,12 +115,18 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
       // only the state here; Approve / Reject are in the ⋯ menu and the review popup
       cell: (c) => <StatusBadge status={c.getValue() as string} />,
     },
+    {
+      id: "live",
+      header: t("admin.rows.onWebsite"),
+      accessorFn: (r) => (isLiveReview(r) ? 1 : 0),
+      cell: ({ row: { original: r } }) => <ReviewLiveSwitch review={r} />,
+    },
     actionsColumn<Review>((r) => (
       <RowActions
         onView={() => setOpenId(r.id)}
         actions={[
           { label: t("common.actions.approve"), icon: <Check />, onSelect: () => decide(r, "approved"), hidden: r.status === "approved" },
-          { label: t(r.status === "approved" ? "admin.rows.unpublish" : "common.actions.reject"), icon: r.status === "approved" ? <EyeOff /> : <X />, onSelect: () => decide(r, "rejected"), hidden: r.status === "rejected" },
+          { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => decide(r, "rejected"), hidden: r.status === "rejected" },
           { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${r.target}`, hidden: scope !== "partner", separated: true },
           { label: t("admin.rows.openBooking"), icon: <ClipboardList />, href: r.offerId ? `/admin/leads/${r.offerId}` : undefined, hidden: !r.offerId },
           { label: t("common.actions.delete"), icon: <Trash2 />, tone: "danger", onSelect: () => del(r), separated: true },
@@ -124,6 +154,7 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
         filters={[
           { id: "status", label: t("common.fields.status"), options: (["pending", "approved", "rejected"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (r) => r.status },
           { id: "stars", label: t("common.fields.rating"), options: [5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: "★".repeat(n) })), get: (r) => String(r.stars) },
+          { id: "live", label: t("admin.rows.onWebsite"), options: [{ value: "shown", label: t("admin.rows.shown") }, { value: "hidden", label: t("admin.rows.hiddenShort") }], get: (r) => (isLiveReview(r) ? "shown" : r.status === "approved" ? "hidden" : "") },
         ]}
       />
       <DetailSheet
@@ -137,9 +168,7 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
             <>
               <Button variant="ghost" className="text-danger hover:bg-danger-soft" onClick={() => del(open)}><Trash2 /> {t("common.actions.delete")}</Button>
               {open.status !== "rejected" && (
-                <Button variant="danger-soft" onClick={() => decide(open, "rejected")}>
-                  {open.status === "approved" ? <EyeOff /> : <X />} {t(open.status === "approved" ? "admin.rows.unpublish" : "common.actions.reject")}
-                </Button>
+                <Button variant="danger-soft" onClick={() => decide(open, "rejected")}><X /> {t("common.actions.reject")}</Button>
               )}
               {open.status !== "approved" && (
                 <Button variant="success" className="flex-1" onClick={() => decide(open, "approved")}><Check /> {t("common.actions.approve")}</Button>
@@ -168,7 +197,18 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
                 ]}
               />
             </SheetSection>
-            {open.status === "approved" && <p className="text-xs text-muted-foreground">{t(scope === "partner" ? "admin.rows.publishedPartner" : "admin.rows.publishedKompass")}</p>}
+            {/* only an approved review can be shown; the switch publishes or unpublishes it */}
+            {open.status === "approved" && (
+              <SheetSection>
+                <label className="flex items-center justify-between gap-3 text-sm font-semibold text-ink">
+                  {t("admin.rows.visibleOnWebsite")}
+                  <ReviewLiveSwitch review={open} />
+                </label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {open.hidden ? t("admin.rows.unpublishedNote") : t(scope === "partner" ? "admin.rows.publishedPartner" : "admin.rows.publishedKompass")}
+                </p>
+              </SheetSection>
+            )}
           </>
         )}
       </DetailSheet>

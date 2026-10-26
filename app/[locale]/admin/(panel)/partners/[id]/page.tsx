@@ -3,10 +3,10 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Check, CheckCircle2, ClipboardList, ExternalLink, EyeOff, HandCoins, Landmark, Lock, LockOpen, Mail, Phone, Plus, RotateCcw, Star, Store, Trash2, Wallet, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ClipboardList, ExternalLink, HandCoins, Landmark, Lock, LockOpen, Mail, Phone, Plus, RotateCcw, Star, Store, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
-import type { Order, Payout, Review } from "@/lib/types";
+import { isLiveReview, type Order, type Payout, type Review } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, usePartnerRatings } from "@/lib/mock/hooks";
@@ -32,6 +32,7 @@ import { CompanyDocuments } from "@/components/admin/company-docs";
 import { FileManager } from "@/components/admin/file-manager";
 import { PayoutDecisionDialog } from "@/components/admin/payout-actions";
 import { MessageCenter } from "@/components/shared/message-thread";
+import { ReviewLiveSwitch } from "@/components/admin/reviews-moderation";
 import { routeText } from "@/lib/jobs";
 
 const TABS = ["overview", "documents", "bookings", "wallet", "reviews", "files", "messages"] as const;
@@ -61,7 +62,7 @@ function PartnerDetail() {
     toast.success(t(executed ? "admin.rows.markedDone" : "admin.rows.markedNotDone", { id: o.offerId }));
   };
   const decideReview = (id: string, status: "approved" | "rejected") => {
-    patch("reviews", id, { status });
+    patch("reviews", id, { status, hidden: false });
     toast.success(t(`common.status.${status}`));
   };
   const issueRefund = useStore((s) => s.issueRefund);
@@ -116,11 +117,12 @@ function PartnerDetail() {
     },
     { id: "date", header: t("common.fields.date"), accessorFn: (r) => r.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
     { id: "status", header: t("common.fields.status"), accessorFn: (r) => r.status, cell: (c) => <StatusBadge status={c.getValue() as string} /> },
+    { id: "live", header: t("admin.rows.onWebsite"), accessorFn: (r) => (isLiveReview(r) ? 1 : 0), cell: ({ row: { original: r } }) => <ReviewLiveSwitch review={r} /> },
     actionsColumn<Review>((r) => (
       <RowActions
         actions={[
           { label: t("common.actions.approve"), icon: <CheckCircle2 />, onSelect: () => decideReview(r.id, "approved"), hidden: r.status === "approved" },
-          { label: t(r.status === "approved" ? "admin.rows.unpublish" : "common.actions.reject"), icon: <EyeOff />, onSelect: () => decideReview(r.id, "rejected"), hidden: r.status === "rejected" },
+          { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => decideReview(r.id, "rejected"), hidden: r.status === "rejected" },
           { label: t("admin.rows.openBooking"), icon: <ClipboardList />, href: r.offerId ? `/admin/leads/${r.offerId}` : undefined, hidden: !r.offerId, separated: true },
           {
             label: t("common.actions.delete"),

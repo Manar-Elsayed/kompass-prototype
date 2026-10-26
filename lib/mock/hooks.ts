@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 import { useShallow } from "zustand/react/shallow";
-import type { L10n, Lang, Permission } from "@/lib/types";
+import { isLiveReview, type L10n, type Lang, type Permission } from "@/lib/types";
 import { useStore } from "./store";
 
 // On the server there is no storage, so the persist API is not attached.
@@ -59,7 +59,7 @@ export function usePartnerRatings() {
   return useMemo(() => {
     const acc: Record<string, { sum: number; count: number }> = {};
     for (const r of reviews) {
-      if (r.target === "kompass" || r.status !== "approved") continue;
+      if (r.target === "kompass" || !isLiveReview(r)) continue;
       acc[r.target] ??= { sum: 0, count: 0 };
       acc[r.target].sum += r.stars;
       acc[r.target].count += 1;

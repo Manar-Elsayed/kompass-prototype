@@ -1,4 +1,4 @@
-import { DOC_KEYS, type DB, type DocKey, type FakeReport, type Offer, type Order, type Partner, type Refund, type VerificationFlag } from "@/lib/types";
+import { isLiveReview, DOC_KEYS, type DB, type DocKey, type FakeReport, type Offer, type Order, type Partner, type Refund, type VerificationFlag } from "@/lib/types";
 import { NOW, DAY } from "./seed";
 
 /** Reference "now": the frozen seed date, or real time if later (for new entries). */
@@ -218,7 +218,7 @@ export const canBuyLeads = (p: Pick<Partner, "status" | "banned" | "documents">)
  */
 export function companyScore(db: Pick<DB, "orders" | "reviews">, p: Pick<Partner, "id" | "lastSeen">) {
   const bought90 = db.orders.filter((o) => o.partnerId === p.id && inLastDays(o.createdAt, 90)).length;
-  const rated = db.reviews.filter((r) => r.target === p.id && r.status === "approved");
+  const rated = db.reviews.filter((r) => r.target === p.id && isLiveReview(r));
   const rating = rated.length ? rated.reduce((a, r) => a + r.stars, 0) / rated.length : 0;
   const idleDays = Math.max(0, (refNow() - Date.parse(p.lastSeen)) / DAY);
   const score = Math.round(bought90 * 10 + rating * 8 + Math.max(0, 14 - idleDays));
@@ -384,7 +384,7 @@ export function partnerFeed(db: FeedDB, partnerId: string): FeedItem[] {
   for (const x of db.payouts.filter((y) => y.partnerId === partnerId && y.status !== "requested"))
     push(x.id, x.decidedAt ?? x.createdAt, x.status === "paid" ? "payoutPaid" : "payoutRejected", x.status === "paid" ? "success" : "warning", "/portal/payments?tab=payouts", { amount: x.amount });
 
-  for (const r of db.reviews.filter((x) => x.target === partnerId && x.status === "approved"))
+  for (const r of db.reviews.filter((x) => x.target === partnerId && isLiveReview(x)))
     push(r.id, r.createdAt, "review", r.stars >= 4 ? "success" : "warning", "/portal/reviews", { stars: r.stars, name: r.name });
   for (const r of db.removals.filter((x) => x.partnerId === partnerId && x.status !== "pending"))
     push(r.id, r.createdAt, r.status === "approved" ? "removalApproved" : "removalRejected", r.status === "approved" ? "success" : "warning", "/portal/reviews");

@@ -6,12 +6,13 @@ import { useL } from "@/lib/mock/hooks";
 import { Stars } from "@/components/shared/bits";
 import { ReviewForm } from "@/components/site/review-form";
 import { ReviewCard } from "@/components/site/sections";
+import { isLiveReview } from "@/lib/types";
 
 export default function RatingsPage() {
   const t = useTranslations("site.review");
   const L = useL();
   const home = useStore((s) => s.site.home);
-  const reviews = useStore((s) => s.reviews).filter((r) => r.target === "kompass" && r.status === "approved");
+  const reviews = useStore((s) => s.reviews).filter((r) => r.target === "kompass" && isLiveReview(r));
   const avg = reviews.length ? reviews.reduce((a, r) => a + r.stars, 0) / reviews.length : 0;
 
   return (
