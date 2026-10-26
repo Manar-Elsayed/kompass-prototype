@@ -28,7 +28,9 @@ export default function RolesPage() {
   const t = useTranslations();
   const tr = useTranslations("admin.roles");
   const L = useL();
-  const roles = useStore((s) => s.roles);
+  // Super admin first, then the built-in roles, then new roles in the order they were created
+  const rank = (id: string, system?: boolean) => (system ? 0 : /^role-\d+$/.test(id) ? Number(id.slice(5)) : 1);
+  const roles = [...useStore((s) => s.roles)].sort((a, b) => rank(a.id, a.system) - rank(b.id, b.system));
   const users = useStore((s) => s.users);
   const patch = useStore((s) => s.patch);
   const add = useStore((s) => s.add);
