@@ -560,6 +560,62 @@ export const admin: Built<typeof Def> = {
     readyAll: "C’è tutto. Può approvare.",
     sendContractHint: "Invii prima il contratto: l’azienda lo firma nel portale partner, poi qui risulta firmato.",
   },
+  del: {
+    review: {
+      title: "Eliminare questa recensione?",
+      body: "La recensione di {name} viene eliminata definitivamente, anche dal sito e dalla valutazione media. Non si può annullare.",
+      button: "Elimina recensione",
+      done: "Recensione eliminata",
+    },
+    article: {
+      title: "Eliminare «{title}»?",
+      body: "L’articolo esce dal blog e il suo link non funziona più. Non si può annullare. Per toglierlo solo per un po’, annulli invece la pubblicazione.",
+      button: "Elimina articolo",
+      done: "Articolo eliminato",
+    },
+    example: {
+      title: "Eliminare questo esempio di offerta?",
+      body: "«{title}» viene rimosso dalla home page. Non si può annullare.",
+      button: "Elimina esempio",
+      done: "Esempio di offerta eliminato",
+    },
+    faq: {
+      title: "Eliminare questa FAQ?",
+      body: "«{question}» viene rimossa dalla pagina FAQ. Non si può annullare.",
+      button: "Elimina FAQ",
+      done: "FAQ eliminata",
+    },
+    question: {
+      title: "Eliminare questa domanda?",
+      body: "«{question}» viene rimossa dalla posta in arrivo. Non si può annullare.",
+      button: "Elimina domanda",
+      done: "Domanda eliminata",
+    },
+    coupon: {
+      body: "I partner non possono più usarlo. Le richieste già acquistate con questo coupon mantengono lo sconto. Non si può annullare. Per sospenderlo, lo disattivi.",
+      button: "Elimina coupon",
+      done: "Coupon {code} eliminato",
+    },
+    role: {
+      title: "Eliminare il ruolo «{name}»?",
+      body: "Nessuno ha questo ruolo, quindi nessuno perde l’accesso. Non si può annullare.",
+      button: "Elimina ruolo",
+      done: "Ruolo eliminato",
+    },
+    member: {
+      done: "{name} rimosso dal team",
+    },
+    removal: {
+      title: "Rimuovere questa recensione?",
+      body: "Come richiesto da {company}, la recensione viene eliminata dalla sua pagina e dalla sua valutazione media. Non si può annullare.",
+      button: "Rimuovi recensione",
+    },
+    payment: {
+      title: "Rifiutare questo pagamento?",
+      body: "{id} · {amount} da {name}. Il portafoglio non cambia e l’azienda vede il pagamento come rifiutato.",
+      button: "Rifiuta pagamento",
+    },
+  },
   payouts: {
     searchPh: "Cerca pagamento, azienda o IBAN…",
     title: "Versamenti",
@@ -808,7 +864,7 @@ export const admin: Built<typeof Def> = {
     open: "Apri",
     delete: "Elimina",
     deleteTitle: "Eliminare {name}?",
-    deleteBody: "Il file viene rimosso per tutti.",
+    deleteBody: "Il file viene rimosso per tutti. Non si può annullare.",
     deleted: "File eliminato",
     uploaded: "File caricato",
     empty: "Ancora nessun file.",
@@ -1001,7 +1057,6 @@ export const admin: Built<typeof Def> = {
       excerpt: "Estratto",
       body: "Testo",
       published: "Pubblicato",
-      deleteTitle: "Eliminare questo articolo?",
     },
     faq: {
       title: "FAQ",

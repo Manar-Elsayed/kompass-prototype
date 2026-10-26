@@ -560,6 +560,62 @@ export const admin: Built<typeof Def> = {
     readyAll: "Tout est là. Vous pouvez approuver.",
     sendContractHint: "Envoyez d’abord le contrat : l’entreprise le signe dans le portail partenaire, puis il apparaît ici comme signé.",
   },
+  del: {
+    review: {
+      title: "Supprimer cet avis ?",
+      body: "L’avis de {name} est supprimé définitivement, y compris du site et de la note moyenne. Cette action est irréversible.",
+      button: "Supprimer l’avis",
+      done: "Avis supprimé",
+    },
+    article: {
+      title: "Supprimer « {title} » ?",
+      body: "L’article quitte le blog et son lien ne fonctionne plus. Cette action est irréversible. Pour le retirer temporairement, dépubliez-le plutôt.",
+      button: "Supprimer l’article",
+      done: "Article supprimé",
+    },
+    example: {
+      title: "Supprimer cet exemple d’offre ?",
+      body: "« {title} » est retiré de la page d’accueil. Cette action est irréversible.",
+      button: "Supprimer l’exemple",
+      done: "Exemple d’offre supprimé",
+    },
+    faq: {
+      title: "Supprimer cette question de la FAQ ?",
+      body: "« {question} » est retirée de la page FAQ. Cette action est irréversible.",
+      button: "Supprimer la question",
+      done: "Question supprimée",
+    },
+    question: {
+      title: "Supprimer cette question ?",
+      body: "« {question} » est retirée de la boîte de réception. Cette action est irréversible.",
+      button: "Supprimer la question",
+      done: "Question supprimée",
+    },
+    coupon: {
+      body: "Les partenaires ne peuvent plus l’utiliser. Les demandes déjà achetées avec ce code gardent leur réduction. Cette action est irréversible. Pour le mettre en pause, désactivez-le.",
+      button: "Supprimer le code",
+      done: "Code {code} supprimé",
+    },
+    role: {
+      title: "Supprimer le rôle « {name} » ?",
+      body: "Personne n’a ce rôle : aucun accès n’est perdu. Cette action est irréversible.",
+      button: "Supprimer le rôle",
+      done: "Rôle supprimé",
+    },
+    member: {
+      done: "{name} retiré de l’équipe",
+    },
+    removal: {
+      title: "Retirer cet avis ?",
+      body: "Comme {company} l’a demandé, l’avis est supprimé de sa page et de sa note moyenne. Cette action est irréversible.",
+      button: "Retirer l’avis",
+    },
+    payment: {
+      title: "Refuser ce paiement ?",
+      body: "{id} · {amount} de {name}. Le portefeuille ne change pas et l’entreprise voit le paiement comme refusé.",
+      button: "Refuser le paiement",
+    },
+  },
   payouts: {
     searchPh: "Rechercher un versement, une entreprise ou un IBAN…",
     title: "Versements",
@@ -808,7 +864,7 @@ export const admin: Built<typeof Def> = {
     open: "Ouvrir",
     delete: "Supprimer",
     deleteTitle: "Supprimer {name} ?",
-    deleteBody: "Le fichier est supprimé pour tout le monde.",
+    deleteBody: "Le fichier est supprimé pour tout le monde. Cette action est irréversible.",
     deleted: "Fichier supprimé",
     uploaded: "Fichier téléversé",
     empty: "Aucun fichier pour l’instant.",
@@ -1001,7 +1057,6 @@ export const admin: Built<typeof Def> = {
       excerpt: "Extrait",
       body: "Contenu",
       published: "Publié",
-      deleteTitle: "Supprimer cet article ?",
     },
     faq: {
       title: "FAQ",

@@ -77,13 +77,13 @@ export default function BlogAdmin() {
                 separated: true,
                 onSelect: () =>
                   confirm({
-                    title: t("common.confirm.title"),
-                    body: L(b.title),
+                    title: t("admin.del.article.title", { title: L(b.title) }),
+                    body: t("admin.del.article.body"),
                     tone: "danger",
-                    confirmLabel: t("common.actions.delete"),
+                    confirmLabel: t("admin.del.article.button"),
                     onConfirm: () => {
                       remove("blogs", b.id);
-                      toast.success(t("common.toast.deleted"));
+                      toast.success(t("admin.del.article.done"));
                     },
                   }),
               },

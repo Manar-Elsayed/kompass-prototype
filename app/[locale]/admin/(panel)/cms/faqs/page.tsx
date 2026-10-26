@@ -74,7 +74,7 @@ export default function FaqsAdmin() {
                 size="icon-sm"
                 className="text-danger hover:bg-danger-soft"
                 aria-label={t("common.actions.delete")}
-                onClick={() => confirm({ title: t("common.confirm.title"), body: L(f.question), tone: "danger", confirmLabel: t("common.actions.delete"), onConfirm: () => { remove("faqs", f.id); toast.success(t("common.toast.deleted")); } })}
+                onClick={() => confirm({ title: t("admin.del.faq.title"), body: t("admin.del.faq.body", { question: L(f.question) }), tone: "danger", confirmLabel: t("admin.del.faq.button"), onConfirm: () => { remove("faqs", f.id); toast.success(t("admin.del.faq.done")); } })}
               >
                 <Trash2 />
               </Button>

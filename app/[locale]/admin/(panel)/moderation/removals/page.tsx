@@ -27,10 +27,10 @@ export default function RemovalsPage() {
 
   const approve = (rr: RemovalRequest) =>
     confirm({
-      title: t("common.confirm.title"),
-      body: tr("removalsSub"),
+      title: t("admin.del.removal.title"),
+      body: t("admin.del.removal.body", { company: partnerMap[rr.partnerId]?.name ?? "" }),
       tone: "danger",
-      confirmLabel: t("common.actions.approve"),
+      confirmLabel: t("admin.del.removal.button"),
       onConfirm: () => {
         patch("removals", rr.id, { status: "approved" });
         remove("reviews", rr.reviewId);

@@ -62,12 +62,13 @@ export default function RolesPage() {
                         disabled={users.some((u) => u.roleId === r.id)}
                         onClick={() =>
                           confirm({
-                            title: t("common.confirm.title"),
-                            body: t("common.confirm.deleteBody"),
+                            title: t("admin.del.role.title", { name: L(r.name) }),
+                            body: t("admin.del.role.body"),
                             tone: "danger",
+                            confirmLabel: t("admin.del.role.button"),
                             onConfirm: () => {
                               remove("roles", r.id);
-                              toast.success(t("common.toast.deleted"));
+                              toast.success(t("admin.del.role.done"));
                             },
                           })
                         }

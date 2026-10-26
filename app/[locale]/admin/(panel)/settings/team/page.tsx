@@ -107,7 +107,7 @@ export default function TeamPage() {
                 confirmLabel: t("admin.rows.removeMember"),
                 onConfirm: () => {
                   remove("users", u.id);
-                  toast.success(t("common.toast.deleted"));
+                  toast.success(t("admin.del.member.done", { name: u.name }));
                 },
               }),
           },

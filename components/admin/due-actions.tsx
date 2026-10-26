@@ -33,10 +33,10 @@ export function useDueDecision() {
     });
   const reject = (d: PartnerDue) =>
     confirm({
-      title: t("common.confirm.title"),
-      body: `${d.id} · ${formatCHF(d.amount, lang)}`,
+      title: t("admin.del.payment.title"),
+      body: t("admin.del.payment.body", { id: d.id, amount: formatCHF(d.amount, lang), name: partnerMap[d.partnerId]?.name ?? "" }),
       tone: "danger",
-      confirmLabel: t("common.actions.reject"),
+      confirmLabel: t("admin.del.payment.button"),
       onConfirm: () => {
         decideDue(d.id, "canceled");
         toast.success(td("canceled"));

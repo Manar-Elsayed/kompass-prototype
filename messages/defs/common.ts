@@ -148,14 +148,9 @@ export const common = {
   toast: {
     saved: "Changes saved",
     created: "Created successfully",
-    deleted: "Deleted",
     updated: "Updated",
     copied: "Copied to clipboard",
     resetDone: "Demo data restored",
-  },
-  confirm: {
-    title: "Are you sure?",
-    deleteBody: "This action cannot be undone.",
   },
   proto: {
     label: "Prototype",
