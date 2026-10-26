@@ -50,16 +50,24 @@ export default function InvoicesPage() {
   const paid30 = invoices.filter((i) => i.status === "paid" && i.paidAt && inLastDays(i.paidAt, 30));
   const sum = (xs: Invoice[]) => xs.reduce((a, i) => a + i.amount, 0);
 
-  // a receipt for every franc that moved: confirmed receipts, online / admin payments, lead purchases
-  const receipts: ReceiptRow[] = useMemo(
-    () =>
-      [
-        ...dues.filter((d) => d.status === "confirmed").map((d) => ({ id: `RC-${d.id}`, partnerId: d.partnerId, kind: "receipt" as const, amount: d.amount, at: d.createdAt, ref: d.reference })),
-        ...topups.filter((x) => x.method !== "credit").map((x) => ({ id: `RC-${x.id}`, partnerId: x.partnerId, kind: x.method as "online" | "admin", amount: x.amount, at: x.createdAt, ref: x.reference })),
-        ...orders.map((o) => ({ id: `RC-${o.id}`, partnerId: o.partnerId, kind: "purchase" as const, amount: o.price, at: o.createdAt, ref: o.offerId })),
-      ].sort((a, b) => b.at.localeCompare(a.at)),
-    [dues, topups, orders],
-  );
+  // a receipt for every franc that moved: confirmed receipts, online / admin payments, lead purchases.
+  // Numbered per year with the invoice prefix, oldest first: KMP-R-2026-0001, KMP-R-2026-0002, …
+  const prefix = useStore((s) => s.config.invoicePrefix) || "INV";
+  const receipts: ReceiptRow[] = useMemo(() => {
+    const rows = [
+      ...dues.filter((d) => d.status === "confirmed").map((d) => ({ id: d.id, partnerId: d.partnerId, kind: "receipt" as const, amount: d.amount, at: d.createdAt, ref: d.reference })),
+      ...topups.filter((x) => x.method !== "credit").map((x) => ({ id: x.id, partnerId: x.partnerId, kind: x.method as "online" | "admin", amount: x.amount, at: x.createdAt, ref: x.reference })),
+      ...orders.map((o) => ({ id: o.id, partnerId: o.partnerId, kind: "purchase" as const, amount: o.price, at: o.createdAt, ref: o.offerId })),
+    ].sort((a, b) => a.at.localeCompare(b.at));
+    const perYear: Record<string, number> = {};
+    return rows
+      .map((r) => {
+        const year = r.at.slice(0, 4);
+        perYear[year] = (perYear[year] ?? 0) + 1;
+        return { ...r, id: `${prefix}-R-${year}-${String(perYear[year]).padStart(4, "0")}` };
+      })
+      .reverse();
+  }, [dues, topups, orders, prefix]);
 
   const company = (id: string) => (
     <span className="flex items-center gap-2 font-semibold text-ink">

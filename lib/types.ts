@@ -226,7 +226,7 @@ export interface WalletTopup {
 /** Invoice for credit given now and paid later. "Overdue" is derived: due and past dueAt. */
 export type InvoiceStatus = "due" | "paid";
 export interface Invoice {
-  id: ID; // INV-2026-0001
+  id: ID; // {invoice prefix}-2026-0001, e.g. KMP-2026-0001
   partnerId: ID;
   topupId: ID;
   amount: number;
@@ -309,6 +309,8 @@ export interface Partner {
   /** Partnership contract signed in the portal during onboarding. */
   contractSignedAt?: string;
   contractSignedBy?: string;
+  /** The contract template the company signed, e.g. partner-contract-v3.pdf. */
+  contractVersion?: string;
   /** Why Kompass declined the application, shown to the applicant. */
   rejectionReason?: string;
   /** Cantons the company works in; without it, its own canton. */
