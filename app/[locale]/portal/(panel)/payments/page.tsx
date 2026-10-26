@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowDownToLine, Check, Clock, Copy, CreditCard, Download, FileText, HandCoins, ImageUp, Landmark, Upload, Wallet } from "lucide-react";
+import { ArrowDownToLine, Check, Clock, Copy, CreditCard, Download, FileText, HandCoins, ImageUp, Landmark, Upload, Wallet, Search } from "lucide-react";
 import { toast } from "sonner";
 import { PAYOUT_REASONS, type Invoice, type PartnerDue, type PayoutReason } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
@@ -271,7 +271,14 @@ function Statement({ entries }: { entries: ReturnType<typeof walletLedger>["entr
   const lang = useLang();
   const [kind, setKind] = useState<LedgerKind | "all">("all");
   const [period, setPeriod] = useState<"all" | "30" | "90" | "365">("all");
-  const rows = entries.filter((e) => (kind === "all" || e.kind === kind) && (period === "all" || Date.now() - Date.parse(e.at) <= Number(period) * 86_400_000));
+  const [q, setQ] = useState("");
+  const term = q.trim().toLowerCase();
+  const rows = entries.filter(
+    (e) =>
+      (kind === "all" || e.kind === kind) &&
+      (period === "all" || Date.now() - Date.parse(e.at) <= Number(period) * 86_400_000) &&
+      (!term || `${e.reference} ${tw(`kinds.${e.kind}`, { ref: e.reference })}`.toLowerCase().includes(term)),
+  );
   const total = rows.reduce((a, e) => a + e.amount, 0);
 
   const exportCsv = () => {
@@ -293,9 +300,13 @@ function Statement({ entries }: { entries: ReturnType<typeof walletLedger>["entr
         description={t("statementHint", { count: rows.length, total: `${total < 0 ? "−" : "+"}${formatCHF(Math.abs(total), lang)}` })}
         action={<Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}><Download /> {t("exportCsv")}</Button>}
       />
-      <div className="mt-4 flex flex-wrap gap-2 px-5">
-        <Select size="sm" className="w-48" value={kind} onValueChange={(v) => setKind(v as typeof kind)} options={[{ value: "all", label: t("allTypes") }, ...LEDGER_KINDS.map((k) => ({ value: k, label: t(`ledgerKinds.${k}`) }))]} />
-        <Select size="sm" className="w-40" value={period} onValueChange={(v) => setPeriod(v as typeof period)} options={(["all", "30", "90", "365"] as const).map((p) => ({ value: p, label: t(`periods.${p}`) }))} />
+      <div className="mt-4 flex flex-wrap items-center gap-2 px-5">
+        <div className="relative w-full sm:min-w-48 sm:flex-1">
+          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("statementSearchPh")} className="h-9 ps-9" />
+        </div>
+        <Select size="sm" className="h-9 w-48" value={kind} onValueChange={(v) => setKind(v as typeof kind)} options={[{ value: "all", label: t("allTypes") }, ...LEDGER_KINDS.map((k) => ({ value: k, label: t(`ledgerKinds.${k}`) }))]} />
+        <Select size="sm" className="h-9 w-40" value={period} onValueChange={(v) => setPeriod(v as typeof period)} options={(["all", "30", "90", "365"] as const).map((p) => ({ value: p, label: t(`periods.${p}`) }))} />
       </div>
       <WalletLedger entries={rows} limit={500} className="mt-4 border-t" />
     </Card>

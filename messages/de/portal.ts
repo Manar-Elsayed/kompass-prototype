@@ -120,6 +120,8 @@ export const portal: Built<typeof Def> = {
     bought: "Anfrage {id} gehört Ihnen – kontaktieren Sie jetzt den Kunden",
     viewLead: "Anfrage ansehen",
     terms: "Anfragen werden nicht zurückerstattet, ausser die Meldung einer gefälschten Anfrage wird bestätigt.",
+    searchPh: "Anfrage-Nr., Ort oder PLZ suchen…",
+    count: "{count, plural, =0 {Keine Anfragen passen zu Ihren Filtern} one {# Anfrage passt zu Ihren Filtern} other {# Anfragen passen zu Ihren Filtern}}",
   },
   leads: {
     title: "Meine Anfragen",
@@ -305,6 +307,7 @@ export const portal: Built<typeof Def> = {
     purposeWalletHint: "Der Betrag wird Ihrem Wallet gutgeschrieben, sobald Kompass den Beleg bestätigt.",
     purposeInvoiceHint: "Kompass markiert die Rechnung als bezahlt, sobald der Beleg bestätigt ist. Ihr Wallet ändert sich nicht.",
     receiptChecking: "Beleg wird geprüft",
+    statementSearchPh: "Anfrage oder Referenz suchen…",
   },
   reviews: {
     title: "Bewertungen",
@@ -318,8 +321,8 @@ export const portal: Built<typeof Def> = {
     reason: "Begründung",
     sent: "Antrag auf Entfernung an Kompass gesendet",
     empty: "Noch keine veröffentlichten Bewertungen.",
-    shareTitle: "Zufriedene Kunden um eine Bewertung bitten",
-    shareBody: "Senden Sie ihnen den Link zu Ihrem öffentlichen Profil – Bewertungen erscheinen nach der Moderation.",
+    shareTitle: "So erhalten Sie Bewertungen",
+    shareBody: "Nach einem über Kompass gebuchten Auftrag erhält die Kundschaft eine kurze Umfrage und bewertet Sie. Kompass prüft jede Bewertung, bevor sie auf Ihrem Profil erscheint. Teilen Sie Ihr Profil, damit neue Kundschaft sie lesen kann.",
     copyLink: "Profil-Link kopieren",
   },
   profile: {

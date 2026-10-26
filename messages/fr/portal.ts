@@ -120,6 +120,8 @@ export const portal: Built<typeof Def> = {
     bought: "La demande {id} est à vous — contactez le client dès maintenant",
     viewLead: "Voir la demande",
     terms: "Les demandes ne sont pas remboursables, sauf si un signalement de fausse demande est confirmé.",
+    searchPh: "Rechercher un n° de demande, une ville ou un NPA…",
+    count: "{count, plural, =0 {Aucune demande ne correspond à vos filtres} one {# demande correspond à vos filtres} other {# demandes correspondent à vos filtres}}",
   },
   leads: {
     title: "Mes demandes",
@@ -305,6 +307,7 @@ export const portal: Built<typeof Def> = {
     purposeWalletHint: "Le montant est ajouté à votre portefeuille dès que Kompass confirme le justificatif.",
     purposeInvoiceHint: "Kompass marque la facture comme payée dès qu’il confirme le justificatif. Votre portefeuille ne change pas.",
     receiptChecking: "Justificatif en vérification",
+    statementSearchPh: "Rechercher une demande ou une référence…",
   },
   reviews: {
     title: "Avis",
@@ -318,8 +321,8 @@ export const portal: Built<typeof Def> = {
     reason: "Motif",
     sent: "Demande de suppression envoyée à Kompass",
     empty: "Aucun avis publié pour l’instant.",
-    shareTitle: "Demandez un avis à vos clients satisfaits",
-    shareBody: "Envoyez-leur le lien de votre profil public — les avis apparaissent après modération.",
+    shareTitle: "Comment vous recevez des avis",
+    shareBody: "Après une mission réservée via Kompass, le client reçoit un court questionnaire et vous évalue. Kompass vérifie chaque avis avant sa publication sur votre profil. Partagez votre profil pour que de nouveaux clients puissent les lire.",
     copyLink: "Copier le lien du profil",
   },
   profile: {

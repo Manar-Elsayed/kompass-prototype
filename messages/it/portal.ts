@@ -120,6 +120,8 @@ export const portal: Built<typeof Def> = {
     bought: "La richiesta {id} è Sua: contatti subito il cliente",
     viewLead: "Vedi richiesta",
     terms: "Le richieste non sono rimborsabili, salvo conferma di una segnalazione di richiesta falsa.",
+    searchPh: "Cerca n. richiesta, località o NPA…",
+    count: "{count, plural, =0 {Nessuna richiesta corrisponde ai filtri} one {# richiesta corrisponde ai filtri} other {# richieste corrispondono ai filtri}}",
   },
   leads: {
     title: "Le mie richieste",
@@ -305,6 +307,7 @@ export const portal: Built<typeof Def> = {
     purposeWalletHint: "L’importo viene aggiunto al portafoglio non appena Kompass conferma la ricevuta.",
     purposeInvoiceHint: "Kompass segna la fattura come pagata non appena conferma la ricevuta. Il portafoglio non cambia.",
     receiptChecking: "Ricevuta in verifica",
+    statementSearchPh: "Cerca richiesta o riferimento…",
   },
   reviews: {
     title: "Recensioni",
@@ -318,8 +321,8 @@ export const portal: Built<typeof Def> = {
     reason: "Motivo",
     sent: "Richiesta di rimozione inviata a Kompass",
     empty: "Ancora nessuna recensione pubblicata.",
-    shareTitle: "Chieda una recensione ai clienti soddisfatti",
-    shareBody: "Invii loro il link al Suo profilo pubblico: le recensioni appaiono dopo la moderazione.",
+    shareTitle: "Come ricevere recensioni",
+    shareBody: "Dopo un lavoro prenotato tramite Kompass, il cliente riceve un breve sondaggio e la valuta. Kompass controlla ogni recensione prima che compaia sul suo profilo. Condivida il profilo così i nuovi clienti possono leggerle.",
     copyLink: "Copia link del profilo",
   },
   profile: {

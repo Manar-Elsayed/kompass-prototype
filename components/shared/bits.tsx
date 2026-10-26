@@ -41,12 +41,20 @@ export function Stars({
   const s = size === "lg" ? "size-6" : size === "md" ? "size-5" : "size-3.5";
   return (
     <span className={cn("inline-flex items-center gap-0.5", className)} aria-label={`${value} / 5`}>
-      {Array.from({ length: 5 }, (_, i) => (
-        <Star
-          key={i}
-          className={cn(s, i < Math.round(value) ? "fill-amber-400 text-amber-400" : "fill-muted text-muted")}
-        />
-      ))}
+      {Array.from({ length: 5 }, (_, i) => {
+        // how much of this star is filled, to the nearest half
+        const fill = Math.max(0, Math.min(1, Math.round((value - i) * 2) / 2));
+        return (
+          <span key={i} className="relative inline-flex">
+            <Star className={cn(s, "fill-muted text-muted")} />
+            {fill > 0 && (
+              <span className="absolute inset-y-0 start-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
+                <Star className={cn(s, "fill-amber-400 text-amber-400")} />
+              </span>
+            )}
+          </span>
+        );
+      })}
     </span>
   );
 }

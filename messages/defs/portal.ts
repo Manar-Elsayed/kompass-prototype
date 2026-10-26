@@ -117,6 +117,8 @@ export const portal = {
     bought: "Offer {id} is yours — contact the customer now",
     viewLead: "View offer",
     terms: "Offers are non-refundable unless a fake-offer report is confirmed.",
+    searchPh: "Search offer no., city or postcode…",
+    count: "{count, plural, =0 {No offers match your filters} one {# offer matches your filters} other {# offers match your filters}}",
   },
   leads: {
     title: "My offers",
@@ -302,6 +304,7 @@ export const portal = {
     purposeWalletHint: "The amount is added to your wallet once Kompass confirms the receipt.",
     purposeInvoiceHint: "Kompass marks the invoice as paid once it confirms the receipt. Your wallet doesn’t change.",
     receiptChecking: "Receipt being checked",
+    statementSearchPh: "Search offer or reference…",
   },
   reviews: {
     title: "Reviews",
@@ -315,8 +318,8 @@ export const portal = {
     reason: "Reason",
     sent: "Removal request sent to Kompass",
     empty: "No published reviews yet.",
-    shareTitle: "Ask happy customers for a review",
-    shareBody: "Send them your public profile link — reviews appear after moderation.",
+    shareTitle: "How you get reviews",
+    shareBody: "After a job booked through Kompass, the customer gets a short survey and rates you. Kompass checks every review before it appears on your profile. Share your profile so new customers can read them.",
     copyLink: "Copy profile link",
   },
   profile: {
