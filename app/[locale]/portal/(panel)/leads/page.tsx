@@ -3,10 +3,10 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Ban, BellRing, CheckCircle2, Flag, Headset, Mail, Phone, RotateCcw, ShoppingBag } from "lucide-react";
+import { Ban, BellRing, CheckCircle2, Flag, Headset, Mail, Phone, RotateCcw, ShoppingBag, PhoneMissed, Trophy, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import type { FakeReportStatus, Order } from "@/lib/types";
+import { ORDER_OUTCOMES, type FakeReportStatus, type Order, type OrderOutcome } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
@@ -26,9 +26,12 @@ import { JobFacts, JobPlaces } from "@/components/shared/job-details";
 import { routeFull, routeText } from "@/lib/jobs";
 
 const REASONS = ["phone", "never", "duplicate", "unreachable"] as const;
-const GROUPS: LeadGroup[] = ["open", "executed", "reported", "cancelled"];
+const GROUPS: LeadGroup[] = ["open", "won", "lost", "executed", "reported", "cancelled"];
 const OUTCOME_TONE: Record<LeadOutcome, "neutral" | "success" | "warning" | "info" | "danger" | "primary"> = {
   active: "primary",
+  won: "success",
+  lost: "neutral",
+  unreachable: "warning",
   chosen: "success",
   chosenOther: "neutral",
   executed: "success",
@@ -92,6 +95,12 @@ function MyLeads() {
   const status = (o: Order) => {
     const { status: s } = outcomeOf(o);
     return <Badge tone={OUTCOME_TONE[s]} dot>{t(`outcome.${s}`)}</Badge>;
+  };
+  // after the call: how it went (click the same answer again to clear it)
+  const setOutcome = (o: Order, outcome: OrderOutcome) => {
+    const clear = o.outcome === outcome;
+    patch("orders", o.id, clear ? { outcome: undefined, outcomeAt: undefined } : { outcome, outcomeAt: new Date().toISOString() });
+    toast.success(clear ? t("outcomeCleared") : t("outcomeSaved", { status: t(`outcome.${outcome}`) }));
   };
   const markExecuted = (o: Order) =>
     confirm({
@@ -215,6 +224,33 @@ function MyLeads() {
                     <p className="mt-1 text-muted-foreground">{t(`choiceHint.${choiceOf(open)}`)}</p>
                   </div>
                 )}
+                {["open", "won", "lost"].includes(outcomeOf(open).group) && !outcomeOf(open).report && (
+                  <div className="rounded-xl border p-3">
+                    <p className="text-sm font-semibold text-ink">{t("outcomeTitle")}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{t("outcomeHint")}</p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      {(ORDER_OUTCOMES as readonly OrderOutcome[]).map((x) => (
+                        <Button
+                          key={x}
+                          size="sm"
+                          variant={open.outcome === x ? (x === "won" ? "success" : "secondary") : "outline"}
+                          aria-pressed={open.outcome === x}
+                          onClick={() => setOutcome(open, x)}
+                          className="h-auto min-h-9 whitespace-normal py-1.5"
+                        >
+                          {x === "won" ? <Trophy /> : x === "lost" ? <UserX /> : <PhoneMissed />} {t(`set.${x}`)}
+                        </Button>
+                      ))}
+                    </div>
+                    {/* a number nobody answers may mean a fake request: point to the refund path */}
+                    {open.outcome === "unreachable" && (
+                      <p className="mt-3 rounded-lg bg-warning-soft/60 px-3 py-2 text-xs text-ink">
+                        {t("unreachableHint")}{" "}
+                        <button type="button" className="font-semibold text-primary hover:underline" onClick={() => setReporting(open)}>{t("report")}</button>
+                      </p>
+                    )}
+                  </div>
+                )}
                 <Card className="bg-primary-soft/40 p-4 shadow-none">
                   <p className="text-lg font-bold text-ink">{lead.firstName} {lead.lastName}</p>
                   {lead.requester && (
@@ -235,9 +271,9 @@ function MyLeads() {
                 <DL items={[{ label: tl("execution"), value: formatDate(lead.executionDate, lang) }, { label: t("paid"), value: formatCHF(open.price, lang) }]} />
                 {lead.details && <p className="rounded-xl border border-dashed p-4 text-sm">“{lead.details}”</p>}
               </div>
-              {outcomeOf(open).group === "open" && (
+              {(outcomeOf(open).group === "open" || outcomeOf(open).group === "won") && (
                 <div className="sticky bottom-0 mt-auto flex gap-2 border-t bg-surface p-4">
-                  {!outcomeOf(open).report && <Button variant="ghost" className="text-danger hover:bg-danger-soft" onClick={() => setReporting(open)}><Flag /> {t("report")}</Button>}
+                  {!outcomeOf(open).report && outcomeOf(open).group === "open" && <Button variant="ghost" className="text-danger hover:bg-danger-soft" onClick={() => setReporting(open)}><Flag /> {t("report")}</Button>}
                   <Button variant="success" className="flex-1" onClick={() => markExecuted(open)}>
                     <CheckCircle2 /> {t("markDone")}
                   </Button>

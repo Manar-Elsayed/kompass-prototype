@@ -191,6 +191,8 @@ export const admin: Built<typeof Def> = {
     expiresIn: "{days, plural, =0 {Heute} one {Morgen} other {In # Tagen}}",
     flagged: "Markiert",
     detail: {
+      companyReported: "Was die Firma gemeldet hat",
+      unreachableWarning: "{count} Firmen haben diese Kundschaft nicht erreicht. Prüfen Sie, ob die Anfrage gefälscht ist.",
       overview: "Übersicht",
       move: "Auftragsdetails",
       buyers: "Partner, die diese Anfrage gekauft haben",
@@ -386,6 +388,7 @@ export const admin: Built<typeof Def> = {
     refunded: "CHF {amount} an {name} zurückerstattet",
   },
   partners: {
+    winRateFoot: "Erfolgsquote {rate} % ({won} von {decided})",
     title: "Partner",
     searchPh: "Firma, Ort, Kanton oder E-Mail suchen…",
     subtitle: "Zugelassene Firmen, die Anfragen kaufen können.",
@@ -486,6 +489,7 @@ export const admin: Built<typeof Def> = {
       choose: "Datei wählen",
     },
     bookings: {
+      companySays: "Firma: {outcome}",
       title: "Offerten-Buchungen",
       count: "{count, plural, one {# Buchung} other {# Buchungen}}",
       fakeTitle: "Buchungen von Fake-Offerten",
@@ -739,6 +743,9 @@ export const admin: Built<typeof Def> = {
     },
   },
   wallets: {
+    low: "Zu wenig zum Kaufen",
+    lowHint: "Unter der günstigsten Anfrage dieser Firma: Sie kann erst nach dem Aufladen kaufen.",
+    enough: "Genug zum Kaufen",
     searchPh: "Firma oder Ort suchen…",
     title: "Wallets",
     subtitle: "Das Guthaben jeder Firma und alle Bewegungen: Aufladungen, Kredit, Anfragekäufe und Rückerstattungen.",

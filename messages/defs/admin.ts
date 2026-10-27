@@ -188,6 +188,8 @@ export const admin = {
     expiresIn: "{days, plural, =0 {Today} one {Tomorrow} other {In # days}}",
     flagged: "Flagged",
     detail: {
+      companyReported: "What the company reported",
+      unreachableWarning: "{count} companies couldn’t reach this customer. Check whether the request is fake.",
       overview: "Overview",
       move: "Job details",
       buyers: "Partners who bought this offer",
@@ -383,6 +385,7 @@ export const admin = {
     refunded: "CHF {amount} refunded to {name}",
   },
   partners: {
+    winRateFoot: "Win rate {rate}% ({won} of {decided})",
     title: "Partners",
     searchPh: "Search company, city, canton or email…",
     subtitle: "Approved companies that can buy offers.",
@@ -483,6 +486,7 @@ export const admin = {
       choose: "Choose file",
     },
     bookings: {
+      companySays: "Company: {outcome}",
       title: "Offer bookings",
       count: "{count, plural, one {# booking} other {# bookings}}",
       fakeTitle: "Fake offer bookings",
@@ -736,6 +740,9 @@ export const admin = {
     },
   },
   wallets: {
+    low: "Too low to buy",
+    lowHint: "Below the cheapest offer this company takes: it can’t buy until it tops up.",
+    enough: "Enough to buy",
     searchPh: "Search company or city…",
     title: "Wallets",
     subtitle: "Every company’s balance and how it moved: top-ups, credit, offer purchases and refunds.",

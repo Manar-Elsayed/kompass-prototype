@@ -306,6 +306,11 @@ export default function LeadDetail() {
                           {o.note && <p className="mt-0.5 text-xs text-ink">{o.note}</p>}
                         </div>
                         {o.partnerId === offer.chosenPartnerId && <Badge tone="primary"><Hand /> {tl("chosen")}</Badge>}
+                        {o.outcome && !o.executed && (
+                          <Badge tone={o.outcome === "won" ? "success" : o.outcome === "unreachable" ? "warning" : "neutral"} title={tl("companyReported")}>
+                            {t(`portal.leads.outcome.${o.outcome}`)}
+                          </Badge>
+                        )}
                         {o.executed && <Badge tone="success">{t("admin.shop.executed")}</Badge>}
                         <span className="font-semibold">{formatCHF(o.price, lang)}</span>
                       </li>
@@ -314,6 +319,11 @@ export default function LeadDetail() {
                 </ul>
               ) : (
                 <EmptyState icon={<Building2 />} title={tl("noBuyers")} className="py-8" />
+              )}
+              {orders.filter((o) => o.outcome === "unreachable").length >= 2 && (
+                <p className="mt-3 rounded-lg bg-warning-soft/60 px-3 py-2 text-sm text-ink">
+                  {tl("unreachableWarning", { count: orders.filter((o) => o.outcome === "unreachable").length })}
+                </p>
               )}
               {offer.buyersNotifiedAt && (
                 <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">

@@ -42,6 +42,9 @@ export const portal: Built<typeof Def> = {
     search: "Cerca ditte…",
   },
   dashboard: {
+    winRate: "Tasso di successo",
+    winRateFoot: "{won} richieste vinte su {decided}",
+    winRateEmpty: "Ci dica com’è andata con le sue richieste",
     hello: "Bentornato, {name}",
     subtitle: "Ecco come va la Sua attività su Kompass.",
     wallet: "Saldo del portafoglio",
@@ -123,7 +126,24 @@ export const portal: Built<typeof Def> = {
     searchPh: "Cerca n. richiesta, località o NPA…",
     count: "{count, plural, =0 {Nessuna richiesta corrisponde ai filtri} one {# richiesta corrisponde ai filtri} other {# richieste corrispondono ai filtri}}",
   },
+  lowBalance: {
+    title: "Il suo saldo è {balance}: non basta per una richiesta",
+    body: "Le richieste costano da {min}. Ricarichi ora per non perdere la prossima.",
+    topUp: "Ricarica online",
+    transfer: "Paga con bonifico",
+    short: "Saldo troppo basso per acquistare una richiesta",
+  },
   leads: {
+    outcomeTitle: "Com’è andata?",
+    outcomeHint: "Ce lo dica dopo aver parlato con il cliente. Aggiorna il suo tasso di successo.",
+    outcomeSaved: "Salvato: {status}",
+    outcomeCleared: "Risposta rimossa",
+    unreachableHint: "Numero errato o nessuno risponde mai? Se pensa che la richiesta sia falsa, la segnali per riavere i soldi.",
+    set: {
+      won: "Ho ottenuto il lavoro",
+      lost: "Hanno scelto un’altra azienda",
+      unreachable: "Non raggiungibile",
+    },
     title: "Le mie richieste",
     searchPh: "Cerca richiesta, cliente o località…",
     subtitle: "I clienti che ha acquistato. Li contatti in fretta: stanno confrontando le offerte.",
@@ -160,6 +180,9 @@ export const portal: Built<typeof Def> = {
     },
     bookedBy: "Prenotato da {name}",
     outcome: {
+      won: "Vinto",
+      lost: "Perso",
+      unreachable: "Non raggiungibile",
       active: "Aperto",
       chosen: "Ha prenotato voi",
       chosenOther: "Ha scelto un’altra ditta",
@@ -169,6 +192,8 @@ export const portal: Built<typeof Def> = {
       cancelledCustomer: "Annullata",
     },
     groups: {
+      won: "Vinte",
+      lost: "Perse",
       open: "Aperti",
       executed: "Eseguiti",
       reported: "Segnalati",

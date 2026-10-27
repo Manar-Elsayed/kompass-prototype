@@ -27,6 +27,7 @@ import { PaymentProof } from "@/components/shared/payment-proof";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 import { DetailSheet, SheetSection } from "@/components/admin/row-actions";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
+import { receiptParty, useReceipts } from "@/components/shared/receipts";
 import { KOMPASS_IBAN, MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
 import { useCompose } from "@/components/portal/compose";
 
@@ -75,6 +76,12 @@ function Payments() {
   useEffect(() => {
     if (wanted && (TABS as readonly string[]).includes(wanted)) setTab(wanted as Tab);
   }, [wanted]);
+  // from the low-balance banner: open the matching way to top up
+  const topupParam = params.get("topup");
+  useEffect(() => {
+    if (topupParam === "online") setOnline(true);
+    if (topupParam === "transfer") setUpload(true);
+  }, [topupParam]);
 
   const ledger = useMemo(
     () => walletLedger({ orders, dues, topups, refunds, invoices, partners, payouts }, partner.id),
@@ -89,6 +96,7 @@ function Payments() {
   // a transfer receipt for this invoice is waiting for Kompass
   const checking = (i: Invoice) => i.status === "due" && dues.some((d) => d.invoiceId === i.id && d.status === "pending");
   const invStatus = (i: Invoice) => (i.status === "paid" ? "paid" : isOverdue(i) ? "overdue" : "due");
+  const receipts = useReceipts();
   const openDoc = (i: Invoice) => setDoc({ kind: "invoice", id: i.id, date: i.issuedAt, partner, line: ti("creditLine"), amount: i.amount, status: invStatus(i), dueAt: i.dueAt, paidAt: i.paidAt });
 
   return (
@@ -150,7 +158,7 @@ function Payments() {
             </Card>
             <Card className="h-fit overflow-hidden">
               <CardHeader title={t("recentMoves")} action={<Button variant="ghost" size="sm" onClick={() => setTab("statement")}>{t("fullStatement")}</Button>} />
-              <WalletLedger entries={ledger.entries} limit={6} className="mt-4 border-t" />
+              <WalletLedger entries={ledger.entries} limit={6} className="mt-4 border-t" receiptOf={receipts.numberOf} onReceipt={(e) => receipts.open(e, receiptParty(partner))} />
             </Card>
           </div>
         </TabsContent>
@@ -224,6 +232,7 @@ function Payments() {
       </Tabs>
 
       {upload && <UploadDialog invoiceId={uploadInvoice} onClose={() => { setUpload(false); setUploadInvoice(undefined); }} />}
+      {receipts.dialog}
       {online && <OnlineTopUpDialog onClose={() => setOnline(false)} onTransfer={() => { setOnline(false); setUpload(true); }} />}
       {payout && <PayoutDialog onClose={() => setPayout(false)} onDone={() => setTab("payouts")} />}
       {paying && (
@@ -267,6 +276,8 @@ function Payments() {
 /** Every wallet movement, filterable by type and period, exportable as CSV for the bookkeeping. */
 function Statement({ entries }: { entries: ReturnType<typeof walletLedger>["entries"] }) {
   const t = useTranslations("portal.payments");
+  const partner = useCurrentPartner()!;
+  const receipts = useReceipts();
   const tw = useTranslations("admin.wallets");
   const lang = useLang();
   const [kind, setKind] = useState<LedgerKind | "all">("all");
@@ -282,8 +293,8 @@ function Statement({ entries }: { entries: ReturnType<typeof walletLedger>["entr
   const total = rows.reduce((a, e) => a + e.amount, 0);
 
   const exportCsv = () => {
-    const head = ["date", "type", "reference", "amount_chf"];
-    const lines = rows.map((e) => [e.at.slice(0, 10), tw(`kinds.${e.kind}`, { ref: e.reference }), e.reference, e.amount.toFixed(2)]);
+    const head = ["date", "type", "reference", "receipt", "amount_chf"];
+    const lines = rows.map((e) => [e.at.slice(0, 10), tw(`kinds.${e.kind}`, { ref: e.reference }), e.reference, receipts.numberOf(e) ?? "", e.amount.toFixed(2)]);
     const csv = [head, ...lines].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
     const url = URL.createObjectURL(new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -308,7 +319,8 @@ function Statement({ entries }: { entries: ReturnType<typeof walletLedger>["entr
         <Select size="sm" className="h-9 w-48" value={kind} onValueChange={(v) => setKind(v as typeof kind)} options={[{ value: "all", label: t("allTypes") }, ...LEDGER_KINDS.map((k) => ({ value: k, label: t(`ledgerKinds.${k}`) }))]} />
         <Select size="sm" className="h-9 w-40" value={period} onValueChange={(v) => setPeriod(v as typeof period)} options={(["all", "30", "90", "365"] as const).map((p) => ({ value: p, label: t(`periods.${p}`) }))} />
       </div>
-      <WalletLedger entries={rows} limit={500} className="mt-4 border-t" />
+      <WalletLedger entries={rows} limit={500} className="mt-4 border-t" receiptOf={receipts.numberOf} onReceipt={(e) => receipts.open(e, receiptParty(partner))} />
+      {receipts.dialog}
     </Card>
   );
 }

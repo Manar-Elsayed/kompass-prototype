@@ -8,7 +8,7 @@ import type { Invoice, PayMethod } from "@/lib/types";
 import { formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang, usePartnerMap } from "@/lib/mock/hooks";
-import { inLastDays, isOverdue } from "@/lib/mock/selectors";
+import { inLastDays, isOverdue, receiptRows, type ReceiptRow } from "@/lib/mock/selectors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
@@ -20,15 +20,6 @@ import { MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 
-type ReceiptKind = "receipt" | "online" | "admin" | "purchase";
-interface ReceiptRow {
-  id: string;
-  partnerId: string;
-  kind: ReceiptKind;
-  amount: number;
-  at: string;
-  ref: string;
-}
 
 const invStatus = (i: Invoice) => (i.status === "paid" ? "paid" : isOverdue(i) ? "overdue" : "due");
 
@@ -50,24 +41,9 @@ export default function InvoicesPage() {
   const paid30 = invoices.filter((i) => i.status === "paid" && i.paidAt && inLastDays(i.paidAt, 30));
   const sum = (xs: Invoice[]) => xs.reduce((a, i) => a + i.amount, 0);
 
-  // a receipt for every franc that moved: confirmed receipts, online / admin payments, lead purchases.
-  // Numbered per year with the invoice prefix, oldest first: KMP-R-2026-0001, KMP-R-2026-0002, …
-  const prefix = useStore((s) => s.config.invoicePrefix) || "INV";
-  const receipts: ReceiptRow[] = useMemo(() => {
-    const rows = [
-      ...dues.filter((d) => d.status === "confirmed").map((d) => ({ id: d.id, partnerId: d.partnerId, kind: "receipt" as const, amount: d.amount, at: d.createdAt, ref: d.reference })),
-      ...topups.filter((x) => x.method !== "credit").map((x) => ({ id: x.id, partnerId: x.partnerId, kind: x.method as "online" | "admin", amount: x.amount, at: x.createdAt, ref: x.reference })),
-      ...orders.map((o) => ({ id: o.id, partnerId: o.partnerId, kind: "purchase" as const, amount: o.price, at: o.createdAt, ref: o.offerId })),
-    ].sort((a, b) => a.at.localeCompare(b.at));
-    const perYear: Record<string, number> = {};
-    return rows
-      .map((r) => {
-        const year = r.at.slice(0, 4);
-        perYear[year] = (perYear[year] ?? 0) + 1;
-        return { ...r, id: `${prefix}-R-${year}-${String(perYear[year]).padStart(4, "0")}` };
-      })
-      .reverse();
-  }, [dues, topups, orders, prefix]);
+  // a receipt for every franc that moved: the same numbers the companies see on their statement
+  const prefix = useStore((s) => s.config.invoicePrefix);
+  const receipts: ReceiptRow[] = useMemo(() => receiptRows({ dues, topups, orders }, prefix), [dues, topups, orders, prefix]);
 
   const company = (id: string) => (
     <span className="flex items-center gap-2 font-semibold text-ink">

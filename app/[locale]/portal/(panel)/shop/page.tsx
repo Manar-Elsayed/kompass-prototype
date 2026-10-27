@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/shared/bits";
 import { PageHeader } from "@/components/admin/ui";
 import { LeadCard } from "@/components/portal/lead-card";
+import { LowBalanceBanner } from "@/components/portal/low-balance";
 import { useCanBuy } from "@/components/portal/shell";
 import { CITIES } from "@/lib/mock/seed";
 
@@ -54,6 +55,7 @@ export default function LeadShop() {
   return (
     <>
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
+      <LowBalanceBanner />
       <Card className="mb-2 flex flex-wrap items-center gap-2 p-3">
         <div className="relative w-full sm:min-w-48 sm:flex-1">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

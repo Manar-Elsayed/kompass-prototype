@@ -8,8 +8,9 @@ import type { Partner } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang } from "@/lib/mock/hooks";
-import { inLastDays, walletLedger } from "@/lib/mock/selectors";
+import { inLastDays, walletLedger, lowBalance } from "@/lib/mock/selectors";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/controls";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
@@ -17,6 +18,7 @@ import { KpiCard, PageHeader } from "@/components/admin/ui";
 import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { CreditDialog, TopUpDialog } from "@/components/admin/wallet-actions";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
+import { receiptParty, useReceipts } from "@/components/shared/receipts";
 
 type Row = Partner & ReturnType<typeof walletLedger>;
 
@@ -44,6 +46,13 @@ export default function WalletsPage() {
   const creditDue = rows.reduce((a, r) => a + r.creditDue, 0);
   const overdue = rows.reduce((a, r) => a + r.creditOverdue, 0);
   const byId = (id: string | null) => rows.find((r) => r.id === id);
+  const receipts = useReceipts();
+  const services = useStore((s) => s.services);
+  const defaultPrice = useStore((s) => s.config.defaultLeadPrice);
+  const isLow = (id: string) => {
+    const p = partners.find((x) => x.id === id);
+    return !!p && !p.banned && lowBalance(p, services, defaultPrice).low;
+  };
 
   const columns: ColumnDef<Row, unknown>[] = [
     {
@@ -57,7 +66,18 @@ export default function WalletsPage() {
         </span>
       ),
     },
-    { id: "balance", header: tw("balance"), accessorFn: (r) => r.wallet, cell: (c) => <span className="font-bold text-ink">{formatCHF(c.getValue() as number, lang)}</span> },
+    {
+      id: "balance",
+      header: tw("balance"),
+      accessorFn: (r) => r.wallet,
+      // below the cheapest offer the company takes, it can't buy anything: worth a call
+      cell: ({ row: { original: r } }) => (
+        <span className="flex flex-col items-start gap-0.5">
+          <span className="font-bold text-ink">{formatCHF(r.wallet, lang)}</span>
+          {isLow(r.id) && <Badge tone="warning" title={tw("lowHint")}>{tw("low")}</Badge>}
+        </span>
+      ),
+    },
     { id: "toppedUp", meta: { className: "hidden 2xl:table-cell" }, header: tw("toppedUp"), accessorFn: (r) => r.toppedUp, cell: (c) => <span className="text-success">{formatCHF(c.getValue() as number, lang)}</span> },
     { id: "spent", meta: { className: "hidden 2xl:table-cell" }, header: tw("spent"), accessorFn: (r) => r.spent, cell: (c) => formatCHF(c.getValue() as number, lang) },
     { id: "refunded", meta: { className: "hidden 2xl:table-cell" }, header: tw("refunded"), accessorFn: (r) => r.refunded, cell: (c) => <span className="text-muted-foreground">{formatCHF(c.getValue() as number, lang)}</span> },
@@ -88,6 +108,7 @@ export default function WalletsPage() {
   ];
 
   const open = byId(history);
+  const openPartner = partners.find((p) => p.id === history);
   const topUpRow = byId(topUp);
   const creditRow = byId(credit);
 
@@ -113,6 +134,7 @@ export default function WalletsPage() {
         searchPlaceholder={tw("searchPh")}
         initialSort={[{ id: "balance", desc: true }]}
         onRowClick={(r) => setHistory(r.id)}
+        filters={[{ id: "low", label: tw("balance"), options: [{ value: "low", label: tw("low") }, { value: "ok", label: tw("enough") }], get: (r) => (isLow(r.id) ? "low" : "ok") }]}
       />
 
       {open && (
@@ -132,11 +154,12 @@ export default function WalletsPage() {
               </Button>
             </div>
             <div className="max-h-[60dvh] overflow-y-auto border-t pb-2">
-              <WalletLedger entries={open.entries} />
+              <WalletLedger entries={open.entries} receiptOf={receipts.numberOf} onReceipt={(e) => openPartner && receipts.open(e, receiptParty(openPartner))} />
             </div>
           </DialogContent>
         </Dialog>
       )}
+      {receipts.dialog}
       {topUpRow && <TopUpDialog partner={topUpRow} onClose={() => setTopUp(null)} />}
       {creditRow && <CreditDialog partner={creditRow} onClose={() => setCredit(null)} />}
     </>

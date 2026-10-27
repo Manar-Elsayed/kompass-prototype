@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useLowBalance } from "@/components/portal/low-balance";
 import { Logo } from "@/components/shared/bits";
 import { LocaleSwitcher } from "@/components/shared/locale-switcher";
 import { PrototypeDock } from "@/components/shared/prototype-dock";
@@ -87,6 +88,7 @@ function Sidebar() {
   const lang = useLang();
   const pathname = usePathname();
   const partner = useCurrentPartner()!;
+  const lowWallet = useLowBalance().low;
   const offers = useStore((s) => s.offers);
   const orders = useStore((s) => s.orders);
   const fakeReports = useStore((s) => s.fakeReports);
@@ -113,9 +115,13 @@ function Sidebar() {
             <p className="truncate text-xs text-muted-foreground">{partner.city} · {partner.canton}</p>
           </div>
         </div>
-        <Link href="/portal/payments" className="mt-3 flex items-center justify-between rounded-lg bg-surface px-3 py-2 text-sm ring-1 ring-border transition hover:ring-primary/40">
+        <Link
+          href="/portal/payments"
+          title={lowWallet ? t("lowBalance.short") : undefined}
+          className={cn("mt-3 flex items-center justify-between rounded-lg px-3 py-2 text-sm ring-1 transition", lowWallet ? "bg-warning-soft/60 ring-warning/40 hover:ring-warning" : "bg-surface ring-border hover:ring-primary/40")}
+        >
           <span className="flex items-center gap-1.5 text-muted-foreground"><Wallet className="size-4" />{t("dashboard.wallet")}</span>
-          <span className="font-bold text-ink">{formatCHF(partner.wallet, lang)}</span>
+          <span className={cn("font-bold", lowWallet ? "text-warning" : "text-ink")}>{formatCHF(partner.wallet, lang)}</span>
         </Link>
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2" aria-label="Partner">
@@ -154,6 +160,7 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
   const lang = useLang();
   const router = useRouter();
   const partner = useCurrentPartner()!;
+  const lowWallet = useLowBalance().low;
   const logout = useStore((s) => s.partnerLogout);
 
   return (
@@ -163,7 +170,7 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
       </Button>
       <Link href="/portal" className="lg:hidden"><Logo className="h-6" /></Link>
       <div className="ms-auto flex items-center gap-1">
-        <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
+        <Button asChild variant="outline" size="sm" className={cn("hidden sm:inline-flex", lowWallet && "border-warning/50 bg-warning-soft/60 text-warning")} title={lowWallet ? t("lowBalance.short") : undefined}>
           <Link href="/portal/payments"><Wallet /> {formatCHF(partner.wallet, lang)}</Link>
         </Button>
         <Button asChild variant="accent" size="sm" className="hidden md:inline-flex">

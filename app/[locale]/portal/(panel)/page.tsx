@@ -2,14 +2,14 @@
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowRight, CalendarCheck, CircleCheck, ClipboardCheck, Clock, FileWarning, Headset, MessageSquare, ShoppingBag, Star, Wallet, Receipt } from "lucide-react";
+import { ArrowRight, CalendarCheck, CircleCheck, ClipboardCheck, Clock, FileWarning, Headset, MessageSquare, ShoppingBag, Star, Wallet, Receipt, Trophy } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { Link } from "@/i18n/navigation";
 import { cn, formatCHF, formatDate, timeAgo } from "@/lib/utils";
 import { C } from "@/lib/chart";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL, useLang, usePartnerRatings, useServiceMap } from "@/lib/mock/hooks";
-import { availableLeads, documentState, inLastDays, isOverdue, leadOutcome, refNow } from "@/lib/mock/selectors";
+import { availableLeads, documentState, inLastDays, isOverdue, leadOutcome, refNow, winRate } from "@/lib/mock/selectors";
 import { DAY } from "@/lib/mock/seed";
 import type { DocKey } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState, Stars } from "@/components/shared/bits";
 import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { useLowBalance } from "@/components/portal/low-balance";
 import { LeadCard } from "@/components/portal/lead-card";
 import { useCanBuy } from "@/components/portal/shell";
 import { FeedRow, usePartnerFeed } from "@/components/portal/feed";
@@ -41,6 +42,10 @@ export default function PortalDashboard() {
   const last30 = mine.filter((o) => inLastDays(o.createdAt, 30));
   const pending = dues.filter((d) => d.partnerId === partner.id && d.status === "pending");
   const rating = ratings[partner.id];
+  const fakeReports = useStore((s) => s.fakeReports);
+  const refunds = useStore((s) => s.refunds);
+  // how often bought offers turn into jobs (from what the company reported)
+  const win = winRate({ orders, offers, fakeReports, refunds }, partner.id);
 
   return (
     <>
@@ -50,7 +55,7 @@ export default function PortalDashboard() {
         actions={<Button asChild variant="accent"><Link href="/portal/shop"><ShoppingBag /> {t("goShop")}</Link></Button>}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <KpiCard
           label={t("wallet")}
           value={formatCHF(partner.wallet, lang)}
@@ -60,6 +65,14 @@ export default function PortalDashboard() {
         />
         <KpiCard label={t("available")} value={available.length} icon={<ShoppingBag />} tone="accent" href="/portal/shop" />
         <KpiCard label={t("bought30")} value={last30.length} icon={<ClipboardCheck />} tone="info" href="/portal/leads" footer={t("spent30", { amount: formatCHF(last30.reduce((a, o) => a + o.price, 0), lang) })} />
+        <KpiCard
+          label={t("winRate")}
+          value={win.rate === null ? "–" : `${win.rate}%`}
+          icon={<Trophy />}
+          tone="success"
+          href="/portal/leads"
+          footer={win.decided ? t("winRateFoot", { won: win.won, decided: win.decided }) : t("winRateEmpty")}
+        />
         <KpiCard label={t("rating")} value={rating ? rating.avg.toFixed(1) : "–"} icon={<Star />} tone="warning" href="/portal/reviews" footer={<Stars value={rating?.avg ?? 0} />} />
       </div>
 
@@ -106,6 +119,7 @@ function ToDo() {
   const tp = useTranslations("admin.partners");
   const lang = useLang();
   const partner = useCurrentPartner()!;
+  const wallet = useLowBalance();
   const offers = useStore((s) => s.offers);
   const orders = useStore((s) => s.orders);
   const fakeReports = useStore((s) => s.fakeReports);
@@ -143,9 +157,9 @@ function ToDo() {
   if (unread.length)
     items.push({ id: "msg", tone: "info", icon: <MessageSquare />, text: t("messages", { count: unread.length }), cta: t("read"), href: unread.length === 1 ? `/portal/messages?thread=${unread[0].id}` : "/portal/messages" });
 
-  const cheapest = Math.min(...services.filter((s) => partner.serviceIds.includes(s.id)).map((s) => s.leadPrice));
-  if (Number.isFinite(cheapest) && partner.wallet < cheapest)
-    items.push({ id: "wallet", tone: "warning", icon: <Wallet />, text: t("lowWallet", { price: formatCHF(cheapest, lang) }), cta: t("topUp"), href: "/portal/payments" });
+  // same rule as the shop banner and the admin flag: below the cheapest offer the company takes
+  if (wallet.low)
+    items.push({ id: "wallet", tone: "warning", icon: <Wallet />, text: t("lowWallet", { price: formatCHF(wallet.min, lang) }), cta: t("topUp"), href: "/portal/payments?topup=online" });
 
   const toneCls = { danger: "bg-danger-soft text-danger", warning: "bg-warning-soft text-warning", success: "bg-success-soft text-success", info: "bg-info-soft text-info" };
 

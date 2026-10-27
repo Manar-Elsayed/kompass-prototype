@@ -958,6 +958,20 @@ export const payouts: Payout[] = [
   { id: "PO-0003", partnerId: "p-006", amount: 150, iban: partners[5].bank.iban, status: "rejected", reason: "cash", reference: "Open credit invoice must be paid first.", byUserId: "u-3", createdAt: daysAgo(12), decidedAt: daysAgo(11) },
 ];
 
+// companies told Kompass how most of their past offers went (won, lost or couldn't reach the customer)
+{
+  const orng = createRng(20261027);
+  const offerById = new Map(offers.map((o) => [o.id, o]));
+  const today = daysAgo(0);
+  for (const o of orders) {
+    const offer = offerById.get(o.offerId);
+    if (!offer || o.executed || offer.status === "cancelled" || offer.chosenPartnerId || offer.executionDate > today) continue;
+    if (!orng.chance(0.7)) continue;
+    o.outcome = orng.pick(["won", "won", "lost", "lost", "unreachable"] as const);
+    o.outcomeAt = offer.executionDate;
+  }
+}
+
 // an urgent request admin assigned to the demo company by phone, with the agreed price and a note
 {
   const offerById = new Map(offers.map((o) => [o.id, o]));
