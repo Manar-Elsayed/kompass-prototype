@@ -43,6 +43,7 @@ function Messages() {
         viewer="company"
         selected={selected}
         onSelect={setSelected}
+        autoOpen
         empty={<EmptyState icon={<MessagesSquare />} title={t("empty")} body={t("emptyBody")} action={<Button variant="outline" size="sm" onClick={newMessage}>{t("new")}</Button>} className="py-12" />}
       />
       {dialog}

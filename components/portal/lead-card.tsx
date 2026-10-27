@@ -26,6 +26,8 @@ import { routeText } from "@/lib/jobs";
 export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold: number; canBuy: boolean; compact?: boolean }) {
   const t = useTranslations("portal.shop");
   const tf = useTranslations("common.fields");
+  const tform = useTranslations("common.form");
+  const lift = (on: boolean) => tform(on ? "yes" : "no");
   const L = useL();
   const lang = useLang();
   const svc = useServiceMap()[offer.serviceId];
@@ -41,7 +43,7 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
             <Icon name={svc?.icon ?? "Truck"} className="size-5" />
           </span>
           <div>
-            <p className="font-bold text-ink">{L(svc?.name)} · {offer.from.rooms} {tf("rooms")}</p>
+            <p className="font-bold text-ink">{L(svc?.name)}{offer.from.rooms ? ` · ${offer.from.rooms} ${tf("rooms")}` : ""}</p>
             <p className="text-xs text-muted-foreground"><span dir="ltr" className="font-mono">{offer.id}</span> · {timeAgo(offer.createdAt, lang)}</p>
           </div>
         </div>
@@ -56,7 +58,7 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
 
       <div className="mt-4 space-y-2 rounded-xl bg-surface-2/70 p-3 text-sm">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5"><MapPin className="size-4 shrink-0 text-accent" />{offer.from.zip} {offer.from.city}{offer.to && <><ArrowRight className="size-3.5 text-muted-foreground" /> {offer.to.zip} {offer.to.city}</>}</p>
-        <p className="flex items-center gap-2"><Building className="size-4 shrink-0 text-accent" />{offer.to ? <>{tf("floor")} {offer.from.floor} → {offer.to.floor} · {tf("elevator")}: {offer.from.elevator ? "✓" : "✗"} / {offer.to.elevator ? "✓" : "✗"}</> : <>{tf("floor")} {offer.from.floor} · {tf("elevator")}: {offer.from.elevator ? "✓" : "✗"}</>}</p>
+        <p className="flex items-center gap-2"><Building className="size-4 shrink-0 text-accent" />{offer.to ? <>{tf("floor")} {offer.from.floor} → {offer.to.floor} · {tf("elevator")}: {lift(offer.from.elevator)} → {lift(offer.to.elevator)}</> : <>{tf("floor")} {offer.from.floor} · {tf("elevator")}: {lift(offer.from.elevator)}</>}</p>
         <p className="flex items-center gap-2"><Calendar className="size-4 shrink-0 text-accent" />{formatDate(offer.executionDate, lang)}</p>
         {!compact && offer.details && <p className="line-clamp-2 border-t pt-2 text-muted-foreground">“{offer.details}”</p>}
       </div>
@@ -64,7 +66,7 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
           <Lock className="size-3.5 shrink-0" />
-          <span className="truncate">{t("hidden")}</span>
+          <span>{t("hidden")}</span>
         </p>
         <Button size="sm" variant="accent" disabled={!canBuy} onClick={() => setOpen(true)} className="shrink-0">
           <ShoppingCart /> {t("buy")}
