@@ -42,6 +42,9 @@ export const portal: Built<typeof Def> = {
     search: "Rechercher une entreprise…",
   },
   dashboard: {
+    winRate: "Taux de réussite",
+    winRateFoot: "{won} demandes gagnées sur {decided}",
+    winRateEmpty: "Dites-nous comment vos demandes se sont passées",
     hello: "Bon retour, {name}",
     subtitle: "Voici comment se porte votre activité sur Kompass.",
     wallet: "Solde du portefeuille",
@@ -123,7 +126,24 @@ export const portal: Built<typeof Def> = {
     searchPh: "Rechercher un n° de demande, une ville ou un NPA…",
     count: "{count, plural, =0 {Aucune demande ne correspond à vos filtres} one {# demande correspond à vos filtres} other {# demandes correspondent à vos filtres}}",
   },
+  lowBalance: {
+    title: "Votre solde est de {balance} : pas assez pour une demande",
+    body: "Les demandes coûtent dès {min}. Rechargez maintenant pour ne pas manquer la prochaine.",
+    topUp: "Recharger en ligne",
+    transfer: "Payer par virement",
+    short: "Solde trop bas pour acheter une demande",
+  },
   leads: {
+    outcomeTitle: "Comment ça s’est passé ?",
+    outcomeHint: "Dites-le-nous après avoir parlé au client. Cela met à jour votre taux de réussite.",
+    outcomeSaved: "Enregistré : {status}",
+    outcomeCleared: "Réponse effacée",
+    unreachableHint: "Numéro faux ou jamais de réponse ? Si vous pensez que la demande est fausse, signalez-la pour être remboursé.",
+    set: {
+      won: "J’ai obtenu le travail",
+      lost: "Une autre entreprise a été choisie",
+      unreachable: "Client injoignable",
+    },
     title: "Mes demandes",
     searchPh: "Rechercher une demande, un client ou une ville…",
     subtitle: "Les clients que vous avez achetés. Contactez-les rapidement — ils comparent les offres.",
@@ -160,6 +180,9 @@ export const portal: Built<typeof Def> = {
     },
     bookedBy: "Réservé par {name}",
     outcome: {
+      won: "Gagné",
+      lost: "Perdu",
+      unreachable: "Injoignable",
       active: "Ouvert",
       chosen: "Vous a réservé",
       chosenOther: "A choisi une autre entreprise",
@@ -169,6 +192,8 @@ export const portal: Built<typeof Def> = {
       cancelledCustomer: "Annulée",
     },
     groups: {
+      won: "Gagnées",
+      lost: "Perdues",
       open: "Ouverts",
       executed: "Exécutés",
       reported: "Signalés",

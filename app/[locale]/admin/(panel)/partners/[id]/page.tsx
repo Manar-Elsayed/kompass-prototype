@@ -10,7 +10,7 @@ import { isLiveReview, type Order, type Payout, type Review } from "@/lib/types"
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, usePartnerRatings } from "@/lib/mock/hooks";
-import { isOverdue, walletLedger } from "@/lib/mock/selectors";
+import { isOverdue, walletLedger, winRate, lowBalance } from "@/lib/mock/selectors";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
 import { EmptyState, Stars, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
+import { receiptParty, useReceipts } from "@/components/shared/receipts";
 import { MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
 import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
@@ -70,6 +71,7 @@ function PartnerDetail() {
   const router = useRouter();
   const ratings = usePartnerRatings();
   const { confirm, dialog } = useConfirm();
+  const receipts = useReceipts();
   const [topUp, setTopUp] = useState(false);
   const [credit, setCredit] = useState(false);
   const [doc, setDoc] = useState<MoneyDoc | null>(null);
@@ -87,6 +89,8 @@ function PartnerDetail() {
   if (!p) return <Card><EmptyState title={t("common.notFound.title")} /></Card>;
 
   const ledger = walletLedger(db, p.id);
+  const win = winRate(db, p.id);
+  const lowWallet = lowBalance(p, db.services, db.config.defaultLeadPrice).low;
   const orders = db.orders.filter((o) => o.partnerId === p.id);
   const reports = db.fakeReports.filter((r) => orders.some((o) => o.id === r.orderId));
   // a booking is "fake" once its offer was cancelled as fake, or while the company has reported it
@@ -211,7 +215,13 @@ function PartnerDetail() {
       id: "status",
       header: t("common.fields.status"),
       accessorFn: (o) => offerMap[o.offerId]?.status ?? "",
-      cell: (c) => (c.getValue() ? <StatusBadge status={c.getValue() as string} /> : "–"),
+      // the offer's status, and underneath what the company reported about the deal
+      cell: ({ row: { original: o } }) => (
+        <span className="flex flex-col items-start gap-0.5">
+          {offerMap[o.offerId]?.status ? <StatusBadge status={offerMap[o.offerId].status} /> : "–"}
+          {o.outcome && !o.executed && <span className="text-xs text-muted-foreground">{tb("companySays", { outcome: t(`portal.leads.outcome.${o.outcome}`) })}</span>}
+        </span>
+      ),
     },
     ...(fake
       ? [
@@ -312,8 +322,14 @@ function PartnerDetail() {
       />
 
       <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label={tp("wallet")} value={formatCHF(p.wallet, lang)} icon={<Wallet />} />
-        <KpiCard label={tp("leadsBought")} value={ledger.leads} icon={<CheckCircle2 />} tone="info" footer={fakeBookings.length ? tb("fakeCount", { count: fakeBookings.length }) : undefined} />
+        <KpiCard label={tp("wallet")} value={formatCHF(p.wallet, lang)} icon={<Wallet />} footer={lowWallet ? <span className="font-semibold text-warning">{t("admin.wallets.low")}</span> : undefined} />
+        <KpiCard
+          label={tp("leadsBought")}
+          value={ledger.leads}
+          icon={<CheckCircle2 />}
+          tone="info"
+          footer={[win.rate !== null ? tp("winRateFoot", { rate: win.rate, won: win.won, decided: win.decided }) : null, fakeBookings.length ? tb("fakeCount", { count: fakeBookings.length }) : null].filter(Boolean).join(" · ") || undefined}
+        />
         <KpiCard label={tp("spent")} value={formatCHF(ledger.spent, lang)} icon={<Wallet />} tone="accent" footer={ledger.creditDue ? `${t("admin.wallets.creditDue")}: ${formatCHF(ledger.creditDue, lang)}` : undefined} />
         <KpiCard label={tp("avgRating")} value={ratings[p.id]?.avg.toFixed(1) ?? "–"} icon={<Star />} tone="warning" footer={`${ratings[p.id]?.count ?? 0} ${tp("reviews")}`} />
       </div>
@@ -446,7 +462,8 @@ function PartnerDetail() {
                 </div>
               }
             />
-            <WalletLedger entries={ledger.entries} className="mt-4 max-h-[520px] overflow-y-auto border-t" />
+            <WalletLedger entries={ledger.entries} className="mt-4 max-h-[520px] overflow-y-auto border-t" receiptOf={receipts.numberOf} onReceipt={(e) => receipts.open(e, receiptParty(p))} />
+            {receipts.dialog}
           </Card>
           <Card className="h-fit overflow-hidden">
             <CardHeader title={t("admin.invoices.creditTab")} />

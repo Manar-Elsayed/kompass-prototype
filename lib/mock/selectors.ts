@@ -1,4 +1,4 @@
-import { isLiveReview, DOC_KEYS, type DB, type DocKey, type FakeReport, type Offer, type Order, type Partner, type Refund, type VerificationFlag } from "@/lib/types";
+import { isLiveReview, DOC_KEYS, type DB, type DocKey, type FakeReport, type Offer, type Order, type Partner, type Refund, type Service, type VerificationFlag } from "@/lib/types";
 import { NOW, DAY } from "./seed";
 
 /** Reference "now": the frozen seed date, or real time if later (for new entries). */
@@ -21,6 +21,65 @@ export interface LedgerEntry {
   amount: number; // signed: money in > 0, purchases and payouts < 0
   reference: string; // receipt / payment reference, or the lead id for purchases
   payMethod?: string;
+}
+
+/**
+ * How often the company's bought offers turn into jobs: won (or done) out of the offers whose result
+ * is known. Fake or cancelled offers don't count either way.
+ */
+export function winRate(db: Pick<DB, "orders" | "offers" | "fakeReports" | "refunds">, partnerId: string) {
+  let won = 0, decided = 0;
+  for (const o of db.orders) {
+    if (o.partnerId !== partnerId) continue;
+    const { group } = leadOutcome(db, o);
+    if (group === "won" || group === "executed") { won++; decided++; }
+    else if (group === "lost") decided++;
+  }
+  return { won, decided, rate: decided ? Math.round((won / decided) * 100) : null };
+}
+
+/** Companies that said they couldn't reach this customer: several of them is a sign the request is fake. */
+export const unreachableCount = (db: Pick<DB, "orders">, offerId: string) => db.orders.filter((o) => o.offerId === offerId && o.outcome === "unreachable").length;
+
+/**
+ * Every receipt Kompass issues — a confirmed payment, an online or admin top-up, an offer purchase —
+ * numbered per year with the invoice prefix, oldest first. The admin Invoices page and the company's
+ * statement both use it, so the same payment always has the same receipt number.
+ */
+export type ReceiptKind = "receipt" | "online" | "admin" | "purchase";
+export interface ReceiptRow {
+  id: string; // the receipt number, e.g. KMP-R-2026-0001
+  sourceId: string; // the payment, top-up or order it is for
+  partnerId: string;
+  kind: ReceiptKind;
+  amount: number;
+  at: string;
+  ref: string;
+}
+export function receiptRows(db: Pick<DB, "dues" | "topups" | "orders">, prefix: string): ReceiptRow[] {
+  const rows = [
+    ...db.dues.filter((d) => d.status === "confirmed").map((d) => ({ sourceId: d.id, partnerId: d.partnerId, kind: "receipt" as const, amount: d.amount, at: d.createdAt, ref: d.reference })),
+    ...db.topups.filter((x) => x.method !== "credit").map((x) => ({ sourceId: x.id, partnerId: x.partnerId, kind: x.method as "online" | "admin", amount: x.amount, at: x.createdAt, ref: x.reference })),
+    ...db.orders.map((o) => ({ sourceId: o.id, partnerId: o.partnerId, kind: "purchase" as const, amount: o.price, at: o.createdAt, ref: o.offerId })),
+  ].sort((a, b) => a.at.localeCompare(b.at));
+  const perYear: Record<string, number> = {};
+  return rows
+    .map((r) => {
+      const year = r.at.slice(0, 4);
+      perYear[year] = (perYear[year] ?? 0) + 1;
+      return { ...r, id: `${prefix || "INV"}-R-${year}-${String(perYear[year]).padStart(4, "0")}` };
+    })
+    .reverse();
+}
+
+/**
+ * The cheapest offer the company can buy. Below it the wallet can't pay for any offer, so the
+ * company silently stops buying unless someone tells it.
+ */
+export function lowBalance(partner: Pick<Partner, "wallet" | "serviceIds" | "pausedServiceIds">, services: Pick<Service, "id" | "leadPrice">[], fallback: number) {
+  const prices = services.filter((s) => takesOffersFor(partner, s.id)).map((s) => s.leadPrice);
+  const min = prices.length ? Math.min(...prices) : fallback;
+  return { low: partner.wallet < min, min };
 }
 
 type LedgerDB = Pick<DB, "orders" | "dues" | "topups" | "refunds" | "invoices" | "partners" | "payouts">;
@@ -251,12 +310,16 @@ export function partnerRegions(db: Pick<DB, "nominations">, partnerId: string) {
  * cancelled (fake → refunded, customer → not refunded), reported as fake and being checked,
  * executed, the customer chose this company / another one, or still open.
  */
-export type LeadOutcome = "active" | "chosen" | "chosenOther" | "executed" | "reported" | "cancelledFake" | "cancelledCustomer";
-export type LeadGroup = "open" | "executed" | "reported" | "cancelled";
+export type LeadOutcome = "active" | "won" | "lost" | "unreachable" | "chosen" | "chosenOther" | "executed" | "reported" | "cancelledFake" | "cancelledCustomer";
+/** open = still to follow up; won / lost = decided (by the company or by the customer's choice). */
+export type LeadGroup = "open" | "won" | "lost" | "executed" | "reported" | "cancelled";
 export const LEAD_GROUP: Record<LeadOutcome, LeadGroup> = {
   active: "open",
-  chosen: "open",
-  chosenOther: "open",
+  won: "won",
+  chosen: "won",
+  lost: "lost",
+  unreachable: "lost",
+  chosenOther: "lost",
   executed: "executed",
   reported: "reported",
   cancelledFake: "cancelled",
@@ -272,6 +335,8 @@ export function leadOutcome(db: Pick<DB, "offers" | "fakeReports" | "refunds">, 
   else if (report?.status === "confirmed") status = "cancelledFake";
   else if (report && report.status !== "canceled") status = "reported";
   else if (order.executed) status = "executed";
+  // the company's own report is the freshest fact about the deal
+  else if (order.outcome) status = order.outcome;
   else if (offer?.chosenPartnerId === order.partnerId) status = "chosen";
   else if (offer?.chosenPartnerId) status = "chosenOther";
   return { status, group: LEAD_GROUP[status], offer, report, refund, assigned: order.channel === "manual" };

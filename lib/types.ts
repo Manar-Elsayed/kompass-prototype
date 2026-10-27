@@ -129,8 +129,13 @@ export interface Order {
   note?: string;
   couponCode?: string;
   executed: boolean;
+  /** What the company reports after contacting the customer. */
+  outcome?: OrderOutcome;
+  outcomeAt?: string;
   createdAt: string;
 }
+export const ORDER_OUTCOMES = ["won", "lost", "unreachable"] as const;
+export type OrderOutcome = (typeof ORDER_OUTCOMES)[number];
 
 export type FakeReportStatus = "open" | "testing" | "pending" | "confirmed" | "canceled";
 export interface FakeReport {

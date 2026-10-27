@@ -191,6 +191,8 @@ export const admin: Built<typeof Def> = {
     expiresIn: "{days, plural, =0 {Oggi} one {Domani} other {Tra # giorni}}",
     flagged: "Segnalato",
     detail: {
+      companyReported: "Cosa ha segnalato l’azienda",
+      unreachableWarning: "{count} aziende non hanno raggiunto questo cliente. Verifichi se la richiesta è falsa.",
       overview: "Panoramica",
       move: "Dettagli del lavoro",
       buyers: "Partner che hanno acquistato questa richiesta",
@@ -386,6 +388,7 @@ export const admin: Built<typeof Def> = {
     refunded: "CHF {amount} rimborsati a {name}",
   },
   partners: {
+    winRateFoot: "Tasso di successo {rate}% ({won} su {decided})",
     title: "Partner",
     searchPh: "Cerca azienda, località, cantone o e-mail…",
     subtitle: "Ditte approvate che possono acquistare richieste.",
@@ -486,6 +489,7 @@ export const admin: Built<typeof Def> = {
       choose: "Scegli file",
     },
     bookings: {
+      companySays: "Azienda: {outcome}",
       title: "Prenotazioni di offerte",
       count: "{count, plural, one {# prenotazione} other {# prenotazioni}}",
       fakeTitle: "Prenotazioni di offerte false",
@@ -739,6 +743,9 @@ export const admin: Built<typeof Def> = {
     },
   },
   wallets: {
+    low: "Troppo basso per acquistare",
+    lowHint: "Sotto la richiesta più economica di questa azienda: non può acquistare finché non ricarica.",
+    enough: "Sufficiente per acquistare",
     searchPh: "Cerca azienda o località…",
     title: "Portafogli",
     subtitle: "Il saldo di ogni ditta e tutti i movimenti: ricariche, credito, acquisti di richieste e rimborsi.",

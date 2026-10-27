@@ -42,6 +42,9 @@ export const portal: Built<typeof Def> = {
     search: "Firmen suchen…",
   },
   dashboard: {
+    winRate: "Erfolgsquote",
+    winRateFoot: "{won} von {decided} Anfragen gewonnen",
+    winRateEmpty: "Sagen Sie uns, wie Ihre Anfragen liefen",
     hello: "Willkommen zurück, {name}",
     subtitle: "So läuft Ihr Geschäft auf Kompass.",
     wallet: "Wallet-Guthaben",
@@ -123,7 +126,24 @@ export const portal: Built<typeof Def> = {
     searchPh: "Anfrage-Nr., Ort oder PLZ suchen…",
     count: "{count, plural, =0 {Keine Anfragen passen zu Ihren Filtern} one {# Anfrage passt zu Ihren Filtern} other {# Anfragen passen zu Ihren Filtern}}",
   },
+  lowBalance: {
+    title: "Ihr Guthaben beträgt {balance}: zu wenig für eine Anfrage",
+    body: "Anfragen kosten ab {min}. Laden Sie jetzt auf, damit Sie die nächste nicht verpassen.",
+    topUp: "Online aufladen",
+    transfer: "Per Banküberweisung zahlen",
+    short: "Guthaben reicht für keine Anfrage",
+  },
   leads: {
+    outcomeTitle: "Wie ist es gelaufen?",
+    outcomeHint: "Sagen Sie es uns nach dem Gespräch mit der Kundschaft. Das aktualisiert Ihre Erfolgsquote.",
+    outcomeSaved: "Gespeichert: {status}",
+    outcomeCleared: "Antwort entfernt",
+    unreachableHint: "Nummer falsch oder nie erreichbar? Wenn Sie die Anfrage für gefälscht halten, melden Sie sie und erhalten Ihr Geld zurück.",
+    set: {
+      won: "Auftrag erhalten",
+      lost: "Andere Firma gewählt",
+      unreachable: "Nicht erreicht",
+    },
     title: "Meine Anfragen",
     searchPh: "Anfrage, Kunde oder Ort suchen…",
     subtitle: "Ihre gekauften Kunden. Melden Sie sich rasch – sie vergleichen Offerten.",
@@ -160,6 +180,9 @@ export const portal: Built<typeof Def> = {
     },
     bookedBy: "Gebucht von {name}",
     outcome: {
+      won: "Gewonnen",
+      lost: "Verloren",
+      unreachable: "Nicht erreicht",
       active: "Offen",
       chosen: "Hat Sie gebucht",
       chosenOther: "Andere Firma gewählt",
@@ -169,6 +192,8 @@ export const portal: Built<typeof Def> = {
       cancelledCustomer: "Storniert",
     },
     groups: {
+      won: "Gewonnen",
+      lost: "Verloren",
       open: "Offen",
       executed: "Ausgeführt",
       reported: "Gemeldet",

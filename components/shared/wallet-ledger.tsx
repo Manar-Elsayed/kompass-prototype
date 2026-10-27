@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ArrowDownLeft, ArrowUpRight, CreditCard, HandCoins, Landmark, RotateCcw } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, CreditCard, FileText, HandCoins, Landmark, RotateCcw } from "lucide-react";
 import type { LedgerEntry } from "@/lib/mock/selectors";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { useLang } from "@/lib/mock/hooks";
@@ -16,9 +16,25 @@ const ICON = {
   payout: Landmark,
 } as const;
 
-/** One company's wallet movements, newest first. Shared by the admin Wallets page and the portal. */
-export function WalletLedger({ entries, limit = 60, className }: { entries: LedgerEntry[]; limit?: number; className?: string }) {
+/**
+ * One company's wallet movements, newest first. Shared by the admin Wallets page and the portal.
+ * With `receiptOf` / `onReceipt`, lines that have a receipt get a button that opens it.
+ */
+export function WalletLedger({
+  entries,
+  limit = 60,
+  className,
+  receiptOf,
+  onReceipt,
+}: {
+  entries: LedgerEntry[];
+  limit?: number;
+  className?: string;
+  receiptOf?: (e: LedgerEntry) => string | undefined;
+  onReceipt?: (e: LedgerEntry) => void;
+}) {
   const t = useTranslations("admin.wallets");
+  const tr = useTranslations("admin.invoices");
   const lang = useLang();
   if (!entries.length) return <p className="px-5 py-8 text-center text-sm text-muted-foreground">{t("noMoves")}</p>;
   return (
@@ -48,6 +64,20 @@ export function WalletLedger({ entries, limit = 60, className }: { entries: Ledg
               {out ? "−" : "+"}
               {formatCHF(Math.abs(e.amount), lang)}
             </span>
+            {onReceipt && (
+              <span className="w-24 shrink-0 text-end">
+                {receiptOf?.(e) && (
+                  <button
+                    type="button"
+                    onClick={() => onReceipt(e)}
+                    title={receiptOf(e)}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-primary hover:bg-primary-soft"
+                  >
+                    <FileText className="size-3.5" /> {tr("receipt")}
+                  </button>
+                )}
+              </span>
+            )}
           </li>
         );
       })}

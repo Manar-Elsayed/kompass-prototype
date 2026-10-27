@@ -39,6 +39,9 @@ export const portal = {
     search: "Search companies…",
   },
   dashboard: {
+    winRate: "Win rate",
+    winRateFoot: "{won} of {decided} offers won",
+    winRateEmpty: "Tell us how your offers went",
     hello: "Welcome back, {name}",
     subtitle: "Here's how your business is doing on Kompass.",
     wallet: "Wallet balance",
@@ -120,7 +123,24 @@ export const portal = {
     searchPh: "Search offer no., city or postcode…",
     count: "{count, plural, =0 {No offers match your filters} one {# offer matches your filters} other {# offers match your filters}}",
   },
+  lowBalance: {
+    title: "Your balance is {balance}: not enough for an offer",
+    body: "Offers cost from {min}. Top up now so you don’t miss the next one.",
+    topUp: "Top up online",
+    transfer: "Pay by bank transfer",
+    short: "Balance too low to buy an offer",
+  },
   leads: {
+    outcomeTitle: "How did it go?",
+    outcomeHint: "Tell us after you’ve talked to the customer. It updates your win rate.",
+    outcomeSaved: "Saved: {status}",
+    outcomeCleared: "Answer cleared",
+    unreachableHint: "Number wrong or nobody ever answers? If you think the request is fake, report it to get your money back.",
+    set: {
+      won: "I won the job",
+      lost: "They chose someone else",
+      unreachable: "Couldn’t reach them",
+    },
     title: "My offers",
     searchPh: "Search offer, customer or city…",
     subtitle: "Customers you bought. Contact them quickly — they are comparing offers.",
@@ -157,6 +177,9 @@ export const portal = {
     },
     bookedBy: "Booked by {name}",
     outcome: {
+      won: "Won",
+      lost: "Lost",
+      unreachable: "Couldn’t reach",
       active: "Open",
       chosen: "Booked you",
       chosenOther: "Chose another company",
@@ -166,6 +189,8 @@ export const portal = {
       cancelledCustomer: "Cancelled",
     },
     groups: {
+      won: "Won",
+      lost: "Lost",
       open: "Open",
       executed: "Executed",
       reported: "Reported",
