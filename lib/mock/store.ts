@@ -297,7 +297,7 @@ export const useStore = create<Store>()(
           return {
             partners: s.partners.map((p) =>
               p.id === partnerId
-                ? { ...p, contractSignedAt: at, contractSignedBy: name.trim(), documents: { ...p.documents, contract: { file: "contract-signed.pdf", uploadedAt: at, status: "pending_review" } } }
+                ? { ...p, contractSignedAt: at, contractSignedBy: name.trim(), contractVersion: s.config.contractTemplate, documents: { ...p.documents, contract: { file: "contract-signed.pdf", uploadedAt: at, status: "pending_review" } } }
                 : p,
             ),
             notifications: notify(s, {
@@ -338,7 +338,7 @@ export const useStore = create<Store>()(
         const at = nowIso();
         const year = new Date(at).getFullYear();
         const next = Math.max(0, ...s.invoices.map((i) => Number(i.id.split("-").pop()) || 0)) + 1;
-        const invoiceId = `INV-${year}-${String(next).padStart(4, "0")}`;
+        const invoiceId = `${s.config.invoicePrefix || "INV"}-${year}-${String(next).padStart(4, "0")}`;
         const topupId = `TU-${String(s.topups.length + 1).padStart(4, "0")}`;
         const invoice: Invoice = { id: invoiceId, partnerId, topupId, amount, status: "due", issuedAt: at, dueAt: new Date(Date.now() + termDays * 86_400_000).toISOString() };
         const topup: WalletTopup = { id: topupId, partnerId, amount, method: "credit", reference: invoiceId, note, byUserId, invoiceId, createdAt: at };
@@ -763,11 +763,11 @@ export const useStore = create<Store>()(
       // companies and no-shows; v9 the partner portal flows (onboarding contract, message threads,
       // payouts, service areas); v10 two booking types (same / other person); v11 no-shows removed
       // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address; v14 fake-offer reports whose
-      // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout; v17 team invitations (an invited member who hasn't signed in yet). Older saves start again from the current seed,
+      // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout; v17 team invitations (an invited member who hasn't signed in yet); v18 invoice numbers from the prefix and the contract version each company signed. Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 17,
+      version: 18,
       migrate: (persisted, version) => {
-        if (version >= 17) return persisted as Store;
+        if (version >= 18) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

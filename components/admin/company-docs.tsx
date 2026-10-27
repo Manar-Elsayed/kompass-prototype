@@ -54,7 +54,7 @@ export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-ink">{t(key)}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {d ? `${d.file} · ${td("uploaded", { date: formatDate(d.uploadedAt, lang) })}` : t("notUploaded")}
+                    {d ? `${d.file}${key === "contract" && partner.contractVersion ? ` (${partner.contractVersion})` : ""} · ${td("uploaded", { date: formatDate(d.uploadedAt, lang) })}` : t("notUploaded")}
                   </p>
                 </div>
                 {d && <Badge tone={d.status === "valid" ? "success" : d.status === "rejected" ? "danger" : "info"}>{td(`status.${d.status}`)}</Badge>}

@@ -111,6 +111,7 @@ function Progress({ partner }: { partner: Partner }) {
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
                 <FileSignature className="size-4 text-success" />
                 {t("signedBy", { name: partner.contractSignedBy ?? partner.ownerName, date: formatDateTime(partner.contractSignedAt!, lang) })}
+                {partner.contractVersion && <span className="font-mono text-xs" dir="ltr">· {partner.contractVersion}</span>}
               </p>
             )}
           </Step>

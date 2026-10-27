@@ -176,7 +176,7 @@ export const partners: Partner[] = rawPartners.map(({ expiresAt, documents: uplo
         insurance: doc(uploaded.insurance, "pending_review"),
         register: doc(uploaded.register, "pending_review"),
       },
-      ...(signed ? { contractSignedAt: daysAgo(1), contractSignedBy: p.ownerName } : {}),
+      ...(signed ? { contractSignedAt: daysAgo(1), contractSignedBy: p.ownerName, contractVersion: "partner-contract-v3.pdf" } : {}),
       ...(p.status === "rejected"
         ? { rejectionReason: "We could not verify your liability insurance and the commercial register extract does not list moving or cleaning services. You are welcome to apply again with both documents." }
         : {}),
@@ -185,6 +185,8 @@ export const partners: Partner[] = rawPartners.map(({ expiresAt, documents: uplo
   const demo = i === 0; // the demo portal account must be able to buy
   return {
     ...p,
+    // companies older than a year signed the previous contract and keep it
+    contractVersion: p.createdAt < daysAgo(365) ? "partner-contract-v2.pdf" : "partner-contract-v3.pdf",
     documents: {
       contract: doc(uploaded.contract, "valid", demo ? daysAhead(220) : expiresAt),
       // one company has uploaded its renewed insurance, which Kompass still has to check
@@ -860,7 +862,7 @@ approved.slice(0, 14).forEach((p, i) => {
 ).forEach(([amount, age, term, status], i) => {
   const p = approved[(i * 5 + 2) % approved.length];
   const topupId = `TU-${pad(topups.length + 1, 4)}`;
-  const invoiceId = `INV-2026-${pad(i + 31, 4)}`;
+  const invoiceId = `KMP-2026-${pad(i + 31, 4)}`;
   topups.push({
     id: topupId,
     partnerId: p.id,
