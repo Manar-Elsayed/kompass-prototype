@@ -66,7 +66,7 @@ export default function ApplicationDetail() {
       label: t("admin.partners.contract"),
       ok: !!p.contractSignedAt,
       detail: p.contractSignedAt
-        ? ta("signedBy", { name: p.contractSignedBy ?? p.ownerName, date: formatDate(p.contractSignedAt, lang) })
+        ? `${ta("signedBy", { name: p.contractSignedBy ?? p.ownerName, date: formatDate(p.contractSignedAt, lang) })}${p.contractVersion ? ` · ${p.contractVersion}` : ""}`
         : p.status === "contract_sent"
           ? ta("awaitingSignature")
           : ta("noContractYet"),
