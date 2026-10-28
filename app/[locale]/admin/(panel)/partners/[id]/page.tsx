@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Check, CheckCircle2, ClipboardList, ExternalLink, HandCoins, Landmark, Lock, LockOpen, Mail, Phone, Plus, RotateCcw, Star, Store, Trash2, Wallet, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ClipboardList, ExternalLink, HandCoins, Landmark, Lock, LockOpen, Mail, Phone, Plus, RotateCcw, ShoppingCart, Star, Store, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import { isLiveReview, type Order, type Payout, type Review } from "@/lib/types";
@@ -247,6 +247,7 @@ function PartnerDetail() {
         viewHref={`/admin/leads/${o.offerId}`}
         actions={[
           { label: t(o.executed ? "admin.rows.markNotDone" : "admin.rows.markDone"), icon: o.executed ? <RotateCcw /> : <CheckCircle2 />, onSelect: () => setExecuted(o, !o.executed) },
+          { label: t("admin.rows.openOrder"), icon: <ShoppingCart />, href: `/admin/leads/shop/${o.id}` },
           { label: t("admin.leads.survey.openSurvey"), icon: <ExternalLink />, href: `/requests/${o.offerId}` },
         ]}
       />
