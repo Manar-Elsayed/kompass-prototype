@@ -77,8 +77,8 @@ export default function PortalDashboard() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_380px]">
+        {/* fresh offers lead the main column; what needs attention heads the side column */}
         <div className="min-w-0 space-y-6">
-          <ToDo />
           <section>
             <div className="mb-3 flex items-end justify-between gap-3">
               <div className="min-w-0">
@@ -99,6 +99,7 @@ export default function PortalDashboard() {
         </div>
 
         <div className="space-y-4">
+          <ToDo />
           <Activity />
           <KompassMessages />
           <RecentPurchases />
