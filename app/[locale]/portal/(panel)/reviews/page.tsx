@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Copy, Flag, MessageSquareQuote, Star } from "lucide-react";
 import { toast } from "sonner";
 import { isLiveReview, type Review } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useLang, usePartnerRatings } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
@@ -16,24 +16,35 @@ import { Field } from "@/components/ui/label";
 import { Avatar, Progress } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EmptyState, Stars, StatusBadge } from "@/components/shared/bits";
+import { EmptyState, Stars } from "@/components/shared/bits";
 import { PageHeader } from "@/components/admin/ui";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
+
+/** Where a review stands for the company: on its profile, or somewhere in a removal request. */
+type ReviewState = "published" | "requested" | "declined" | "removed";
+const STATES: ReviewState[] = ["published", "requested", "declined", "removed"];
+const STATE_TONE = { published: "success", requested: "warning", declined: "neutral", removed: "danger" } as const;
 
 export default function PartnerReviews() {
   const t = useTranslations("portal.reviews");
   const tc = useTranslations("common");
   const lang = useLang();
   const partner = useCurrentPartner()!;
-  const reviews = useStore((s) => s.reviews).filter((r) => r.target === partner.id && isLiveReview(r));
   const removals = useStore((s) => s.removals).filter((r) => r.partnerId === partner.id);
+  const removalOf = (id: string) => removals.find((r) => r.reviewId === id);
+  // the table also keeps reviews Kompass removed on request; the rating counts only the live ones
+  const own = useStore((s) => s.reviews).filter((r) => r.target === partner.id && (isLiveReview(r) || removalOf(r.id)?.status === "approved"));
+  const reviews = own.filter(isLiveReview);
   const request = useStore((s) => s.requestReviewRemoval);
   const rating = usePartnerRatings()[partner.id];
   const [target, setTarget] = useState<Review | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const removalOf = (id: string) => removals.find((r) => r.reviewId === id);
+  const stateOf = (r: Review): ReviewState => {
+    const rr = removalOf(r.id);
+    return !rr ? "published" : rr.status === "approved" ? "removed" : rr.status === "pending" ? "requested" : "declined";
+  };
   const dist = [5, 4, 3, 2, 1].map((n) => ({ n, c: reviews.filter((r) => r.stars === n).length }));
   const profileUrl = typeof window !== "undefined" ? `${window.location.origin}/${lang}/companies/${partner.id}` : "";
 
@@ -55,18 +66,24 @@ export default function PartnerReviews() {
       header: tc("fields.comment"),
       accessorFn: (r) => r.comment,
       enableSorting: false,
-      cell: ({ row: { original: r } }) => <p className="line-clamp-2 min-w-48 max-w-xl text-sm leading-relaxed" title={r.comment}>“{r.comment}”</p>,
+      cell: ({ row: { original: r } }) => <p className={cn("line-clamp-2 min-w-48 max-w-xl text-sm leading-relaxed", stateOf(r) === "removed" && "text-muted-foreground line-through")} title={r.comment}>“{r.comment}”</p>,
     },
     { id: "date", header: tc("fields.date"), accessorFn: (r) => r.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
+    {
+      id: "state",
+      header: tc("fields.status"),
+      accessorFn: (r) => STATES.indexOf(stateOf(r)),
+      cell: ({ row: { original: r } }) => {
+        const s = stateOf(r);
+        return <Badge tone={STATE_TONE[s]} dot className="whitespace-nowrap" title={s === "published" ? undefined : t(`stateHint.${s}`)}>{t(`state.${s}`)}</Badge>;
+      },
+    },
     {
       id: "removal",
       header: "",
       enableSorting: false,
       cell: ({ row: { original: r } }) => {
-        const rr = removalOf(r.id);
-        return rr ? (
-          <span className="flex items-center justify-end gap-2 whitespace-nowrap text-xs text-muted-foreground">{t("removalPending")} <StatusBadge status={rr.status} /></span>
-        ) : (
+        return stateOf(r) !== "published" ? null : (
           <div className="flex justify-end">
             <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => { setReason(""); setTarget(r); }}>
               <Flag /> {t("requestRemoval")}
@@ -116,13 +133,17 @@ export default function PartnerReviews() {
       </div>
 
       <DataTable
-        data={reviews}
+        data={own}
         columns={columns}
         heading={<p className="font-bold text-ink">{t("allReviews")}</p>}
         search={(r) => `${r.name} ${r.comment}`}
         searchPlaceholder={t("searchPh")}
         initialSort={[{ id: "date", desc: true }]}
-        filters={[{ id: "stars", label: tc("fields.rating"), options: [5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: `${n} ★` })), get: (r) => String(r.stars) }]}
+        filters={[
+          { id: "state", label: tc("fields.status"), options: STATES.map((s) => ({ value: s, label: t(`state.${s}`) })), get: stateOf },
+          { id: "stars", label: tc("fields.rating"), options: [5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: `${n} ★` })), get: (r) => String(r.stars) },
+        ]}
+        rowClassName={(r) => (stateOf(r) === "removed" ? "bg-surface-2/40" : undefined)}
         emptyState={<EmptyState icon={<Star />} title={t("empty")} />}
       />
 

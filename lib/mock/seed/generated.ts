@@ -601,6 +601,21 @@ export const removals: RemovalRequest[] = lowReviews.slice(0, 4).map((r, i) => (
   createdAt: daysAgo(rng.int(0, 15)),
 }));
 
+/* The demo company (Alpen Umzüge AG) gets one review for each removal outcome, so its portal shows them all. */
+{
+  const pid = partners[0].id;
+  const demo: [string, number, string, RemovalRequest["status"], number, string][] = [
+    ["Marco Keller", 1, "Never showed up and did not answer the phone.", "approved", 41, "This customer booked another company; we never had a job with them."],
+    ["Nina Frei", 2, "Two boxes arrived damaged and nobody called back.", "pending", 9, "Review contains false statements: we called the customer back twice and paid for the damage."],
+    ["Thomas Meier", 3, "Okay job, but they arrived two hours late.", "rejected", 63, "The delay was caused by the customer’s building access."],
+  ];
+  demo.forEach(([name, stars, comment, status, age, reason], i) => {
+    const id = `RV-D${i + 1}`;
+    reviews.push({ id, target: pid, name, email: `demo${i + 1}@mail.ch`, stars, comment, status: "approved", hidden: status === "approved" || undefined, createdAt: daysAgo(age) });
+    removals.push({ id: `RR-${removals.length + 1}`, reviewId: id, partnerId: pid, reason, status, createdAt: daysAgo(age - 3) });
+  });
+}
+
 /* ---------- (retired) complaints ---------- */
 // Complaints were removed from the product. Their generator made these RNG draws; keep making them so
 // every record generated after this point (contacts, questions, visitors…) stays exactly the same.
