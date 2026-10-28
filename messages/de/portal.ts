@@ -344,6 +344,8 @@ export const portal: Built<typeof Def> = {
     shareTitle: "So erhalten Sie Bewertungen",
     shareBody: "Nach einem über Kompass gebuchten Auftrag erhält die Kundschaft eine kurze Umfrage und bewertet Sie. Kompass prüft jede Bewertung, bevor sie auf Ihrem Profil erscheint. Teilen Sie Ihr Profil, damit neue Kundschaft sie lesen kann.",
     copyLink: "Profil-Link kopieren",
+    allReviews: "Alle Bewertungen",
+    searchPh: "Nach Kunde oder Text suchen…",
   },
   profile: {
     title: "Firmenprofil",

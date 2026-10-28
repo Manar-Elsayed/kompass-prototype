@@ -344,6 +344,8 @@ export const portal: Built<typeof Def> = {
     shareTitle: "Come ricevere recensioni",
     shareBody: "Dopo un lavoro prenotato tramite Kompass, il cliente riceve un breve sondaggio e la valuta. Kompass controlla ogni recensione prima che compaia sul suo profilo. Condivida il profilo così i nuovi clienti possono leggerle.",
     copyLink: "Copia link del profilo",
+    allReviews: "Tutte le recensioni",
+    searchPh: "Cerca per cliente o testo…",
   },
   profile: {
     title: "Profilo aziendale",
