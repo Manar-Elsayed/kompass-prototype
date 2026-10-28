@@ -260,9 +260,9 @@ function MyLeads() {
                       <span dir="ltr">{lead.requester.phone}</span>
                     </p>
                   )}
-                  <div className="mt-3 flex gap-2">
-                    <Button asChild size="sm"><a href={`tel:${lead.phone}`}><Phone /> {t("call")}</a></Button>
-                    <Button asChild size="sm" variant="outline"><a href={`mailto:${lead.email}`}><Mail /> {t("email")}</a></Button>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button asChild className="w-full"><a href={`tel:${lead.phone}`}><Phone /> {t("call")}</a></Button>
+                    <Button asChild className="w-full" variant="outline"><a href={`mailto:${lead.email}`}><Mail /> {t("email")}</a></Button>
                   </div>
                   <p className="mt-3 text-sm" dir="ltr">{lead.phone} · {lead.email}</p>
                 </Card>

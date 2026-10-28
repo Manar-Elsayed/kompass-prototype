@@ -21,6 +21,8 @@ import {
   ShoppingCart,
   UserPlus,
   XCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
@@ -171,7 +173,8 @@ export default function LeadDetail() {
                 <ShieldCheck /> {tl("approve")}
               </Button>
             )}
-            {offer.status !== "cancelled" && (
+            {/* an expired offer is already closed; a fake one is cancelled from its fake-offer reports */}
+            {offer.status !== "cancelled" && offer.status !== "expired" && (
               <Button variant="danger-soft" onClick={() => setCancelOpen(true)}>
                 <Ban /> {tl("cancel")}
               </Button>
@@ -419,7 +422,7 @@ export default function LeadDetail() {
                   { label: tl("wanted"), value: offer.offersWanted },
                 ]}
               />
-              <Button asChild variant="ghost" size="sm" className="mt-4 -ms-2">
+              <Button asChild variant="outline" className="mt-4 w-full">
                 <Link href="/admin/leads">
                   {t("admin.leads.title")} <ArrowRight />
                 </Link>
@@ -644,12 +647,12 @@ function SurveyCard({ offer, orders }: { offer: Offer; orders: Order[] }) {
           </div>
         )}
         {!cancelled && !noBuyers && (
-          <div className="flex flex-wrap gap-2">
+          <div className="grid gap-2 pt-1">
             {canSendSurvey(offer, orders.length, answers.length > 0) && (
-              <Button size="sm" onClick={() => ask(offer)}><Send /> {t(sent ? "resend" : "send")}</Button>
+              <Button className="w-full" onClick={() => ask(offer)}><Send /> {t(sent ? "resend" : "send")}</Button>
             )}
-            <Button size="sm" variant="outline" onClick={() => setPreview(true)}><Mail /> {t("previewEmail")}</Button>
-            <Button asChild size="sm" variant="ghost">
+            <Button className="w-full" variant="outline" onClick={() => setPreview(true)}><Mail /> {t("previewEmail")}</Button>
+            <Button asChild className="w-full" variant="ghost">
               <Link href={`/requests/${offer.id}`} target="_blank"><ArrowRight /> {t("openSurvey")}</Link>
             </Button>
           </div>
@@ -676,14 +679,28 @@ function FakeReportsCard({ orders }: { orders: Order[] }) {
   const allReports = useStore((s) => s.fakeReports);
   const partnerMap = usePartnerMap();
   const { setStatus, dialog } = useFakeReportStatus();
+  const [showDecided, setShowDecided] = useState(false);
   const orderOf = (r: FakeReport) => orders.find((o) => o.id === r.orderId);
   const reports = allReports.filter((r) => orderOf(r)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   if (!reports.length) return null;
   const active = reports.some((r) => !isFinalReport(r));
+  // a sold-out offer can still turn out to be fake; once every report is decided it's history, so fold it
+  const folded = !active && !showDecided;
 
   return (
     <Card id="fake-reports" className={cn("scroll-mt-24", active && "border-warning/40")}>
-      <CardHeader title={t("admin.fake.title")} description={active ? t("admin.rows.confirmFakeHint") : undefined} />
+      <CardHeader
+        title={t("admin.fake.title")}
+        description={active ? t("admin.rows.confirmFakeHint") : t("admin.fake.allDecided", { count: reports.length })}
+        action={
+          !active && (
+            <Button size="sm" variant="ghost" onClick={() => setShowDecided((v) => !v)}>
+              {showDecided ? <ChevronUp /> : <ChevronDown />} {t(showDecided ? "admin.fake.hideDecided" : "admin.fake.showDecided")}
+            </Button>
+          )
+        }
+      />
+      {!folded && (
       <CardBody>
         <ul className="divide-y rounded-xl border">
           {reports.map((r) => {
@@ -705,6 +722,7 @@ function FakeReportsCard({ orders }: { orders: Order[] }) {
           })}
         </ul>
       </CardBody>
+      )}
       {dialog}
     </Card>
   );

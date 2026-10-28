@@ -50,7 +50,7 @@ export const common = {
   status: {
     new: "New",
     in_progress: "In progress",
-    completed: "Completed",
+    completed: "Sold out",
     cancelled: "Cancelled",
     pending: "Pending",
     approved: "Approved",

@@ -377,6 +377,9 @@ export const admin: Built<typeof Def> = {
     revenue: "Ricavi",
   },
   fake: {
+    allDecided: "{count, plural, one {# segnalazione · decisa} other {# segnalazioni · tutte decise}}",
+    showDecided: "Mostra",
+    hideDecided: "Nascondi",
     refundCol: "Rimborso",
     refundState: { refunded: "Rimborsato", pending: "In attesa", rejected: "Rifiutato", none: "Non rimborsato" },
     report: "Segnalazione",
