@@ -308,7 +308,9 @@ export function partnerRegions(db: Pick<DB, "nominations">, partnerId: string) {
 /**
  * What happened to a lead after the company bought it, most decisive fact first:
  * cancelled (fake → refunded, customer → not refunded), reported as fake and being checked,
- * executed, the customer chose this company / another one, or still open.
+ * executed, the customer's answer in the after-move survey (this company / another one), the
+ * company's own report (won / lost / unreachable), or still open. The customer's answer is the
+ * neutral fact, so it replaces what the company marked; `overridden` says when they differed.
  */
 export type LeadOutcome = "active" | "won" | "lost" | "unreachable" | "chosen" | "chosenOther" | "executed" | "reported" | "cancelledFake" | "cancelledCustomer";
 /** open = still to follow up; won / lost = decided (by the company or by the customer's choice). */
@@ -335,11 +337,12 @@ export function leadOutcome(db: Pick<DB, "offers" | "fakeReports" | "refunds">, 
   else if (report?.status === "confirmed") status = "cancelledFake";
   else if (report && report.status !== "canceled") status = "reported";
   else if (order.executed) status = "executed";
-  // the company's own report is the freshest fact about the deal
-  else if (order.outcome) status = order.outcome;
   else if (offer?.chosenPartnerId === order.partnerId) status = "chosen";
   else if (offer?.chosenPartnerId) status = "chosenOther";
-  return { status, group: LEAD_GROUP[status], offer, report, refund, assigned: order.channel === "manual" };
+  else if (order.outcome) status = order.outcome;
+  const byCustomer = status === "chosen" || status === "chosenOther";
+  const overridden = byCustomer && !!order.outcome && (status === "chosen") !== (order.outcome === "won");
+  return { status, group: LEAD_GROUP[status], offer, report, refund, assigned: order.channel === "manual", byCustomer, overridden };
 }
 
 /**
