@@ -21,8 +21,6 @@ import {
   ShoppingCart,
   UserPlus,
   XCircle,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
@@ -173,7 +171,7 @@ export default function LeadDetail() {
                 <ShieldCheck /> {tl("approve")}
               </Button>
             )}
-            {/* an expired offer is already closed; a fake one is cancelled from its fake-offer reports */}
+            {/* an expired offer is already closed, so only new, in-progress and completed (sold) offers can be cancelled */}
             {offer.status !== "cancelled" && offer.status !== "expired" && (
               <Button variant="danger-soft" onClick={() => setCancelOpen(true)}>
                 <Ban /> {tl("cancel")}
@@ -679,28 +677,14 @@ function FakeReportsCard({ orders }: { orders: Order[] }) {
   const allReports = useStore((s) => s.fakeReports);
   const partnerMap = usePartnerMap();
   const { setStatus, dialog } = useFakeReportStatus();
-  const [showDecided, setShowDecided] = useState(false);
   const orderOf = (r: FakeReport) => orders.find((o) => o.id === r.orderId);
   const reports = allReports.filter((r) => orderOf(r)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   if (!reports.length) return null;
   const active = reports.some((r) => !isFinalReport(r));
-  // a sold-out offer can still turn out to be fake; once every report is decided it's history, so fold it
-  const folded = !active && !showDecided;
 
   return (
     <Card id="fake-reports" className={cn("scroll-mt-24", active && "border-warning/40")}>
-      <CardHeader
-        title={t("admin.fake.title")}
-        description={active ? t("admin.rows.confirmFakeHint") : t("admin.fake.allDecided", { count: reports.length })}
-        action={
-          !active && (
-            <Button size="sm" variant="ghost" onClick={() => setShowDecided((v) => !v)}>
-              {showDecided ? <ChevronUp /> : <ChevronDown />} {t(showDecided ? "admin.fake.hideDecided" : "admin.fake.showDecided")}
-            </Button>
-          )
-        }
-      />
-      {!folded && (
+      <CardHeader title={t("admin.fake.title")} description={active ? t("admin.rows.confirmFakeHint") : undefined} />
       <CardBody>
         <ul className="divide-y rounded-xl border">
           {reports.map((r) => {
@@ -722,7 +706,6 @@ function FakeReportsCard({ orders }: { orders: Order[] }) {
           })}
         </ul>
       </CardBody>
-      )}
       {dialog}
     </Card>
   );

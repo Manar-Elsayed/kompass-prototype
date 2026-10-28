@@ -53,7 +53,7 @@ export const common: Built<typeof Def> = {
   status: {
     new: "Neu",
     in_progress: "In Bearbeitung",
-    completed: "Ausverkauft",
+    completed: "Abgeschlossen",
     cancelled: "Storniert",
     pending: "Ausstehend",
     approved: "Genehmigt",
