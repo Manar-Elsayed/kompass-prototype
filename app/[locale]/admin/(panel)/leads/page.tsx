@@ -226,7 +226,6 @@ function Leads() {
             get: (o) => (o.status === "new" ? "review" : isExpiringSoon(o) ? "expiring" : ""),
           },
           { id: "service", label: t("common.fields.service"), options: services.map((s) => ({ value: s.id, label: L(s.name) })), get: (o) => o.serviceId },
-          { id: "lang", label: t("common.fields.language"), options: ["de", "en", "fr", "it"].map((l) => ({ value: l, label: t(`common.lang.${l}`) })), get: (o) => o.lang },
         ]}
         rowClassName={(o) => (o.status === "cancelled" ? "opacity-60" : o.status === "new" ? "bg-warning-soft/25" : isExpiringSoon(o) ? "bg-warning-soft/15" : undefined)}
       />
