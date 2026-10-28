@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Ban, BellRing, CheckCircle2, Flag, Headset, Mail, Phone, RotateCcw, ShoppingBag, PhoneMissed, Trophy, UserX } from "lucide-react";
+import { Ban, BellRing, CheckCircle2, Flag, Headset, Mail, Phone, RotateCcw, ShoppingBag, PhoneMissed, Trophy, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { ORDER_OUTCOMES, type FakeReportStatus, type Order, type OrderOutcome } from "@/lib/types";
@@ -82,19 +82,20 @@ function MyLeads() {
   const open = orders.find((o) => o.id === openId);
   const lead = open ? offerMap[open.offerId] : undefined;
 
-  // the customer tells Kompass which company they booked; every buyer sees the outcome
-  const choiceOf = (o: Order) => {
-    const chosen = offerMap[o.offerId]?.chosenPartnerId;
-    return !chosen ? "pending" : chosen === partner.id ? "you" : "other";
-  };
-  const choice = (o: Order) => {
-    const c = choiceOf(o);
-    return <Badge tone={c === "you" ? "success" : c === "other" ? "neutral" : "outline"}>{t(`choice.${c}`)}</Badge>;
-  };
-
-  const status = (o: Order) => {
-    const { status: s } = outcomeOf(o);
-    return <Badge tone={OUTCOME_TONE[s]} dot>{t(`outcome.${s}`)}</Badge>;
+  // One status per offer. When the customer named a company in the after-move survey, that answer
+  // decides Won / Lost and is marked "Confirmed by customer".
+  const status = (o: Order, withNote = true) => {
+    const { status: s, byCustomer } = outcomeOf(o);
+    return (
+      <span className="inline-flex flex-col items-start gap-0.5">
+        <Badge tone={OUTCOME_TONE[s]} dot>{t(`outcome.${s}`)}</Badge>
+        {withNote && byCustomer && (
+          <span className="flex items-center gap-1 whitespace-nowrap text-[11px] font-medium text-muted-foreground">
+            <UserCheck className="size-3" /> {t("confirmedByCustomer")}
+          </span>
+        )}
+      </span>
+    );
   };
   // after the call: how it went (click the same answer again to clear it)
   const setOutcome = (o: Order, outcome: OrderOutcome) => {
@@ -179,7 +180,6 @@ function MyLeads() {
         </div>
       ),
     },
-    { id: "choice", meta: { className: "hidden 2xl:table-cell" }, header: t("choiceCol"), accessorFn: (o) => choiceOf(o), cell: ({ row: { original: o } }) => choice(o) },
     { id: "status", header: tf("status"), accessorFn: (o) => outcomeOf(o).status, cell: ({ row: { original: o } }) => status(o) },
   ];
 
@@ -194,9 +194,7 @@ function MyLeads() {
         onRowClick={(o) => setOpenId(o.id)}
         initialSort={[{ id: "bought", desc: true }]}
         emptyState={<EmptyState icon={<ShoppingBag />} title={t("empty")} action={<Button asChild variant="accent"><Link href="/portal/shop">{tn("shop")}</Link></Button>} />}
-        filters={[{ id: "st", label: tf("status"), options: GROUPS.map((g) => ({ value: g, label: t(`groups.${g}`) })), get: (o) => outcomeOf(o).group },
-          { id: "choice", label: t("choiceCol"), options: (["you", "other", "pending"] as const).map((c) => ({ value: c, label: t(`choice.${c}`) })), get: (o) => choiceOf(o) },
-        ]}
+        filters={[{ id: "st", label: tf("status"), options: GROUPS.map((g) => ({ value: g, label: t(`groups.${g}`) })), get: (o) => outcomeOf(o).group }]}
       />
 
       <Dialog open={!!open} onOpenChange={(v) => !v && setOpenId(null)}>
@@ -205,7 +203,7 @@ function MyLeads() {
             <div className="flex min-h-full flex-col">
               <div className="space-y-5 p-6">
                 <div>
-                  <DialogTitle className="flex items-center gap-2"><Mono className="text-lg">{lead.id}</Mono> {status(open)}</DialogTitle>
+                  <DialogTitle className="flex items-center gap-2"><Mono className="text-lg">{lead.id}</Mono> {status(open, false)}</DialogTitle>
                   <DialogDescription className="mt-1">{L(serviceMap[lead.serviceId]?.name)} · {formatDateTime(open.createdAt, lang)}</DialogDescription>
                 </div>
                 <OutcomeBanner order={open} />
@@ -218,13 +216,15 @@ function MyLeads() {
                 {lead.buyersNotifiedAt && (
                   <p className="flex items-center gap-2 text-xs text-muted-foreground"><BellRing className="size-3.5" /> {t("customerNotified", { date: formatDate(lead.buyersNotifiedAt, lang) })}</p>
                 )}
-                {outcomeOf(open).group !== "cancelled" && (
-                  <div className={cn("rounded-xl border p-3 text-sm", choiceOf(open) === "you" ? "border-success/30 bg-success-soft/40" : "bg-surface-2/60")}>
-                    <p className="font-semibold text-ink">{choice(open)}</p>
-                    <p className="mt-1 text-muted-foreground">{t(`choiceHint.${choiceOf(open)}`)}</p>
+                {outcomeOf(open).byCustomer && (
+                  <div className={cn("rounded-xl border p-3 text-sm", outcomeOf(open).status === "chosen" ? "border-success/30 bg-success-soft/40" : "bg-surface-2/60")}>
+                    <p className="flex items-center gap-2 font-semibold text-ink"><UserCheck className="size-4 text-success" /> {t("confirmedByCustomer")}</p>
+                    <p className="mt-1 text-muted-foreground">{t(outcomeOf(open).status === "chosen" ? "choiceHint.you" : "choiceHint.other")}</p>
+                    {outcomeOf(open).overridden && open.outcome && <p className="mt-1 text-xs text-muted-foreground">{t("overridden", { status: t(`outcome.${open.outcome}`) })}</p>}
                   </div>
                 )}
-                {["open", "won", "lost"].includes(outcomeOf(open).group) && !outcomeOf(open).report && (
+                {/* the company reports how it went until the customer's answer settles it */}
+                {["open", "won", "lost"].includes(outcomeOf(open).group) && !outcomeOf(open).report && !outcomeOf(open).byCustomer && (
                   <div className="rounded-xl border p-3">
                     <p className="text-sm font-semibold text-ink">{t("outcomeTitle")}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{t("outcomeHint")}</p>
