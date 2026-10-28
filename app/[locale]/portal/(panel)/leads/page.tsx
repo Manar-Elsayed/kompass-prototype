@@ -10,7 +10,7 @@ import { ORDER_OUTCOMES, type FakeReportStatus, type Order, type OrderOutcome } 
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
-import { leadOutcome, type LeadGroup, type LeadOutcome } from "@/lib/mock/selectors";
+import { OUTCOME_TONE, leadOutcome, type LeadGroup, type LeadOutcome } from "@/lib/mock/selectors";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,18 +27,6 @@ import { routeFull, routeText } from "@/lib/jobs";
 
 const REASONS = ["phone", "never", "duplicate", "unreachable"] as const;
 const GROUPS: LeadGroup[] = ["open", "won", "lost", "executed", "reported", "cancelled"];
-const OUTCOME_TONE: Record<LeadOutcome, "neutral" | "success" | "warning" | "info" | "danger" | "primary"> = {
-  active: "primary",
-  won: "success",
-  lost: "neutral",
-  unreachable: "warning",
-  chosen: "success",
-  chosenOther: "neutral",
-  executed: "success",
-  reported: "warning",
-  cancelledFake: "info",
-  cancelledCustomer: "danger",
-};
 /** How a fake-lead report moves; the last step is confirmed (refunded) or rejected. */
 const REPORT_STEPS: FakeReportStatus[] = ["open", "testing", "pending"];
 

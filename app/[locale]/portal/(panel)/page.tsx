@@ -4,12 +4,12 @@ import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowRight, CalendarCheck, CircleCheck, ClipboardCheck, Clock, FileWarning, Headset, MessageSquare, ShoppingBag, Star, Wallet, Receipt, Trophy } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { cn, formatCHF, formatDate, timeAgo } from "@/lib/utils";
 import { C } from "@/lib/chart";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL, useLang, usePartnerRatings, useServiceMap } from "@/lib/mock/hooks";
-import { availableLeads, documentState, inLastDays, isOverdue, leadOutcome, refNow, winRate } from "@/lib/mock/selectors";
+import { OUTCOME_TONE, availableLeads, documentState, inLastDays, isOverdue, leadOutcome, refNow, winRate } from "@/lib/mock/selectors";
 import { DAY } from "@/lib/mock/seed";
 import type { DocKey } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -102,9 +102,11 @@ export default function PortalDashboard() {
           <ToDo />
           <Activity />
           <KompassMessages />
-          <RecentPurchases />
         </div>
       </div>
+
+      {/* the full purchase list lives in My offers; this is the latest few, as a reference at the end */}
+      <RecentPurchases />
     </>
   );
 }
@@ -240,8 +242,11 @@ function RecentPurchases() {
   const t = useTranslations("portal.dashboard");
   const tn = useTranslations("portal.nav");
   const tl = useTranslations("portal.leads");
+  const tf = useTranslations("common.fields");
+  const ta = useTranslations("admin.leads");
   const L = useL();
   const lang = useLang();
+  const router = useRouter();
   const partner = useCurrentPartner()!;
   const offers = useStore((s) => s.offers);
   const orders = useStore((s) => s.orders);
@@ -250,32 +255,50 @@ function RecentPurchases() {
   const serviceMap = useServiceMap();
   const offerMap = Object.fromEntries(offers.map((o) => [o.id, o]));
   const mine = orders.filter((o) => o.partnerId === partner.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const th = "whitespace-nowrap px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground first:ps-4 last:pe-4";
+  const td = "px-3 py-3 align-middle first:ps-4 last:pe-4";
   return (
-    <Card className="h-fit">
-      <CardHeader title={t("recent")} action={<Button asChild variant="ghost" size="sm"><Link href="/portal/leads">{tn("leads")}</Link></Button>} />
-      <CardBody className="pt-3">
-        {mine.length ? (
-          <ul className="divide-y">
-            {mine.slice(0, 6).map((o) => {
-              const lead = offerMap[o.offerId];
-              const out = leadOutcome({ offers, fakeReports, refunds }, o);
-              return (
-                <li key={o.id}>
-                  <Link href={`/portal/leads?open=${o.offerId}`} className="flex items-center gap-3 py-2.5 text-sm hover:text-primary">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-ink">{lead?.firstName} {lead?.lastName}</p>
-                      <p className="truncate text-xs text-muted-foreground"><Mono className="text-xs font-medium text-muted-foreground">{o.offerId}</Mono> · {L(serviceMap[lead?.serviceId ?? ""]?.name)} · {timeAgo(o.createdAt, lang)}</p>
-                    </div>
-                    {out.status === "active" ? <span className="font-semibold">{formatCHF(o.price, lang)}</span> : <Badge tone={out.group === "cancelled" ? "danger" : out.group === "reported" ? "warning" : "success"}>{tl(`outcome.${out.status}`)}</Badge>}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <EmptyState title={t("noRecent")} className="py-8" />
-        )}
-      </CardBody>
+    <Card className="mt-6 overflow-hidden">
+      <CardHeader title={t("recent")} action={<Button asChild variant="ghost" size="sm"><Link href="/portal/leads">{tn("leads")} <ArrowRight /></Link></Button>} />
+      {mine.length ? (
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-2/60">
+              <tr>
+                <th className={th}>{ta("customer")}</th>
+                <th className={cn(th, "hidden sm:table-cell")}>{tf("reference")}</th>
+                <th className={cn(th, "hidden md:table-cell")}>{tf("service")}</th>
+                <th className={cn(th, "hidden sm:table-cell")}>{tl("bought")}</th>
+                <th className={cn(th, "text-end")}>{tl("paid")}</th>
+                <th className={th}>{tf("status")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mine.slice(0, 6).map((o) => {
+                const lead = offerMap[o.offerId];
+                const out = leadOutcome({ offers, fakeReports, refunds }, o);
+                const open = `/portal/leads?open=${o.offerId}`;
+                return (
+                  <tr key={o.id} onClick={() => router.push(open)} className="cursor-pointer border-t transition-colors hover:bg-surface-2/70">
+                    <td className={td}>
+                      <Link href={open} className="font-semibold text-ink hover:text-primary">{lead?.firstName} {lead?.lastName}</Link>
+                    </td>
+                    <td className={cn(td, "hidden sm:table-cell")}><Mono className="whitespace-nowrap text-xs">{o.offerId}</Mono></td>
+                    <td className={cn(td, "hidden md:table-cell")}>{L(serviceMap[lead?.serviceId ?? ""]?.name)}</td>
+                    <td className={cn(td, "hidden whitespace-nowrap text-muted-foreground sm:table-cell")}>{timeAgo(o.createdAt, lang)}</td>
+                    <td className={cn(td, "whitespace-nowrap text-end font-semibold tabular-nums")}>{formatCHF(o.price, lang)}</td>
+                    <td className={td}>
+                      <Badge tone={OUTCOME_TONE[out.status]} dot>{tl(`outcome.${out.status}`)}</Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <CardBody><EmptyState title={t("noRecent")} className="py-8" /></CardBody>
+      )}
     </Card>
   );
 }
