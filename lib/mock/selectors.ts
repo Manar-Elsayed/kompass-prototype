@@ -326,6 +326,20 @@ export const LEAD_GROUP: Record<LeadOutcome, LeadGroup> = {
   cancelledCustomer: "cancelled",
 };
 
+/** Badge colour for each outcome, shared by My offers and the overview's recent purchases. */
+export const OUTCOME_TONE: Record<LeadOutcome, "neutral" | "success" | "warning" | "info" | "danger" | "primary"> = {
+  active: "primary",
+  won: "success",
+  lost: "neutral",
+  unreachable: "warning",
+  chosen: "success",
+  chosenOther: "neutral",
+  executed: "success",
+  reported: "warning",
+  cancelledFake: "info",
+  cancelledCustomer: "danger",
+};
+
 export function leadOutcome(db: Pick<DB, "offers" | "fakeReports" | "refunds">, order: Order) {
   const offer = db.offers.find((o) => o.id === order.offerId);
   const report: FakeReport | undefined = db.fakeReports.find((r) => r.orderId === order.id);
