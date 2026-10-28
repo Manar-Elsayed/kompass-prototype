@@ -266,7 +266,7 @@ function RecentPurchases() {
             <thead className="bg-surface-2/60">
               <tr>
                 <th className={th}>{ta("customer")}</th>
-                <th className={th}>{tf("reference")}</th>
+                <th className={cn(th, "hidden sm:table-cell")}>{tf("reference")}</th>
                 <th className={cn(th, "hidden md:table-cell")}>{tf("service")}</th>
                 <th className={cn(th, "hidden sm:table-cell")}>{tl("bought")}</th>
                 <th className={cn(th, "text-end")}>{tl("paid")}</th>
@@ -283,7 +283,7 @@ function RecentPurchases() {
                     <td className={td}>
                       <Link href={open} className="font-semibold text-ink hover:text-primary">{lead?.firstName} {lead?.lastName}</Link>
                     </td>
-                    <td className={td}><Mono className="whitespace-nowrap text-xs">{o.offerId}</Mono></td>
+                    <td className={cn(td, "hidden sm:table-cell")}><Mono className="whitespace-nowrap text-xs">{o.offerId}</Mono></td>
                     <td className={cn(td, "hidden md:table-cell")}>{L(serviceMap[lead?.serviceId ?? ""]?.name)}</td>
                     <td className={cn(td, "hidden whitespace-nowrap text-muted-foreground sm:table-cell")}>{timeAgo(o.createdAt, lang)}</td>
                     <td className={cn(td, "whitespace-nowrap text-end font-semibold tabular-nums")}>{formatCHF(o.price, lang)}</td>
