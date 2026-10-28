@@ -61,24 +61,32 @@ export function PartnerServices({ partner, canEdit }: { partner: Partner; canEdi
           const s = services.find((x) => x.id === id);
           const isPaused = paused.includes(id);
           return (
-            <li key={id} className={cn("flex flex-wrap items-center gap-3 rounded-xl border p-3", isPaused && "bg-surface-2/70")}>
-              <Icon name={s?.icon ?? "Truck"} className={cn("size-5", isPaused ? "text-muted-foreground" : "text-primary")} />
-              <span className={cn("flex-1 text-sm font-semibold", isPaused && "text-muted-foreground")}>{L(s?.name)}</span>
-              {isPaused ? <Badge tone="warning" dot>{t("paused")}</Badge> : <Badge tone="success" dot>{t("active")}</Badge>}
-              <Button variant="outline" size="sm" onClick={() => setPaused(id, !isPaused)}>
-                {isPaused ? <CirclePlay /> : <CirclePause />} {t(isPaused ? "resume" : "pause")}
-              </Button>
-              {canEdit && (
-                <Button variant="ghost" size="icon-sm" className="text-danger hover:bg-danger-soft" aria-label={t("remove")} onClick={() => remove(id)}>
-                  <Trash2 />
+            // One fixed shape per row so every card has the same height and the actions line up:
+            // icon | name with its status underneath | actions (never wrap below the name).
+            <li key={id} className={cn("flex items-center gap-3 rounded-xl border p-3", isPaused && "bg-surface-2/70")}>
+              <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", isPaused ? "bg-muted text-muted-foreground" : "bg-primary-soft text-primary")}>
+                <Icon name={s?.icon ?? "Truck"} className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className={cn("truncate text-sm font-semibold", isPaused ? "text-muted-foreground" : "text-ink")} title={L(s?.name)}>{L(s?.name)}</p>
+                {isPaused ? <Badge tone="warning" dot className="mt-1">{t("paused")}</Badge> : <Badge tone="success" dot className="mt-1">{t("active")}</Badge>}
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button variant="outline" size="sm" onClick={() => setPaused(id, !isPaused)}>
+                  {isPaused ? <CirclePlay /> : <CirclePause />} {t(isPaused ? "resume" : "pause")}
                 </Button>
-              )}
+                {canEdit && (
+                  <Button variant="ghost" size="icon-sm" className="text-danger hover:bg-danger-soft" aria-label={t("remove")} onClick={() => remove(id)}>
+                    <Trash2 />
+                  </Button>
+                )}
+              </div>
             </li>
           );
         })}
       </ul>
       {canEdit && missing.length > 0 && (
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex gap-2 [&>*:first-child]:min-w-0 [&>*:first-child]:flex-1">
           <Select value={adding} onValueChange={setAdding} placeholder={t("addPh")} options={missing.map((s) => ({ value: s.id, label: L(s.name) }))} />
           <Button variant="outline" disabled={!adding} onClick={add}><Plus /> {t("add")}</Button>
         </div>

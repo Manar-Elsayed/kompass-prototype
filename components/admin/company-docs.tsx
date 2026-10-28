@@ -26,6 +26,7 @@ const fromInput = (v: string) => (v ? new Date(`${v}T12:00:00`).toISOString() : 
  * for Kompass to check it. Leads can be bought only while all three are checked and unexpired.
  * During onboarding the portal lists only the documents the applicant uploads (`keys`), without the
  * "blocked" warning, since the company can't buy leads yet anyway.
+ * The contract can't be replaced by the company: it may upload one only while there is none.
  */
 export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: { partner: Partner; as: "admin" | "company"; keys?: readonly DocKey[]; onboarding?: boolean }) {
   const t = useTranslations("admin.partners");
@@ -58,9 +59,15 @@ export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: {
                   </p>
                 </div>
                 {d && <Badge tone={d.status === "valid" ? "success" : d.status === "rejected" ? "danger" : "info"}>{td(`status.${d.status}`)}</Badge>}
-                <Button size="sm" variant="outline" onClick={() => setUploading(key)}>
-                  <Upload /> {d ? td("replace") : td("upload")}
-                </Button>
+                {as === "company" && key === "contract" ? (
+                  <Button size="sm" variant="outline" disabled={!!d} onClick={() => setUploading(key)}>
+                    <Upload /> {td("upload")}
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setUploading(key)}>
+                    <Upload /> {d ? td("replace") : td("upload")}
+                  </Button>
+                )}
               </div>
               {d && d.status !== "rejected" && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3 text-sm">
