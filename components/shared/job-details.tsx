@@ -9,6 +9,20 @@ import { useStore } from "@/lib/mock/store";
 import { useLang } from "@/lib/mock/hooks";
 import { DL } from "@/components/admin/ui";
 
+/** Label on the left, value on the right, one row each: quick to scan in a narrow card. */
+function Rows({ items }: { items: { label: React.ReactNode; value: React.ReactNode }[] }) {
+  return (
+    <dl className="divide-y divide-border/60 text-sm">
+      {items.map((it, i) => (
+        <div key={i} className="flex items-baseline justify-between gap-4 py-2 first:pt-0 last:pb-0">
+          <dt className="shrink-0 text-muted-foreground">{it.label}</dt>
+          <dd className="min-w-0 text-end font-semibold text-ink [overflow-wrap:anywhere]">{it.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 /** The request's address(es), titled for its service ("Property to clean", "Moving from"…). */
 export function JobPlaces({ offer, className }: { offer: Offer; className?: string }) {
   const t = useTranslations();
@@ -17,7 +31,7 @@ export function JobPlaces({ offer, className }: { offer: Offer; className?: stri
   const place = (a: Address, title: string, icon: React.ReactNode) => (
     <div className="rounded-xl bg-surface-2/70 p-4">
       <p className="mb-3 flex items-center gap-2 text-sm font-bold text-ink">{icon}{title}</p>
-      <DL
+      <Rows
         items={[
           { label: t("common.fields.street"), value: a.street },
           { label: t("common.fields.city"), value: `${a.zip} ${a.city}` },
@@ -29,9 +43,12 @@ export function JobPlaces({ offer, className }: { offer: Offer; className?: stri
     </div>
   );
   return (
-    <div className={cn("grid gap-4", offer.to && "md:grid-cols-2", className)}>
-      {place(offer.from, t(`site.job.from.${kind}`), <MapPin className="size-4 text-accent" />)}
-      {offer.to && place(offer.to, t(`site.job.to.${kind}`), <Flag className="size-4 text-primary" />)}
+    // side by side only when this block itself is wide enough (it also sits in the narrow portal panel)
+    <div className={cn("@container", className)}>
+      <div className={cn("grid gap-4", offer.to && "@xl:grid-cols-2")}>
+        {place(offer.from, t(`site.job.from.${kind}`), <MapPin className="size-4 text-accent" />)}
+        {offer.to && place(offer.to, t(`site.job.to.${kind}`), <Flag className="size-4 text-primary" />)}
+      </div>
     </div>
   );
 }
