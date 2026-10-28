@@ -349,6 +349,8 @@ export const portal: Built<typeof Def> = {
     shareTitle: "Comment vous recevez des avis",
     shareBody: "Après une mission réservée via Kompass, le client reçoit un court questionnaire et vous évalue. Kompass vérifie chaque avis avant sa publication sur votre profil. Partagez votre profil pour que de nouveaux clients puissent les lire.",
     copyLink: "Copier le lien du profil",
+    allReviews: "Tous les avis",
+    searchPh: "Rechercher par client ou texte…",
   },
   profile: {
     title: "Profil de l’entreprise",

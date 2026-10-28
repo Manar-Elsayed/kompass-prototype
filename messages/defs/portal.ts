@@ -346,6 +346,8 @@ export const portal = {
     shareTitle: "How you get reviews",
     shareBody: "After a job booked through Kompass, the customer gets a short survey and rates you. Kompass checks every review before it appears on your profile. Share your profile so new customers can read them.",
     copyLink: "Copy profile link",
+    allReviews: "All reviews",
+    searchPh: "Search by customer or text…",
   },
   profile: {
     title: "Company profile",
