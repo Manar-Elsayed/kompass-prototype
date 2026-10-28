@@ -474,6 +474,7 @@ export const admin = {
       approve: "Accept",
       reject: "Reject",
       replace: "Replace",
+      replaceLocked: "You can replace it from {days} days before it expires.",
       upload: "Upload",
       accepted: "Document accepted",
       rejectedToast: "Document rejected",

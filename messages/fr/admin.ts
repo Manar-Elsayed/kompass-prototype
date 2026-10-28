@@ -477,6 +477,7 @@ export const admin: Built<typeof Def> = {
       approve: "Accepter",
       reject: "Refuser",
       replace: "Remplacer",
+      replaceLocked: "Vous pourrez le remplacer {days} jours avant son expiration.",
       upload: "Téléverser",
       accepted: "Document accepté",
       rejectedToast: "Document refusé",
