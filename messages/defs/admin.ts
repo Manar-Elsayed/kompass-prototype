@@ -374,9 +374,6 @@ export const admin = {
     revenue: "Revenue",
   },
   fake: {
-    allDecided: "{count, plural, one {# report · decided} other {# reports · all decided}}",
-    showDecided: "Show",
-    hideDecided: "Hide",
     refundCol: "Refund",
     refundState: { refunded: "Refunded", pending: "Waiting", rejected: "Rejected", none: "Not refunded" },
     report: "Report",
