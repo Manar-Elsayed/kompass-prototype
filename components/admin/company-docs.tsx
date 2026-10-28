@@ -26,6 +26,9 @@ const fromInput = (v: string) => (v ? new Date(`${v}T12:00:00`).toISOString() : 
  * for Kompass to check it. Leads can be bought only while all three are checked and unexpired.
  * During onboarding the portal lists only the documents the applicant uploads (`keys`), without the
  * "blocked" warning, since the company can't buy leads yet anyway.
+ * The company can't replace the contract: it may upload one only while there is none. It replaces its
+ * insurance or register extract only when the current one has expired, is about to (the warning
+ * window) or was not accepted — otherwise the button is disabled and says when it opens.
  */
 export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: { partner: Partner; as: "admin" | "company"; keys?: readonly DocKey[]; onboarding?: boolean }) {
   const t = useTranslations("admin.partners");
@@ -58,15 +61,28 @@ export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: {
                   </p>
                 </div>
                 {d && <Badge tone={d.status === "valid" ? "success" : d.status === "rejected" ? "danger" : "info"}>{td(`status.${d.status}`)}</Badge>}
-                <Button size="sm" variant="outline" onClick={() => setUploading(key)}>
-                  <Upload /> {d ? td("replace") : td("upload")}
-                </Button>
+                {as === "company" && key === "contract" ? (
+                  <Button size="sm" variant="outline" disabled={!!d} onClick={() => setUploading(key)}>
+                    <Upload /> {td("upload")}
+                  </Button>
+                ) : as === "company" && d && !(expired || soon || d.status === "rejected") ? (
+                  <Button size="sm" variant="outline" disabled title={td("replaceLocked", { days: DOC_WARN_DAYS })}>
+                    <Upload /> {td("replace")}
+                  </Button>
+                ) : (
+                  <Button size="sm" variant={as === "company" && d && (expired || d.status === "rejected") ? "accent" : "outline"} onClick={() => setUploading(key)}>
+                    <Upload /> {d ? td("replace") : td("upload")}
+                  </Button>
+                )}
               </div>
               {d && d.status !== "rejected" && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3 text-sm">
                   <span className={cn("me-auto", expired ? "font-semibold text-danger" : soon ? "font-semibold text-warning" : "text-muted-foreground")}>
                     {d.expiresAt ? td(expired ? "expiredOn" : "expires", { date: formatDate(d.expiresAt, lang) }) : td("noExpiry")}
                   </span>
+                  {as === "company" && key !== "contract" && !expired && !soon && d.expiresAt && (
+                    <span className="text-xs text-muted-foreground">{td("replaceLocked", { days: DOC_WARN_DAYS })}</span>
+                  )}
                   {as === "admin" && (
                     <Input
                       type="date"
