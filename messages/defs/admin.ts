@@ -559,6 +559,7 @@ export const admin = {
     noContractShort: "No contract yet",
     pendingHint: "Waiting for your review",
     contractSentHint: "Waiting for the signature",
+    inReviewHint: "Signed, waiting for your approval",
     rejectedHint: "Declined applications",
     alreadyPartner: "{name} is already a partner",
     openPartner: "Open partner page",

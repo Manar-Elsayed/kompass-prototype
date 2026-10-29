@@ -9,6 +9,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import type { Partner } from "@/lib/types";
 import { cn, formatDate, timeAgo } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
+import { applicationStage } from "@/lib/mock/selectors";
 import { useHydrated, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
@@ -97,7 +98,7 @@ export default function ApplicationDetail() {
         crumbs={[{ label: ta("title"), href: "/admin/partners/applications" }, { label: p.name }]}
         avatar={<Avatar name={p.name} square className="size-14 rounded-2xl text-base" />}
         title={p.name}
-        badges={<StatusBadge status={p.status} />}
+        badges={<StatusBadge status={applicationStage(p)} />}
         subtitle={`${p.address}, ${p.zip} ${p.city} (${p.canton}) · ${ta("received")} ${formatDate(p.createdAt, lang)} (${timeAgo(p.createdAt, lang)})`}
         primary={
           open ? (

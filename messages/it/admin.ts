@@ -562,6 +562,7 @@ export const admin: Built<typeof Def> = {
     noContractShort: "Nessun contratto ancora",
     pendingHint: "In attesa della Sua verifica",
     contractSentHint: "In attesa della firma",
+    inReviewHint: "Firmato, in attesa della tua approvazione",
     rejectedHint: "Candidature rifiutate",
     alreadyPartner: "{name} è già partner",
     openPartner: "Apri la pagina partner",

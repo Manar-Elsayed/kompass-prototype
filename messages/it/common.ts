@@ -63,6 +63,7 @@ export const common: Built<typeof Def> = {
     open: "Aperto",
     testing: "In verifica",
     contract_sent: "Contratto inviato",
+    in_review: "Da approvare",
     active: "Attivo",
     inactive: "Inattivo",
     banned: "Bloccato",

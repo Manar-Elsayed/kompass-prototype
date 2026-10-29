@@ -60,6 +60,7 @@ export const common = {
     open: "Open",
     testing: "Testing",
     contract_sent: "Contract sent",
+    in_review: "In review",
     active: "Active",
     inactive: "Inactive",
     banned: "Banned",
