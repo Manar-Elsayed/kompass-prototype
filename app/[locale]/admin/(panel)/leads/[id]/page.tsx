@@ -42,6 +42,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { Icon } from "@/components/shared/icon";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
+import { Timeline } from "@/components/admin/timeline";
 import { canSendSurvey, useSendSurvey } from "@/components/admin/survey-send";
 import { FakeStatusSelect, isFinalReport, useFakeReportStatus } from "@/components/admin/fake-report-status";
 import { SurveyEmail } from "@/components/site/request-bits";
@@ -394,17 +395,7 @@ export default function LeadDetail() {
           <Card>
             <CardHeader title={tl("timeline")} />
             <CardBody>
-              <ol className="space-y-4">
-                {timeline.map((e, i) => (
-                  <li key={i} className="flex gap-3">
-                    <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">{e.icon}</span>
-                    <div>
-                      <p className="text-sm font-semibold text-ink">{e.text}</p>
-                      <p className="text-xs text-muted-foreground">{formatDateTime(e.at, lang)}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              <Timeline events={timeline} />
             </CardBody>
           </Card>
 
