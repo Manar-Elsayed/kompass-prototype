@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Star } from "lucide-react";
+import { Plus, Star } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { Partner } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
@@ -91,7 +91,15 @@ export default function PartnersPage() {
 
   return (
     <>
-      <PageHeader title={t("admin.partners.title")} subtitle={t("admin.partners.subtitle")} />
+      <PageHeader
+        title={t("admin.partners.title")}
+        subtitle={t("admin.partners.subtitle")}
+        actions={
+          <Button asChild>
+            <Link href="/admin/partners/new"><Plus /> {t("admin.partners.add")}</Link>
+          </Button>
+        }
+      />
       <DataTable
         data={partners}
         columns={columns}
@@ -101,12 +109,12 @@ export default function PartnersPage() {
         rowClassName={(p) => (p.banned ? "bg-danger-soft/30" : undefined)}
         filters={[
           { id: "svc", label: t("common.fields.service"), options: services.map((s) => ({ value: s.id, label: L(s.name) })), get: (p) => p.serviceIds },
-          { id: "canton", label: "Canton", options: [...new Set(partners.map((p) => p.canton))].sort().map((c) => ({ value: c, label: c })), get: (p) => p.canton },
+          { id: "canton", label: t("admin.applications.canton"), options: [...new Set(partners.map((p) => p.canton))].sort().map((c) => ({ value: c, label: c })), get: (p) => p.canton },
           { id: "status", label: t("common.fields.status"), options: [{ value: "active", label: t("common.status.active") }, { value: "banned", label: t("common.status.banned") }], get: (p) => (p.banned ? "banned" : "active") },
           {
             id: "docs",
             label: t("admin.partners.docs.title"),
-            options: (["missing", "expired", "review", "expiring", "ok"] as const).map((k) => ({ value: k, label: t(`admin.partners.docs.state.${k}`) })),
+            options: (["missing", "expired", "expiring", "ok"] as const).map((k) => ({ value: k, label: t(`admin.partners.docs.state.${k}`) })),
             get: (p) => documentState(p).state,
           },
         ]}

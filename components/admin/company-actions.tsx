@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CreditCard, HandCoins, Lock, LockOpen, MessageSquare } from "lucide-react";
+import { HandCoins, Lock, LockOpen, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import type { Partner } from "@/lib/types";
 import { useStore } from "@/lib/mock/store";
@@ -13,7 +13,7 @@ import type { RowAction } from "./row-actions";
 
 /**
  * The things admin does to a company from any list it appears in (partners, activity, wallets…):
- * contact it, charge credit, see its wallet, ban it. Returns the menu items and the dialogs.
+ * contact it, charge credit, ban it. A banned company only offers Unban (next to View). Returns the menu items and the dialogs.
  */
 export function useCompanyActions() {
   const t = useTranslations();
@@ -35,12 +35,14 @@ export function useCompanyActions() {
       },
     });
 
-  const actionsFor = (p: Partner, opts: { money?: boolean } = {}): RowAction[] => [
-    { label: t("admin.partners.contactCo.button"), icon: <MessageSquare />, onSelect: () => setOpen({ kind: "contact", id: p.id }) },
-    { label: t("admin.wallets.addCredit"), icon: <HandCoins />, onSelect: () => setOpen({ kind: "credit", id: p.id }), hidden: opts.money === false },
-    { label: t("admin.rows.walletHistory"), icon: <CreditCard />, href: `/admin/partners/${p.id}?tab=wallet` },
-    { label: t(p.banned ? "admin.partners.unban" : "admin.partners.ban"), icon: p.banned ? <LockOpen /> : <Lock />, tone: p.banned ? undefined : "danger", separated: true, onSelect: () => toggleBan(p) },
-  ];
+  const actionsFor = (p: Partner, opts: { money?: boolean } = {}): RowAction[] =>
+    p.banned
+      ? [{ label: t("admin.partners.unban"), icon: <LockOpen />, separated: true, onSelect: () => toggleBan(p) }]
+      : [
+          { label: t("admin.partners.contactCo.button"), icon: <MessageSquare />, onSelect: () => setOpen({ kind: "contact", id: p.id }) },
+          { label: t("admin.wallets.addCredit"), icon: <HandCoins />, onSelect: () => setOpen({ kind: "credit", id: p.id }), hidden: opts.money === false },
+          { label: t("admin.partners.ban"), icon: <Lock />, tone: "danger", separated: true, onSelect: () => toggleBan(p) },
+        ];
 
   const dialogs = (
     <>

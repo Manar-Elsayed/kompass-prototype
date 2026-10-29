@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 const TONE: Record<DocState, "success" | "warning" | "info" | "danger"> = {
   ok: "success",
   expiring: "warning",
-  review: "info",
   expired: "danger",
   missing: "danger",
 };

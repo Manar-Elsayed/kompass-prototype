@@ -48,7 +48,8 @@ interface Actions {
 
   /* cross-surface flows */
   submitOffer: (input: Omit<Offer, "id" | "createdAt" | "status" | "active" | "ip" | "device" | "source" | "flags" | "cancelReason" | "cancelledAt" | "verifiedAt" | "repostedAt" | "buyersNotifiedAt" | "chosenPartnerId" | "chosenAt"> & { source?: Offer["source"] }) => Offer;
-  registerPartner: (input: Omit<Partner, "id" | "slug" | "status" | "banned" | "featured" | "wallet" | "documents" | "lastSeen" | "createdAt">) => Partner;
+  /** A website signup, or admin adding a company (no "new application" notification then). Starts as an application. */
+  registerPartner: (input: Omit<Partner, "id" | "slug" | "status" | "banned" | "featured" | "wallet" | "documents" | "lastSeen" | "createdAt">, opts?: { byAdmin?: boolean }) => Partner;
   /** Approving keeps what the company uploaded and marks it checked; rejecting records the reason it is shown. */
   decideApplication: (id: string, decision: "contract_sent" | "approved" | "rejected", expiresAt?: string, reason?: string) => void;
   /** Applicant signs the partnership contract in the portal; Kompass then checks it with the other documents. */
@@ -243,7 +244,7 @@ export const useStore = create<Store>()(
         return offer;
       },
 
-      registerPartner: (input) => {
+      registerPartner: (input, opts = {}) => {
         const s = get();
         const partner: Partner = {
           ...input,
@@ -259,7 +260,7 @@ export const useStore = create<Store>()(
         };
         set({
           partners: [partner, ...s.partners],
-          notifications: notify(s, {
+          notifications: opts.byAdmin ? s.notifications : notify(s, {
             kind: "application",
             title: { en: `New partner application: ${partner.name}`, de: `Neue Partnerbewerbung: ${partner.name}`, fr: `Nouvelle candidature partenaire : ${partner.name}`, it: `Nuova candidatura partner: ${partner.name}` },
             href: `/admin/partners/applications`,
