@@ -11,9 +11,10 @@ export const portal: Built<typeof Def> = {
     support: "Contatta il supporto",
     supportSubject: "Il nostro account è sospeso",
     menu: "Menu",
-    docsBlocked: "Documenti mancanti o scaduti: {docs}. Non può acquistare richieste finché non vengono rinnovati.",
-    docsReview: "Kompass sta verificando i Suoi nuovi documenti ({docs}). Potrà acquistare di nuovo richieste una volta accettati.",
-    docsExpiring: "{doc} scade il {date}. Carichi il rinnovo per continuare ad acquistare richieste.",
+    contractBlocked: "Il contratto firmato non è ancora registrato o verificato. Potrà acquistare richieste appena Kompass lo avrà accettato.",
+    docsMissing: "Documenti mancanti o scaduti: {docs}. Li carichi per favore; può continuare ad acquistare richieste.",
+    docsReview: "Kompass sta verificando i nuovi documenti ({docs}).",
+    docsExpiring: "{doc} scade il {date}. Carichi per tempo il rinnovo.",
     updateDocs: "Aggiorna documenti",
   },
   nav: {
@@ -71,7 +72,8 @@ export const portal: Built<typeof Def> = {
       title: "Da fare",
       subtitle: "{count, plural, one {# punto richiede} other {# punti richiedono}} la Sua attenzione",
       allDone: "Tutto in ordine. Al momento nulla richiede la Sua attenzione.",
-      docsBlocked: "{docs} mancante o scaduto: non può acquistare richieste finché non viene rinnovato.",
+      contractBlocked: "Il contratto firmato deve ancora essere verificato da Kompass prima di poter acquistare richieste.",
+      docsMissing: "{docs} mancante o scaduto. Lo carichi appena possibile; può continuare ad acquistare richieste.",
       docsExpiring: "{doc} scade il {date}. Carichi il rinnovo per tempo.",
       upload: "Carica",
       invoiceOverdue: "La fattura {id} ({amount}) era da pagare entro il {date}.",
@@ -553,7 +555,7 @@ export const portal: Built<typeof Def> = {
     },
     goToPortal: "Vai al Suo portale",
     contract: {
-      title: "Contratto di partenariato Kompass",
+      title: "Accordo di partenariato Kompass: regole e istruzioni",
       parties: {
         title: "Parti",
         body: "Il presente contratto è concluso tra Kompass Umzug GmbH, Bahnhofstrasse 21, 8001 Zürich («Kompass») e {company}, {address}, registro di commercio {reg}, rappresentata da {owner} («il Partner»).",
@@ -564,23 +566,23 @@ export const portal: Built<typeof Def> = {
       },
       leads: {
         title: "Richieste",
-        body: "Ogni richiesta viene venduta al massimo a tante ditte quante il cliente ne ha richieste. Il Partner acquista le richieste nel portale partner al prezzo ivi indicato. I dati di contatto vengono mostrati solo dopo l’acquisto e possono essere utilizzati unicamente per questa richiesta. Un cliente può ricevere offerte per un massimo di {days} giorni.",
-      },
-      payment: {
-        title: "Pagamento",
-        body: "Le richieste vengono pagate da un portafoglio prepagato. I prezzi includono l’IVA del {vat}%. Un acquisto viene rimborsato solo se Kompass conferma che la richiesta è falsa; l’annullamento di una richiesta reale da parte del cliente non dà diritto a rimborso. Il credito non utilizzato può essere versato sul conto bancario del Partner.",
+        body: "Ogni richiesta va al massimo a tante ditte quante ne ha chieste il cliente. Il Partner acquista le richieste nel portale partner. I dati di contatto sono visibili solo dopo l’acquisto e possono essere usati solo per questa richiesta. Le offerte per una richiesta possono essere inviate per un massimo di {days} giorni.",
       },
       documents: {
         title: "Documenti",
-        body: "Il Partner mantiene depositati presso Kompass un’assicurazione di responsabilità civile valida e un estratto aggiornato del registro di commercio. Finché un documento manca o è scaduto, il Partner non può acquistare richieste.",
+        body: "Il Partner firma queste regole prima di poter acquistare richieste. Deposita inoltre un’assicurazione di responsabilità civile, un’assicurazione e un estratto aggiornato del registro di commercio; possono seguire dopo l’approvazione, e Kompass ricorda ciò che manca o è scaduto.",
       },
       conduct: {
         title: "Qualità",
         body: "Il Partner contatta i clienti tempestivamente, presenta offerte oneste e si presenta come convenuto. Kompass può ammonire, sospendere o porre fine alla collaborazione se i clienti segnalano ripetute assenze o comportamenti scorretti.",
       },
-      termination: {
-        title: "Durata e disdetta",
-        body: "Il contratto ha una durata di un anno e si rinnova automaticamente. Ciascuna parte può disdirlo con un preavviso di un mese per la fine di un mese. Si applica il diritto svizzero; il foro competente è Zurigo.",
+      privacy: {
+        title: "Dati dei clienti",
+        body: "Il Partner usa i dati dei clienti solo per rispondere alla richiesta acquistata, li tratta in modo confidenziale e li cancella quando non servono più.",
+      },
+      validity: {
+        title: "Validità",
+        body: "Queste regole valgono dalla firma per tutta la durata del partenariato; non hanno una durata fissa né una data di scadenza. Quando Kompass le aggiorna, al Partner viene chiesto di accettare la nuova versione. Ciascuna parte può terminare il partenariato in qualsiasi momento. Si applica il diritto svizzero; il foro competente è Zurigo.",
       },
     },
   },

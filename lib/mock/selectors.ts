@@ -257,7 +257,8 @@ export function documentState(p: Pick<Partner, "documents">) {
       continue;
     }
     if (d.status === "pending_review") review.push(key);
-    if (d.expiresAt) {
+    // the signed policies have no end date; only insurance and register extract expire
+    if (d.expiresAt && key !== "contract") {
       const t = Date.parse(d.expiresAt);
       if (t < now) expired.push(key);
       else if (t - now <= DOC_WARN_DAYS * DAY) expiring.push(key);
@@ -266,9 +267,8 @@ export function documentState(p: Pick<Partner, "documents">) {
   }
   const ok = !missing.length && !expired.length && !review.length;
   const state: DocState = missing.length || review.length ? "missing" : expired.length ? "expired" : expiring.length ? "expiring" : "ok";
-  // buying needs only a checked, unexpired contract; the other documents can follow after approval
-  const contract = p.documents.contract;
-  const contractOk = !!contract && contract.status === "valid" && !(contract.expiresAt && Date.parse(contract.expiresAt) < now);
+  // buying needs only the signed, checked contract (it has no end date); the other documents can follow after approval
+  const contractOk = p.documents.contract?.status === "valid";
   return { ok, contractOk, state, missing, expired, expiring, review, next };
 }
 

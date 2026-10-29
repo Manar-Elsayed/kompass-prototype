@@ -184,7 +184,7 @@ function Step({ n, state, title, badge, last, children }: { n: number; state: St
   );
 }
 
-/** The partnership contract filled in with the company's details; signed by typing the full name. */
+/** The partner agreement (policies and instructions) filled in with the company's details; signed by typing the full name. */
 function ContractSigner({ partner }: { partner: Partner }) {
   const t = useTranslations("portal.onboarding");
   const tc = useTranslations("portal.onboarding.contract");
@@ -195,8 +195,9 @@ function ContractSigner({ partner }: { partner: Partner }) {
   const [read, setRead] = useState(false);
   const [busy, setBusy] = useState(false);
   const box = useRef<HTMLDivElement>(null);
-  const values = { company: partner.name, owner: partner.ownerName, address: `${partner.address}, ${partner.zip} ${partner.city}`, reg: partner.regNumber, vat: config.vatRate, days: config.leadExpiryDays };
-  const sections = ["parties", "scope", "leads", "payment", "documents", "conduct", "termination"] as const;
+  const values = { company: partner.name, owner: partner.ownerName, address: `${partner.address}, ${partner.zip} ${partner.city}`, reg: partner.regNumber, days: config.leadExpiryDays };
+  // policies and instructions only: no prices or billing, and no term or end date
+  const sections = ["parties", "scope", "leads", "documents", "conduct", "privacy", "validity"] as const;
   const valid = read && agree && name.trim().length >= 3;
 
   const onScroll = () => {

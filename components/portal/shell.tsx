@@ -218,9 +218,14 @@ function StatusBanner() {
     tone = "bg-danger-soft text-danger";
     text = t("banned");
     Icon = ShieldOff;
-  } else if (docs.missing.length || docs.expired.length) {
+  } else if (!docs.contractOk) {
+    // only the signed contract blocks buying
     tone = "bg-danger-soft text-danger";
-    text = t("docsBlocked", { docs: names([...docs.missing, ...docs.expired]) });
+    text = t("contractBlocked");
+  } else if (docs.missing.length || docs.expired.length) {
+    // other documents are reminders: the company keeps buying meanwhile
+    tone = "bg-warning-soft text-warning";
+    text = t("docsMissing", { docs: names([...docs.missing, ...docs.expired]) });
   } else if (docs.review.length) {
     tone = "bg-info-soft text-info";
     text = t("docsReview", { docs: names(docs.review) });

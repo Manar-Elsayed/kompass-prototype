@@ -188,7 +188,8 @@ export const partners: Partner[] = rawPartners.map(({ expiresAt, documents: uplo
     // companies older than a year signed the previous contract and keep it
     contractVersion: p.createdAt < daysAgo(365) ? "partner-contract-v2.pdf" : "partner-contract-v3.pdf",
     documents: {
-      contract: doc(uploaded.contract, "valid", demo ? daysAhead(220) : expiresAt),
+      // the signed policies have no end date
+      contract: doc(uploaded.contract, "valid"),
       // one company has uploaded its renewed insurance, which Kompass still has to check
       insurance:
         i === 4

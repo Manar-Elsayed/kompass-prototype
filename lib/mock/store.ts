@@ -51,7 +51,7 @@ interface Actions {
   /** A website signup, or admin adding a company (no "new application" notification then). Starts as an application. */
   registerPartner: (input: Omit<Partner, "id" | "slug" | "status" | "banned" | "featured" | "wallet" | "documents" | "lastSeen" | "createdAt">, opts?: { byAdmin?: boolean }) => Partner;
   /** Approving keeps what the company uploaded and marks it checked; rejecting records the reason it is shown. */
-  decideApplication: (id: string, decision: "contract_sent" | "approved" | "rejected", expiresAt?: string, reason?: string) => void;
+  decideApplication: (id: string, decision: "contract_sent" | "approved" | "rejected", reason?: string) => void;
   /** Applicant signs the partnership contract in the portal; Kompass then checks it with the other documents. */
   signContract: (partnerId: string, name: string) => void;
   decideDue: (id: string, status: "confirmed" | "canceled") => void;
@@ -269,7 +269,7 @@ export const useStore = create<Store>()(
         return partner;
       },
 
-      decideApplication: (id, decision, expiresAt, reason) =>
+      decideApplication: (id, decision, reason) =>
         set((s) => ({
           partners: s.partners.map((p) =>
             p.id === id
@@ -280,9 +280,13 @@ export const useStore = create<Store>()(
                   documents:
                     decision === "approved"
                       ? {
-                          contract: { file: "contract-signed.pdf", uploadedAt: p.contractSignedAt ?? nowIso(), ...p.documents.contract, status: "valid", expiresAt },
-                          insurance: { file: "insurance.pdf", uploadedAt: nowIso(), ...p.documents.insurance, status: "valid", expiresAt: p.documents.insurance?.expiresAt ?? inDays(365) },
-                          register: { file: "hr-extract.pdf", uploadedAt: nowIso(), ...p.documents.register, status: "valid", expiresAt: p.documents.register?.expiresAt ?? inDays(365) },
+                          // documents the company sent are accepted with the approval; missing ones can follow
+                          ...(Object.fromEntries(
+                            // an accepted insurance or register extract without a date gets one year
+                            Object.entries(p.documents).map(([k, d]) => [k, d && d.status === "pending_review" ? { ...d, status: "valid" as const, expiresAt: d.expiresAt ?? (k === "contract" ? undefined : inDays(365)) } : d]),
+                          ) as Partner["documents"]),
+                          // the signed policies have no end date
+                          contract: { file: "contract-signed.pdf", uploadedAt: p.contractSignedAt ?? nowIso(), ...p.documents.contract, status: "valid", expiresAt: undefined },
                         }
                       : p.documents,
                 }
@@ -764,11 +768,11 @@ export const useStore = create<Store>()(
       // companies and no-shows; v9 the partner portal flows (onboarding contract, message threads,
       // payouts, service areas); v10 two booking types (same / other person); v11 no-shows removed
       // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address; v14 fake-offer reports whose
-      // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout; v17 team invitations (an invited member who hasn't signed in yet); v18 invoice numbers from the prefix and the contract version each company signed; v19 what companies report about their offers (won / lost / couldn't reach); v22 every company review linked to its offer; v23 partners' last seen relative to when the demo loads; v24 a fourth document (insurance), only the contract blocks buying. Older saves start again from the current seed,
+      // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout; v17 team invitations (an invited member who hasn't signed in yet); v18 invoice numbers from the prefix and the contract version each company signed; v19 what companies report about their offers (won / lost / couldn't reach); v22 every company review linked to its offer; v23 partners' last seen relative to when the demo loads; v24 a fourth document (insurance), only the contract blocks buying; v25 the contract is a policies agreement with no end date. Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 24,
+      version: 25,
       migrate: (persisted, version) => {
-        if (version >= 24) return persisted as Store;
+        if (version >= 25) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },
