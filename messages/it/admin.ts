@@ -765,6 +765,7 @@ export const admin: Built<typeof Def> = {
     total: "Sui portafogli delle ditte",
     topped30: "Ricaricato (30 giorni)",
     creditDue: "Credito aperto",
+    overdueCol: "Scaduto",
     overdue: "{amount} scaduti",
     balance: "Saldo",
     toppedUp: "Ricaricato",

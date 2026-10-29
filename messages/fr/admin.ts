@@ -765,6 +765,7 @@ export const admin: Built<typeof Def> = {
     total: "Sur les portefeuilles",
     topped30: "Rechargé (30 jours)",
     creditDue: "Crédit en cours",
+    overdueCol: "En retard",
     overdue: "{amount} en retard",
     balance: "Solde",
     toppedUp: "Rechargé",

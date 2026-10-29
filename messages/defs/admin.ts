@@ -762,6 +762,7 @@ export const admin = {
     total: "On company wallets",
     topped30: "Topped up (30 days)",
     creditDue: "Credit outstanding",
+    overdueCol: "Overdue",
     overdue: "{amount} overdue",
     balance: "Balance",
     toppedUp: "Topped up",

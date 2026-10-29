@@ -83,11 +83,12 @@ export default function WalletsPage() {
     { id: "refunded", meta: { className: "hidden 2xl:table-cell" }, header: tw("refunded"), accessorFn: (r) => r.refunded, cell: (c) => <span className="text-muted-foreground">{formatCHF(c.getValue() as number, lang)}</span> },
     {
       id: "credit",
-      header: tw("creditDue"),
+      header: tw("overdueCol"),
       accessorFn: (r) => r.creditDue,
       cell: ({ row: { original: r } }) =>
         r.creditDue ? (
-          <span className={cn("font-semibold", r.creditOverdue ? "text-danger" : "text-warning")}>{formatCHF(r.creditDue, lang)}</span>
+          // money the company owes Kompass: always red, as a negative amount
+          <span className="whitespace-nowrap font-semibold text-danger">−{formatCHF(r.creditDue, lang)}</span>
         ) : (
           <span className="text-muted-foreground">–</span>
         ),
