@@ -335,7 +335,17 @@ export const portal: Built<typeof Def> = {
     average: "Media",
     total: "Recensioni pubblicate",
     requestRemoval: "Chiedi rimozione",
-    removalPending: "Rimozione richiesta",
+    state: {
+      published: "Pubblicata",
+      requested: "Rimozione richiesta",
+      declined: "Rimozione rifiutata",
+      removed: "Rimossa",
+    },
+    stateHint: {
+      requested: "Kompass sta esaminando la sua richiesta. Fino ad allora la recensione resta sul suo profilo.",
+      declined: "Kompass ha esaminato la sua richiesta e ha mantenuto la recensione. Conta ancora nella sua valutazione.",
+      removed: "Kompass ha rimosso questa recensione. Non appare più sul suo profilo né nella sua valutazione.",
+    },
     removalTitle: "Chiedere la rimozione di questa recensione",
     removalBody: "Spieghi perché questa recensione viola le linee guida (ad es. non è un Suo cliente, affermazioni false). Kompass decide entro 5 giorni lavorativi.",
     reason: "Motivo",

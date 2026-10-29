@@ -26,7 +26,6 @@ export default function RemovalsPage() {
   const removals = useStore((s) => s.removals);
   const reviews = useStore((s) => s.reviews);
   const patch = useStore((s) => s.patch);
-  const remove = useStore((s) => s.remove);
   const partnerMap = usePartnerMap();
   const { confirm, dialog } = useConfirm();
   const [openId, setOpenId] = useState<string | null>(null);
@@ -43,7 +42,7 @@ export default function RemovalsPage() {
       onConfirm: () => {
         setOpenId(null);
         patch("removals", rr.id, { status: "approved" });
-        remove("reviews", rr.reviewId);
+        patch("reviews", rr.reviewId, { hidden: true });
         toast.success(tr("removed"));
       },
     });

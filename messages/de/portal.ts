@@ -335,7 +335,17 @@ export const portal: Built<typeof Def> = {
     average: "Durchschnitt",
     total: "Veröffentlichte Bewertungen",
     requestRemoval: "Entfernung beantragen",
-    removalPending: "Entfernung beantragt",
+    state: {
+      published: "Veröffentlicht",
+      requested: "Entfernung beantragt",
+      declined: "Entfernung abgelehnt",
+      removed: "Entfernt",
+    },
+    stateHint: {
+      requested: "Kompass prüft Ihren Antrag. Bis dahin bleibt die Bewertung in Ihrem Profil.",
+      declined: "Kompass hat Ihren Antrag geprüft und die Bewertung behalten. Sie zählt weiterhin zu Ihrer Bewertung.",
+      removed: "Kompass hat diese Bewertung entfernt. Sie erscheint nicht mehr in Ihrem Profil und zählt nicht mehr zu Ihrer Bewertung.",
+    },
     removalTitle: "Entfernung dieser Bewertung beantragen",
     removalBody: "Erklären Sie, warum diese Bewertung gegen die Richtlinien verstösst (z. B. nicht Ihr Kunde, falsche Aussagen). Kompass entscheidet innert 5 Arbeitstagen.",
     reason: "Begründung",

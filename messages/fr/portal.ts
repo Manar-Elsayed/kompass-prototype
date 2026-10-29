@@ -335,7 +335,17 @@ export const portal: Built<typeof Def> = {
     average: "Moyenne",
     total: "Avis publiés",
     requestRemoval: "Demander la suppression",
-    removalPending: "Suppression demandée",
+    state: {
+      published: "Publié",
+      requested: "Suppression demandée",
+      declined: "Suppression refusée",
+      removed: "Supprimé",
+    },
+    stateHint: {
+      requested: "Kompass examine votre demande. L’avis reste sur votre profil d’ici là.",
+      declined: "Kompass a examiné votre demande et conservé l’avis. Il compte toujours dans votre note.",
+      removed: "Kompass a supprimé cet avis. Il n’apparaît plus sur votre profil ni dans votre note.",
+    },
     removalTitle: "Demander la suppression de cet avis",
     removalBody: "Expliquez pourquoi cet avis enfreint les règles (p. ex. pas votre client, affirmations fausses). Kompass décide dans les 5 jours ouvrables.",
     reason: "Motif",

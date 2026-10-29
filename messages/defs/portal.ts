@@ -332,7 +332,17 @@ export const portal = {
     average: "Average",
     total: "Published reviews",
     requestRemoval: "Request removal",
-    removalPending: "Removal requested",
+    state: {
+      published: "Published",
+      requested: "Removal requested",
+      declined: "Removal declined",
+      removed: "Removed",
+    },
+    stateHint: {
+      requested: "Kompass is checking your request. The review stays on your profile until then.",
+      declined: "Kompass checked your request and kept the review. It still counts in your rating.",
+      removed: "Kompass removed this review. It is no longer on your profile or in your rating.",
+    },
     removalTitle: "Request removal of this review",
     removalBody: "Explain why this review breaks the guidelines (e.g. not your customer, false statements). Kompass decides within 5 business days.",
     reason: "Reason",
