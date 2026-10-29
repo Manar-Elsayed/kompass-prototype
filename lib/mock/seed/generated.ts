@@ -249,6 +249,8 @@ export const offers: Offer[] = Array.from({ length: 128 }, (_, i) => {
   const open = age < 75 && (slot < 0 || OPEN_SLOTS.has(slot));
   const lead = rng.int(14, 60);
   const rooms = rng.pick(["1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5.5"]);
+  // this draw once chose between a fake and a customer cancellation; it stays so the purchases below keep their random stream
+  if (status === "cancelled" && slot !== 14) lrng.chance(0.5);
   return {
     id: `KO-${10400 - i}`,
     serviceId: svc.id,
@@ -270,10 +272,8 @@ export const offers: Offer[] = Array.from({ length: 128 }, (_, i) => {
     status,
     flags,
     booking: "personal" as BookingType,
-    // slot 13 never sold: either side may have cancelled; slot 14 had buyers, so it was found to be fake
-    ...(status === "cancelled"
-      ? { cancelReason: slot === 14 || lrng.chance(0.5) ? ("fake" as const) : ("customer" as const), cancelledAt: daysAgo(Math.max(0, age - 2)) }
-      : {}),
+    // offers are only cancelled as fake (slot 13 never sold, slot 14 had buyers who were refunded)
+    ...(status === "cancelled" ? { cancelReason: "fake" as const, cancelledAt: daysAgo(Math.max(0, age - 2)) } : {}),
     source: rng.chance(0.93) ? "website" : "admin",
     createdAt: daysAgo(age, -rng.int(0, 12)),
   };
@@ -457,11 +457,11 @@ const sampledReports: FakeReport[] = rng.sample(orders, 9).map((o, i) => ({
     "Duplicate of an offer bought last week.",
     "Email bounced, no reply on phone.",
   ]),
-  status: (["open", "open", "testing", "pending", "confirmed", "canceled", "open", "pending", "testing"] as const)[i],
+  status: (["new", "new", "testing", "testing", "canceled", "rejected", "new", "testing", "testing"] as const)[i],
   createdAt: daysAgo(rng.int(0, 25)),
 }));
 
-// Keep each report's status true to the money: a confirmed report sits on an offer cancelled as
+// Keep each report's status true to the money: a canceled report sits on an offer cancelled as
 // fake (its buyers were refunded); any other report sits on an offer that is still real. The
 // replacement purchases are picked in list order, so no random stream moves.
 const fakeCancelled = (orderId: string) => {
@@ -470,7 +470,7 @@ const fakeCancelled = (orderId: string) => {
 };
 const reportedOrders = new Set<string>();
 export const fakeReports: FakeReport[] = sampledReports.map((r) => {
-  const wantFake = r.status === "confirmed";
+  const wantFake = r.status === "canceled";
   let orderId = r.orderId;
   if (fakeCancelled(orderId) !== wantFake || reportedOrders.has(orderId)) {
     orderId = orders.find((o) => fakeCancelled(o.id) === wantFake && !reportedOrders.has(o.id) && !sampledReports.some((x) => x.orderId === o.id))?.id ?? orderId;
@@ -770,9 +770,9 @@ export const notifications: Notification[] = [
 const rrng = createRng(20261019);
 const orderById = Object.fromEntries(orders.map((o) => [o.id, o]));
 export const refunds: Refund[] = [
-  // every confirmed fake-lead report was refunded to the partner wallet
+  // every canceled (confirmed fake) report was refunded to the partner wallet
   ...fakeReports
-    .filter((r) => r.status === "confirmed")
+    .filter((r) => r.status === "canceled")
     .map((r, i) => {
       const o = orderById[r.orderId];
       return {
@@ -790,7 +790,7 @@ export const refunds: Refund[] = [
   // offers cancelled as fake after companies bought them: every buyer got the price back
   ...offers
     .filter((o) => o.status === "cancelled" && o.cancelReason === "fake")
-    .flatMap((o) => orders.filter((x) => x.offerId === o.id && !fakeReports.some((r) => r.orderId === x.id && r.status === "confirmed")))
+    .flatMap((o) => orders.filter((x) => x.offerId === o.id && !fakeReports.some((r) => r.orderId === x.id && r.status === "canceled")))
     .map((x, i) => ({
       id: `RF-${pad(i + 101, 3)}`,
       partnerId: x.partnerId,
@@ -802,9 +802,9 @@ export const refunds: Refund[] = [
       createdAt: offers.find((o) => o.id === x.offerId)!.cancelledAt!,
       decidedAt: offers.find((o) => o.id === x.offerId)!.cancelledAt!,
     })),
-  // claims still waiting: the company reported the lead as fake and Kompass is still checking
+  // claims still waiting: the company reported the lead as fake and Kompass hasn't decided yet
   ...fakeReports
-    .filter((r) => r.status === "pending")
+    .filter((r) => r.status === "new" || r.status === "testing")
     .map((r, i) => {
       const o = orderById[r.orderId];
       return {
@@ -818,10 +818,27 @@ export const refunds: Refund[] = [
         createdAt: r.createdAt,
       };
     }),
+  // rejected reports: Kompass found the request real, so the company's claim was turned down
+  ...fakeReports
+    .filter((r) => r.status === "rejected")
+    .map((r, i) => {
+      const o = orderById[r.orderId];
+      return {
+        id: `RF-${pad(i + 31, 3)}`,
+        partnerId: o.partnerId,
+        amount: o.price,
+        reason: "fake_lead" as const,
+        orderId: o.id,
+        note: r.reason,
+        status: "rejected" as const,
+        createdAt: r.createdAt,
+        decidedAt: r.createdAt,
+      };
+    }),
   ...(
     [
-      // the customer was real and cancelled: policy says no refund
-      ["fake_lead", "rejected", "Customer cancelled after our site visit.", true],
+      // the request turned out to be real: policy says no refund
+      ["fake_lead", "rejected", "Customer was not reachable for two days.", true],
       // admin exceptions, each with its reason written down
       ["manual", "refunded", "Compensation for the shop outage on 2 October.", false],
       ["manual", "refunded", "Coupon WELCOME20 was not applied at checkout.", true],

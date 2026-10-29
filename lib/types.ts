@@ -38,11 +38,11 @@ export interface Service {
 /**
  * Offer lifecycle. New = received and waiting for verification (auto-checks flagged it);
  * In progress = verified and on sale; Completed = sold to as many companies as the customer chose;
- * Expired = the customer's deadline passed before that; Cancelled = fake or withdrawn by the customer.
+ * Expired = the customer's deadline passed before that; Cancelled = confirmed fake (buyers refunded).
  */
 export type LeadStatus = "new" | "in_progress" | "completed" | "expired" | "cancelled";
-/** Why an offer was cancelled — decides the money: fake offers are refunded, customer cancellations are not. */
-export type CancelReason = "fake" | "customer";
+/** Offers are only ever cancelled as fake, and every company that bought one is refunded. */
+export type CancelReason = "fake";
 /** Automatic checks run on every new offer; any hit holds it in New for admin review. */
 export type VerificationFlag = "duplicate" | "invalid_phone" | "invalid_email" | "ip_burst";
 
@@ -137,7 +137,8 @@ export interface Order {
 export const ORDER_OUTCOMES = ["won", "lost", "unreachable"] as const;
 export type OrderOutcome = (typeof ORDER_OUTCOMES)[number];
 
-export type FakeReportStatus = "open" | "testing" | "pending" | "confirmed" | "canceled";
+/** New → Testing → Canceled (the offer is fake: cancelled, buyers refunded) or Rejected (the offer is real: no refund). */
+export type FakeReportStatus = "new" | "testing" | "canceled" | "rejected";
 export interface FakeReport {
   id: ID;
   orderId: ID;

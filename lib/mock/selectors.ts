@@ -313,7 +313,7 @@ export function partnerRegions(db: Pick<DB, "nominations">, partnerId: string) {
  * company's own report (won / lost / unreachable), or still open. The customer's answer is the
  * neutral fact, so it replaces what the company marked; `overridden` says when they differed.
  */
-export type LeadOutcome = "active" | "won" | "lost" | "unreachable" | "chosen" | "chosenOther" | "executed" | "reported" | "cancelledFake" | "cancelledCustomer";
+export type LeadOutcome = "active" | "won" | "lost" | "unreachable" | "chosen" | "chosenOther" | "executed" | "reported" | "cancelledFake";
 /** open = still to follow up; won / lost = decided (by the company or by the customer's choice). */
 export type LeadGroup = "open" | "won" | "lost" | "executed" | "reported" | "cancelled";
 export const LEAD_GROUP: Record<LeadOutcome, LeadGroup> = {
@@ -326,7 +326,6 @@ export const LEAD_GROUP: Record<LeadOutcome, LeadGroup> = {
   executed: "executed",
   reported: "reported",
   cancelledFake: "cancelled",
-  cancelledCustomer: "cancelled",
 };
 
 /** Badge colour for each outcome, shared by My offers and the overview's recent purchases. */
@@ -340,7 +339,6 @@ export const OUTCOME_TONE: Record<LeadOutcome, "neutral" | "success" | "warning"
   executed: "success",
   reported: "warning",
   cancelledFake: "info",
-  cancelledCustomer: "danger",
 };
 
 export function leadOutcome(db: Pick<DB, "offers" | "fakeReports" | "refunds">, order: Order) {
@@ -348,9 +346,8 @@ export function leadOutcome(db: Pick<DB, "offers" | "fakeReports" | "refunds">, 
   const report: FakeReport | undefined = db.fakeReports.find((r) => r.orderId === order.id);
   const refund: Refund | undefined = db.refunds.find((r) => r.orderId === order.id && r.status !== "rejected");
   let status: LeadOutcome = "active";
-  if (offer?.status === "cancelled") status = offer.cancelReason === "fake" ? "cancelledFake" : "cancelledCustomer";
-  else if (report?.status === "confirmed") status = "cancelledFake";
-  else if (report && report.status !== "canceled") status = "reported";
+  if (offer?.status === "cancelled" || report?.status === "canceled") status = "cancelledFake";
+  else if (report && report.status !== "rejected") status = "reported";
   else if (order.executed) status = "executed";
   else if (offer?.chosenPartnerId === order.partnerId) status = "chosen";
   else if (offer?.chosenPartnerId) status = "chosenOther";
@@ -380,7 +377,6 @@ export type FeedKind =
   | "refundRejected"
   | "assigned"
   | "cancelledFake"
-  | "cancelledCustomer"
   | "chosen"
   | "message"
   | "payoutPaid"
@@ -454,7 +450,7 @@ export function partnerFeed(db: FeedDB, partnerId: string): FeedItem[] {
     if (o.channel === "manual") push(o.id, o.createdAt, "assigned", "info", href, { offer: o.offerId, amount: o.price });
     if (!offer) continue;
     if (offer.status === "cancelled" && offer.cancelledAt && offer.cancelledAt > o.createdAt)
-      push(o.id, offer.cancelledAt, offer.cancelReason === "fake" ? "cancelledFake" : "cancelledCustomer", offer.cancelReason === "fake" ? "info" : "warning", href, { offer: o.offerId });
+      push(o.id, offer.cancelledAt, "cancelledFake", "info", href, { offer: o.offerId });
     if (offer.chosenPartnerId === partnerId) push(o.id, offer.chosenAt, "chosen", "success", href, { offer: o.offerId, city: offer.from.city });
   }
 

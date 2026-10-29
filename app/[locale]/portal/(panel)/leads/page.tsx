@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Ban, BellRing, CheckCircle2, Flag, Headset, Mail, Phone, RotateCcw, ShoppingBag, PhoneMissed, Trophy, UserCheck, UserX } from "lucide-react";
+import { BellRing, CheckCircle2, Flag, Headset, Mail, Phone, RotateCcw, ShoppingBag, PhoneMissed, Trophy, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { ORDER_OUTCOMES, type FakeReportStatus, type Order, type OrderOutcome } from "@/lib/types";
@@ -28,7 +28,7 @@ import { routeFull, routeText } from "@/lib/jobs";
 const REASONS = ["phone", "never", "duplicate", "unreachable"] as const;
 const GROUPS: LeadGroup[] = ["open", "won", "lost", "executed", "reported", "cancelled"];
 /** How a fake-lead report moves; the last step is confirmed (refunded) or rejected. */
-const REPORT_STEPS: FakeReportStatus[] = ["open", "testing", "pending"];
+const REPORT_STEPS: FakeReportStatus[] = ["new", "testing"];
 
 export default function MyLeadsPage() {
   return (
@@ -279,8 +279,8 @@ function MyLeads() {
 }
 
 /**
- * What happened to the purchase, in plain words: refunded because the offer was fake, not refunded
- * because the customer cancelled, or where a fake-lead report stands (with its steps).
+ * What happened to the purchase, in plain words: refunded because the offer was fake, or where a
+ * fake-lead report stands (with its steps).
  */
 function OutcomeBanner({ order }: { order: Order }) {
   const t = useTranslations("portal.leads");
@@ -289,7 +289,7 @@ function OutcomeBanner({ order }: { order: Order }) {
   const offers = useStore((s) => s.offers);
   const fakeReports = useStore((s) => s.fakeReports);
   const refunds = useStore((s) => s.refunds);
-  const { status, report, refund, offer } = leadOutcome({ offers, fakeReports, refunds }, order);
+  const { status, report, refund } = leadOutcome({ offers, fakeReports, refunds }, order);
 
   if (status === "cancelledFake")
     return (
@@ -303,22 +303,15 @@ function OutcomeBanner({ order }: { order: Order }) {
         {refund?.status === "refunded" && <Link href="/portal/payments?tab=statement" className="mt-2 inline-block text-xs font-semibold text-primary hover:underline">{t("seeStatement")}</Link>}
       </div>
     );
-  if (status === "cancelledCustomer")
-    return (
-      <div className="rounded-xl border border-danger/20 bg-danger-soft/40 p-3 text-sm">
-        <p className="flex items-center gap-2 font-semibold text-danger"><Ban className="size-4" /> {t("cancelledCustomerTitle", { date: offer?.cancelledAt ? formatDate(offer.cancelledAt, lang) : "" })}</p>
-        <p className="mt-1 text-muted-foreground">{t("cancelledCustomerBody")}</p>
-      </div>
-    );
   if (!report) return null;
-  const rejected = report.status === "canceled";
+  const rejected = report.status === "rejected";
   const reached = rejected ? REPORT_STEPS.length : Math.max(0, REPORT_STEPS.indexOf(report.status));
   return (
     <div className={cn("rounded-xl border p-3 text-sm", rejected ? "bg-surface-2/60" : "border-warning/30 bg-warning-soft/40")}>
       <p className="flex items-center gap-2 font-semibold text-ink"><Flag className="size-4 text-warning" /> {rejected ? t("reportRejectedTitle") : t("reportTitleShort", { date: formatDate(report.createdAt, lang) })}</p>
       <p className="mt-1 text-muted-foreground">{rejected ? t("reportRejectedBody") : t("reportProgressBody")}</p>
       <ol className="mt-3 flex items-center gap-1" aria-label={t("reportSteps")}>
-        {[...REPORT_STEPS, rejected ? "canceled" : "confirmed"].map((s, i) => (
+        {[...REPORT_STEPS, rejected ? "rejected" : "canceled"].map((s, i) => (
           <li key={s} className="flex flex-1 flex-col gap-1">
             <span className={cn("h-1.5 rounded-full", i <= reached ? (rejected && i === REPORT_STEPS.length ? "bg-muted-foreground" : "bg-warning") : "bg-muted")} />
             <span className={cn("text-[11px]", i === reached ? "font-semibold text-ink" : "text-muted-foreground")}>{tst(s)}</span>

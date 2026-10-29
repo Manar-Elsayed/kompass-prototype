@@ -126,7 +126,7 @@ export default function LeadDetail() {
     offer.status === "expired" && { at: offer.deadline, text: tl("evExpired"), icon: <Clock className="size-3.5" /> },
     offer.cancelledAt && {
       at: offer.cancelledAt,
-      text: tl(offer.cancelReason === "fake" ? "evCancelledFake" : "evCancelledCustomer"),
+      text: tl("evCancelledFake"),
       icon: <Ban className="size-3.5" />,
     },
   ]
@@ -188,9 +188,9 @@ export default function LeadDetail() {
             <Card className="flex items-start gap-3 border-danger/20 bg-danger-soft/40 p-4">
               <XCircle className="mt-0.5 size-5 shrink-0 text-danger" />
               <div>
-                <p className="font-bold text-ink">{tl(offer.cancelReason === "fake" ? "cancelledFake" : "cancelledCustomer")}</p>
+                <p className="font-bold text-ink">{tl("cancelledFake")}</p>
                 <p className="text-sm text-muted-foreground">
-                  {offer.cancelledAt && formatDateTime(offer.cancelledAt, lang)} · {tl(offer.cancelReason === "fake" ? "cancelFakeHint" : "cancelCustomerHint")}
+                  {offer.cancelledAt && formatDateTime(offer.cancelledAt, lang)} · {tl("cancelFakeHint")}
                 </p>
               </div>
             </Card>
@@ -514,18 +514,20 @@ function AssignPanel({ offer, orders }: { offer: Offer; orders: Order[] }) {
   );
 }
 
-/** Cancelling needs a reason because it decides the money: fake = refundable, customer = not. */
 /**
- * Taking an offer out of the shop. No refund happens here: a fake offer is refunded from the
- * fake-offer reports, where Kompass confirms it.
+ * Offers are only cancelled as fake: the offer leaves the shop, every company that bought it gets
+ * the price back in its wallet, and open fake reports on it close as Canceled.
  */
 function CancelDialog({ offer, onClose }: { offer: Offer; onClose: () => void }) {
   const t = useTranslations("admin.leads.detail");
   const tc = useTranslations("common.actions");
+  const lang = useLang();
   const cancelOffer = useStore((s) => s.cancelOffer);
+  const buyers = useStore((s) => s.orders).filter((o) => o.offerId === offer.id);
+  const amount = buyers.reduce((a, o) => a + o.price, 0);
 
   const submit = () => {
-    cancelOffer(offer.id, "customer", []);
+    cancelOffer(offer.id, "fake", buyers.map((o) => o.id));
     toast.success(t("cancelled", { id: offer.id }));
     onClose();
   };
@@ -537,6 +539,9 @@ function CancelDialog({ offer, onClose }: { offer: Offer; onClose: () => void })
           <DialogTitle>{t("cancelTitle", { id: offer.id })}</DialogTitle>
           <DialogDescription>{t("cancelHint")}</DialogDescription>
         </DialogHeader>
+        <p className="rounded-xl bg-surface-2 p-3 text-sm text-ink">
+          {buyers.length ? t("cancelRefund", { count: buyers.length, amount: formatCHF(amount, lang) }) : t("cancelNoBuyers")}
+        </p>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{tc("cancel")}</Button>
           <Button variant="danger" onClick={submit}><Ban /> {t("cancel")}</Button>

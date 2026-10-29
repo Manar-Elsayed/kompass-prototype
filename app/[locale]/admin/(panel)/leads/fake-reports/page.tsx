@@ -107,8 +107,8 @@ export default function FakeReportsPage() {
           viewLabel={t("admin.leads.viewOffer")}
           actions={[
             { label: t("admin.rows.openCompany"), icon: <Building2 />, href: order ? `/admin/partners/${order.partnerId}` : undefined, hidden: !order },
-            { label: t("admin.rows.confirmFake"), icon: <ShieldCheck />, onSelect: () => setStatus(r, "confirmed"), hidden: final, separated: true },
-            { label: t("admin.rows.rejectReport"), icon: <XCircle />, tone: "danger", onSelect: () => setStatus(r, "canceled"), hidden: final },
+            { label: t("admin.rows.confirmFake"), icon: <ShieldCheck />, onSelect: () => setStatus(r, "canceled"), hidden: final, separated: true },
+            { label: t("admin.rows.rejectReport"), icon: <XCircle />, tone: "danger", onSelect: () => setStatus(r, "rejected"), hidden: final },
           ]}
         />
       );
