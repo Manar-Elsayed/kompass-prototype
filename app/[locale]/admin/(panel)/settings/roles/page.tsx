@@ -6,13 +6,14 @@ import { Info, Lock, Pencil, Plus, Shield, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { LANGS, PERMISSIONS, type L10n, type Permission, type Role } from "@/lib/types";
 import { cn, l10n, withFallback } from "@/lib/utils";
+import { Link } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentUser, useL } from "@/lib/mock/hooks";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/controls";
+import { Avatar, Checkbox, Popover, PopoverContent, PopoverTrigger } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useConfirm } from "@/components/shared/bits";
@@ -99,7 +100,32 @@ export default function RolesPage() {
                           {r.system ? <Lock className="size-3.5 shrink-0 text-muted-foreground" /> : <Shield className="size-3.5 shrink-0 text-primary" />}
                           {L(r.name)}
                         </p>
-                        <p className="mt-0.5 text-xs font-normal text-muted-foreground">{tr("members", { count })}</p>
+                        {count ? (
+                          // who holds the role: names, emails and whether they can sign in
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button type="button" className="mt-0.5 text-xs font-semibold text-primary hover:underline">{tr("members", { count })}</button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-72 p-0" align="start">
+                              <p className="border-b px-3 py-2 text-xs font-bold text-ink">{tr("membersOf", { role: L(r.name) })}</p>
+                              <ul className="max-h-64 divide-y overflow-y-auto">
+                                {users.filter((u) => u.roleId === r.id).map((u) => (
+                                  <li key={u.id} className="flex items-center gap-2.5 px-3 py-2">
+                                    <Avatar name={u.name} className="size-7 shrink-0 text-[10px]" />
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block truncate text-sm font-semibold text-ink">{u.name}</span>
+                                      <span className="block truncate text-xs text-muted-foreground">{u.email}</span>
+                                    </span>
+                                    {u.invitedAt ? <Badge tone="info">{t("admin.users.invitedStatus")}</Badge> : !u.active && <Badge tone="neutral">{t("common.status.inactive")}</Badge>}
+                                  </li>
+                                ))}
+                              </ul>
+                              <Link href="/admin/settings/team" className="block border-t px-3 py-2 text-xs font-semibold text-primary hover:underline">{tr("manageInTeam")}</Link>
+                            </PopoverContent>
+                          </Popover>
+                        ) : (
+                          <p className="mt-0.5 text-xs font-normal text-muted-foreground">{tr("members", { count })}</p>
+                        )}
                         {L(r.description) && <p className="mt-1 line-clamp-2 text-xs font-normal text-muted-foreground" title={L(r.description)}>{L(r.description)}</p>}
                       </div>
                       {/* custom roles only: rename always; delete for a Super admin, once nobody holds the role */}
