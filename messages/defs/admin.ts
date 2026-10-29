@@ -1264,6 +1264,8 @@ export const admin = {
     subtitle: "Tick the modules each role can open. Changes apply at once. To try a role, use View as role in your account menu (top right).",
     add: "New role",
     members: "{count, plural, =0 {No members} one {# member} other {# members}}",
+    membersOf: "Members · {role}",
+    manageInTeam: "Manage in Team",
     system: "System role",
     module: "Module",
     edit: "Edit role",

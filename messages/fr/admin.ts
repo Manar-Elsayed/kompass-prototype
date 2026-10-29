@@ -1267,6 +1267,8 @@ export const admin: Built<typeof Def> = {
     subtitle: "Cochez les modules que chaque rôle peut ouvrir. Les changements s’appliquent tout de suite. Pour tester un rôle, utilisez « Voir en tant que rôle » dans votre menu de compte (en haut à droite).",
     add: "Nouveau rôle",
     members: "{count, plural, =0 {Aucun membre} one {# membre} other {# membres}}",
+    membersOf: "Membres · {role}",
+    manageInTeam: "Gérer dans l’équipe",
     system: "Rôle système",
     module: "Module",
     edit: "Modifier le rôle",

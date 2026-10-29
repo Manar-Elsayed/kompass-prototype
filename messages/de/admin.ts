@@ -1267,6 +1267,8 @@ export const admin: Built<typeof Def> = {
     subtitle: "Haken Sie an, welche Module jede Rolle öffnen kann. Änderungen gelten sofort. Zum Testen nutzen Sie „Ansicht als Rolle“ in Ihrem Kontomenü (oben rechts).",
     add: "Neue Rolle",
     members: "{count, plural, =0 {Keine Mitglieder} one {# Mitglied} other {# Mitglieder}}",
+    membersOf: "Mitglieder · {role}",
+    manageInTeam: "Im Team verwalten",
     system: "Systemrolle",
     module: "Modul",
     edit: "Rolle bearbeiten",
