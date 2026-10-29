@@ -355,6 +355,11 @@ export const admin = {
     },
   },
   shop: {
+    jobState: "Job",
+    notReported: "Not reported yet",
+    fakeReport: "Fake-offer report",
+    evOutcome: "Company reported: {outcome}",
+    evFake: "Reported as a fake offer",
     title: "Orders",
     searchPh: "Search order, offer, company or customer…",
     ordersCount: "{count, plural, one {# order} other {# orders}}",
@@ -934,6 +939,7 @@ export const admin = {
   rows: {
     openLead: "Open offer",
     openCompany: "Open company",
+    openOrder: "Open order",
     confirmFake: "Confirm as fake",
     rejectReport: "Reject report",
     theOffer: "The offer",

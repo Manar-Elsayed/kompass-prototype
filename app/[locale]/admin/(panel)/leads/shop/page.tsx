@@ -1,21 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Banknote, Building2, ClipboardList, Headset, ShoppingCart, Store as StoreIcon, Zap } from "lucide-react";
-import { Link } from "@/i18n/navigation";
+import { Banknote, Building2, ClipboardList, Headset, Store as StoreIcon, Zap } from "lucide-react";
+import { Link, useRouter } from "@/i18n/navigation";
 import type { Order } from "@/lib/types";
 import { formatCHF, formatDateTime } from "@/lib/utils";
-import { jobKind } from "@/lib/jobs";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, usePartnerMap, useServiceMap } from "@/lib/mock/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/controls";
-import { StatusBadge } from "@/components/shared/bits";
-import { Button } from "@/components/ui/button";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
-import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
-import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { RowActions, actionsColumn } from "@/components/admin/row-actions";
+import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 
 export default function ShopPage() {
   const t = useTranslations();
@@ -27,8 +23,9 @@ export default function ShopPage() {
   const serviceMap = useServiceMap();
   const offerMap = Object.fromEntries(offers.map((o) => [o.id, o]));
   const services = useStore((s) => s.services);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const open = orders.find((x) => x.id === openId);
+  const router = useRouter();
+  // an order has its own page, like an offer
+  const orderHref = (x: Order) => `/admin/leads/shop/${x.id}`;
   // filter choices: only services and companies that have orders
   const serviceOf = (x: Order) => offerMap[x.offerId]?.serviceId ?? "";
   const serviceOptions = [...services]
@@ -49,7 +46,7 @@ export default function ShopPage() {
       accessorFn: (o) => o.createdAt,
       cell: ({ row: { original: o } }) => (
         <div className="whitespace-nowrap">
-          <Mono>{o.id}</Mono>
+          <Link href={orderHref(o)} className="font-mono text-[13px] font-semibold text-primary hover:underline" dir="ltr">{o.id}</Link>
           <p className="text-xs text-muted-foreground">{formatDateTime(o.createdAt, lang)}</p>
         </div>
       ),
@@ -106,7 +103,7 @@ export default function ShopPage() {
     },
     actionsColumn<Order>((x) => (
       <RowActions
-        onView={() => setOpenId(x.id)}
+        viewHref={orderHref(x)}
         actions={[
           { label: t("admin.rows.openLead"), icon: <ClipboardList />, href: `/admin/leads/${x.offerId}`, separated: true },
           { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${x.partnerId}` },
@@ -114,9 +111,6 @@ export default function ShopPage() {
       />
     )),
   ];
-
-  const o = open ? offerMap[open.offerId] : undefined;
-  const p = open ? partnerMap[open.partnerId] : undefined;
 
   return (
     <>
@@ -134,7 +128,7 @@ export default function ShopPage() {
           return `${x.id} ${x.offerId} ${partnerMap[x.partnerId]?.name} ${c ? `${c.firstName} ${c.lastName}` : ""}`;
         }}
         searchPlaceholder={t("admin.shop.searchPh")}
-        onRowClick={(x) => setOpenId(x.id)}
+        onRowClick={(x) => router.push(orderHref(x))}
         initialSort={[{ id: "order", desc: true }]}
         filters={[
           { id: "channel", label: t("admin.shop.channel"), options: (["shop", "dynamic", "manual"] as const).map((c) => ({ value: c, label: t(`admin.shop.${c}`) })), get: (x) => x.channel },
@@ -142,70 +136,6 @@ export default function ShopPage() {
           { id: "company", label: t("admin.shop.company"), options: companyOptions, get: (x) => x.partnerId },
         ]}
       />
-
-      <DetailSheet
-        wide
-        open={!!open}
-        onOpenChange={(v) => !v && setOpenId(null)}
-        title={<><ShoppingCart className="size-5 text-primary" /> {t("admin.shop.details")}</>}
-        subtitle={open && <Mono>{open.id}</Mono>}
-        footer={
-          open ? (
-            <>
-              <Button asChild variant="outline" className="flex-1"><Link href={`/admin/partners/${open.partnerId}`}><Building2 /> {t("admin.rows.openCompany")}</Link></Button>
-              <Button asChild className="flex-1"><Link href={`/admin/leads/${open.offerId}`}><ClipboardList /> {t("admin.rows.openLead")}</Link></Button>
-            </>
-          ) : undefined
-        }
-      >
-          {open && (
-            <>
-              <SheetSection title={t("admin.shop.order")}>
-                <DL
-                  items={[
-                    { label: t("common.fields.price"), value: formatCHF(open.price, lang) },
-                    { label: t("admin.shop.channel"), value: t(`admin.shop.${open.channel}`) },
-                    { label: t("common.fields.date"), value: formatDateTime(open.createdAt, lang) },
-                    { label: t("admin.shop.coupon"), value: open.couponCode ?? "–" },
-                  ]}
-                />
-              </SheetSection>
-              {o && (
-                <section className="rounded-xl border p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="text-sm font-bold text-ink">{t("admin.shop.customer")}</p>
-                    <StatusBadge status={o.status} />
-                  </div>
-                  <DL
-                    items={[
-                      { label: t("common.fields.name"), value: `${o.firstName} ${o.lastName}` },
-                      { label: t("common.fields.phone"), value: o.phone, ltr: true },
-                      { label: t("common.fields.email"), value: o.email, ltr: true },
-                      { label: t("common.fields.service"), value: L(serviceMap[o.serviceId]?.name) },
-                      { label: t(`site.job.from.${jobKind(serviceMap[o.serviceId])}`), value: `${o.from.zip} ${o.from.city}` },
-                      ...(o.to ? [{ label: t(`site.job.to.${jobKind(serviceMap[o.serviceId])}`), value: `${o.to.zip} ${o.to.city}` }] : []),
-                    ]}
-                  />
-                  <Link href={`/admin/leads/${o.id}`} className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">
-                    {t("common.actions.view")} {o.id} →
-                  </Link>
-                </section>
-              )}
-              {p && (
-                <section className="rounded-xl border p-4">
-                  <p className="mb-3 text-sm font-bold text-ink">{t("admin.shop.company")}</p>
-                  <div className="flex items-center gap-3">
-                    <Avatar name={p.name} square className="size-10" />
-                    <div>
-                      <Link href={`/admin/partners/${p.id}`} className="font-semibold text-ink hover:text-primary">{p.name}</Link>
-                      <p className="text-xs text-muted-foreground">{p.email} · {p.phone}</p>
-                    </div>
-                  </div>
-                </section>
-              )}
-            </>
-          )}
-      </DetailSheet>
     </>
   );
 }

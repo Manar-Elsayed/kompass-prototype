@@ -358,6 +358,11 @@ export const admin: Built<typeof Def> = {
     },
   },
   shop: {
+    jobState: "Mission",
+    notReported: "Pas encore indiqué",
+    fakeReport: "Signalement de fausse demande",
+    evOutcome: "L’entreprise indique : {outcome}",
+    evFake: "Signalée comme fausse demande",
     title: "Commandes",
     searchPh: "Rechercher une commande, demande, entreprise ou client…",
     ordersCount: "{count, plural, one {# commande} other {# commandes}}",
@@ -937,6 +942,7 @@ export const admin: Built<typeof Def> = {
   rows: {
     openLead: "Ouvrir la demande",
     openCompany: "Ouvrir l’entreprise",
+    openOrder: "Ouvrir la commande",
     confirmFake: "Confirmer comme faux",
     rejectReport: "Rejeter le signalement",
     theOffer: "La demande",

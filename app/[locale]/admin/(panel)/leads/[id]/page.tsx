@@ -302,7 +302,7 @@ export default function LeadDetail() {
                         <div className="min-w-0 flex-1">
                           <Link href={`/admin/partners/${o.partnerId}`} className="font-semibold text-ink hover:text-primary">{p?.name}</Link>
                           <p className="text-xs text-muted-foreground">
-                            <Mono className="text-xs font-medium text-muted-foreground">{o.id}</Mono> · {t(`admin.shop.${o.channel}`)} · {formatDateTime(o.createdAt, lang)}
+                            <Link href={`/admin/leads/shop/${o.id}`} className="font-mono text-xs font-medium text-primary hover:underline" dir="ltr">{o.id}</Link> · {t(`admin.shop.${o.channel}`)} · {formatDateTime(o.createdAt, lang)}
                           </p>
                           {o.note && <p className="mt-0.5 text-xs text-ink">{o.note}</p>}
                         </div>
