@@ -1109,6 +1109,9 @@ export const admin: Built<typeof Def> = {
       popupDesc: "Pop-up promotionnel sur le site web",
     },
     collections: "Collections",
+    pagesGroup: "Pages",
+    searchPh: "Rechercher une page, une collection ou un service…",
+    noMatch: "Aucune page ne correspond à « {q} ».",
     blog: {
       title: "Articles de blog",
       searchPh: "Rechercher un titre ou un lien…",

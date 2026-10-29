@@ -1106,6 +1106,9 @@ export const admin = {
       popupDesc: "Promotional popup on the website",
     },
     collections: "Collections",
+    pagesGroup: "Pages",
+    searchPh: "Search pages, collections or services…",
+    noMatch: "No page matches “{q}”.",
     blog: {
       title: "Blog articles",
       searchPh: "Search title or link…",
