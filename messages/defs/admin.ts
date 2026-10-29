@@ -415,6 +415,7 @@ export const admin = {
     documents: "Documents & contract",
     contract: "Signed contract",
     insurance: "Liability insurance",
+    extraInsurance: "Insurance",
     register: "Commercial register extract",
     notUploaded: "Not uploaded",
     servicesOffered: "Services offered",
@@ -452,7 +453,7 @@ export const admin = {
     noReviews: "No reviews yet",
     docs: {
       title: "Documents",
-      hint: "A company can buy offers only while all three documents are checked and not expired.",
+      hint: "A company can buy offers once its signed contract is checked and valid. The other documents are required too, but can be uploaded after approval.",
       state: {
         ok: "Approved",
         expiring: "Expires soon",
@@ -473,7 +474,9 @@ export const admin = {
         pending_review: "Needs review",
         rejected: "Rejected",
       },
-      blocked: "Offer purchases are blocked until the documents are in order.",
+      blocked: "Offer purchases are blocked until the signed contract is checked and valid.",
+      stillNeeded: "{count, plural, one {# document is still missing or expired.} other {# documents are still missing or expired.}} The company can buy offers meanwhile.",
+      contractOnFile: "The signed contract is already on file.",
       uploaded: "uploaded {date}",
       expires: "Valid until {date}",
       expiredOn: "Expired on {date}",
@@ -531,6 +534,7 @@ export const admin = {
   applications: {
     aboutTitle: "About the company",
     title: "Partner applications",
+    canFollow: "Not uploaded yet · can follow after approval",
     subtitle: "Review documents, send the contract and approve new partners.",
     received: "Received",
     sendContract: "Send contract",

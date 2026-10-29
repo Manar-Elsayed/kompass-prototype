@@ -418,6 +418,7 @@ export const admin: Built<typeof Def> = {
     documents: "Documenti e contratto",
     contract: "Contratto firmato",
     insurance: "Assicurazione RC",
+    extraInsurance: "Assicurazione",
     register: "Estratto del registro di commercio",
     notUploaded: "Non caricato",
     servicesOffered: "Servizi offerti",
@@ -455,7 +456,7 @@ export const admin: Built<typeof Def> = {
     noReviews: "Ancora nessuna recensione",
     docs: {
       title: "Documenti",
-      hint: "Una ditta può acquistare richieste solo finché tutti e tre i documenti sono verificati e non scaduti.",
+      hint: "Una ditta può acquistare richieste appena il contratto firmato è verificato e valido. Anche gli altri documenti sono richiesti, ma possono essere caricati dopo l’approvazione.",
       state: {
         ok: "Approvati",
         expiring: "In scadenza",
@@ -476,7 +477,9 @@ export const admin: Built<typeof Def> = {
         pending_review: "Da verificare",
         rejected: "Rifiutato",
       },
-      blocked: "Gli acquisti di richieste sono bloccati finché i documenti non sono in regola.",
+      blocked: "Gli acquisti di richieste sono bloccati finché il contratto firmato non è verificato e valido.",
+      stillNeeded: "{count, plural, one {Manca ancora # documento o è scaduto.} other {Mancano ancora # documenti o sono scaduti.}} La ditta può comunque acquistare richieste.",
+      contractOnFile: "Il contratto firmato è già registrato.",
       uploaded: "caricato il {date}",
       expires: "Valido fino al {date}",
       expiredOn: "Scaduto il {date}",
@@ -534,6 +537,7 @@ export const admin: Built<typeof Def> = {
   applications: {
     aboutTitle: "Informazioni sull’azienda",
     title: "Candidature partner",
+    canFollow: "Non ancora caricato · può seguire dopo l’approvazione",
     subtitle: "Verifichi i documenti, invii il contratto e approvi i nuovi partner.",
     received: "Ricevuta",
     sendContract: "Invia contratto",

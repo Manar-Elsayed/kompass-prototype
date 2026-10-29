@@ -418,6 +418,7 @@ export const admin: Built<typeof Def> = {
     documents: "Documents et contrat",
     contract: "Contrat signé",
     insurance: "Assurance responsabilité civile",
+    extraInsurance: "Assurance",
     register: "Extrait du registre du commerce",
     notUploaded: "Non téléversé",
     servicesOffered: "Prestations proposées",
@@ -455,7 +456,7 @@ export const admin: Built<typeof Def> = {
     noReviews: "Pas encore d’avis",
     docs: {
       title: "Documents",
-      hint: "Une entreprise ne peut acheter des demandes que si les trois documents sont vérifiés et non expirés.",
+      hint: "Une entreprise peut acheter des demandes dès que son contrat signé est vérifié et valable. Les autres documents sont aussi requis, mais peuvent être téléversés après l’approbation.",
       state: {
         ok: "Approuvés",
         expiring: "Expirent bientôt",
@@ -476,7 +477,9 @@ export const admin: Built<typeof Def> = {
         pending_review: "À vérifier",
         rejected: "Refusé",
       },
-      blocked: "Les achats de demandes sont bloqués tant que les documents ne sont pas en règle.",
+      blocked: "Les achats de demandes sont bloqués tant que le contrat signé n’est pas vérifié et valable.",
+      stillNeeded: "{count, plural, one {# document manque encore ou a expiré.} other {# documents manquent encore ou ont expiré.}} L’entreprise peut acheter des demandes en attendant.",
+      contractOnFile: "Le contrat signé est déjà enregistré.",
       uploaded: "téléversé le {date}",
       expires: "Valable jusqu’au {date}",
       expiredOn: "Expiré le {date}",
@@ -534,6 +537,7 @@ export const admin: Built<typeof Def> = {
   applications: {
     aboutTitle: "À propos de l’entreprise",
     title: "Candidatures partenaires",
+    canFollow: "Pas encore téléversé · peut suivre après l’approbation",
     subtitle: "Vérifiez les documents, envoyez le contrat et approuvez les nouveaux partenaires.",
     received: "Reçue le",
     sendContract: "Envoyer le contrat",
