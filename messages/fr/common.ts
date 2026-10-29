@@ -198,7 +198,7 @@ export const common: Built<typeof Def> = {
   fakeStatus: {
     new: "Nouveau",
     testing: "En test",
-    canceled: "Fausse confirmée",
+    canceled: "Annulé",
     rejected: "Pas fausse",
   },
   dueStatus: {

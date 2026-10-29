@@ -195,7 +195,7 @@ export const common = {
   fakeStatus: {
     new: "New",
     testing: "Testing",
-    canceled: "Confirmed fake",
+    canceled: "Cancelled",
     rejected: "Not fake",
   },
   dueStatus: {
