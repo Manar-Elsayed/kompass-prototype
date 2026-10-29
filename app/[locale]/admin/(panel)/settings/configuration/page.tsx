@@ -40,7 +40,7 @@ export default function ConfigurationPage() {
     toast.success(t("common.toast.saved"));
   };
 
-  const toggleRow = (k: "autoDistribute" | "comingSoonMode", label: string, hint: string) => (
+  const toggleRow = (k: "autoDistribute", label: string, hint: string) => (
     <label className="flex items-start justify-between gap-6 rounded-xl border p-4">
       <span>
         <span className="block text-sm font-semibold text-ink">{label}</span>
@@ -64,7 +64,7 @@ export default function ConfigurationPage() {
           )
         }
       />
-      <div className="grid max-w-4xl gap-4">
+      <div className="grid gap-4">
         <Card>
           <CardHeader title={tc("leads")} />
           <CardBody className="grid gap-4 sm:grid-cols-3">
@@ -118,10 +118,6 @@ export default function ConfigurationPage() {
               )}
             </div>
           </CardBody>
-        </Card>
-        <Card>
-          <CardHeader title={tc("websiteSection")} />
-          <CardBody>{toggleRow("comingSoonMode", tc("comingSoon"), tc("comingSoonHint"))}</CardBody>
         </Card>
       </div>
       {files.dialog}
