@@ -1273,7 +1273,7 @@ export const admin: Built<typeof Def> = {
     invoicePrefix: "Prefisso fattura",
     supportEmail: "E-mail supporto partner",
     contract: "Modello di contratto partner",
-    vatHint: "Compare su ogni fattura e ricevuta e nel contratto partner.",
+    vatHint: "Compare su ogni fattura e ricevuta.",
     invoicePrefixHint: "Inizio di ogni numero di fattura e ricevuta, ad es. {invoice} e {receipt}. Solo lettere e cifre.",
     supportEmailHint: "Stampata su fatture e ricevute per domande al riguardo.",
     contractSection: "Contratto partner",

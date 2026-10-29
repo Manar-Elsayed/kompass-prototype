@@ -1273,7 +1273,7 @@ export const admin: Built<typeof Def> = {
     invoicePrefix: "Préfixe des factures",
     supportEmail: "E-mail du support partenaires",
     contract: "Modèle de contrat partenaire",
-    vatHint: "Figure sur chaque facture et chaque reçu, et dans le contrat partenaire.",
+    vatHint: "Figure sur chaque facture et chaque reçu.",
     invoicePrefixHint: "Début de chaque numéro de facture et de reçu, p. ex. {invoice} et {receipt}. Lettres et chiffres uniquement.",
     supportEmailHint: "Imprimé sur les factures et les reçus pour les questions à leur sujet.",
     contractSection: "Contrat partenaire",

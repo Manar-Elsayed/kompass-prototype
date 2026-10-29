@@ -1270,7 +1270,7 @@ export const admin = {
     invoicePrefix: "Invoice prefix",
     supportEmail: "Partner support email",
     contract: "Partner contract template",
-    vatHint: "Used on every invoice and receipt, and quoted in the partner contract.",
+    vatHint: "Used on every invoice and receipt.",
     invoicePrefixHint: "Starts every invoice and receipt number, e.g. {invoice} and {receipt}. Letters and digits only.",
     supportEmailHint: "Printed on invoices and receipts for questions about them.",
     contractSection: "Partner contract",

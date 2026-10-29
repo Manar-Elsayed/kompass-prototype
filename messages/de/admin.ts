@@ -1273,7 +1273,7 @@ export const admin: Built<typeof Def> = {
     invoicePrefix: "Rechnungspräfix",
     supportEmail: "Support-E-Mail für Partner",
     contract: "Vorlage Partnervertrag",
-    vatHint: "Steht auf jeder Rechnung und jedem Beleg und im Partnervertrag.",
+    vatHint: "Steht auf jeder Rechnung und jedem Beleg.",
     invoicePrefixHint: "Beginn jeder Rechnungs- und Belegnummer, z. B. {invoice} und {receipt}. Nur Buchstaben und Ziffern.",
     supportEmailHint: "Steht auf Rechnungen und Belegen für Fragen dazu.",
     contractSection: "Partnervertrag",
