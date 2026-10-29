@@ -141,7 +141,17 @@ export default function CouponsPage() {
         search={(c) => `${c.code} ${c.serviceId === "all" ? tc("allServices") : L(serviceMap[c.serviceId]?.name)}`}
         searchPlaceholder={tc("searchPh")}
         onRowClick={(c) => { setErr(""); setDraft(c); }}
-        filters={[{ id: "st", label: t("common.fields.status"), options: (["active", "inactive", "expired"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: status }]}
+        filters={[
+          { id: "st", label: t("common.fields.status"), options: (["active", "inactive", "expired"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: status },
+          {
+            id: "service",
+            label: t("common.fields.service"),
+            options: [{ value: "all", label: tc("allServices") }, ...[...services].sort((a, b) => a.order - b.order).map((s) => ({ value: s.id, label: L(s.name) }))],
+            // a coupon for all services also works for each single service
+            get: (c) => (c.serviceId === "all" ? ["all", ...services.map((s) => s.id)] : [c.serviceId]),
+          },
+          { id: "multi", label: tc("multiUse"), options: [{ value: "yes", label: t("common.form.yes") }, { value: "no", label: t("common.form.no") }], get: (c) => (c.multiUse ? "yes" : "no") },
+        ]}
       />
 
       <Dialog open={!!draft} onOpenChange={(v) => !v && setDraft(null)}>
