@@ -68,7 +68,7 @@ export const NAV: NavGroup[] = [
     icon: Wallet,
     perm: "finance",
     items: [
-      { key: "partnerDues", href: "/admin/finance/partner-dues", perm: "finance", badge: (s) => s.dues.filter((d) => d.status === "pending").length },
+      { key: "partnerDues", href: "/admin/finance/partner-dues", perm: "finance" },
       { key: "wallets", href: "/admin/finance/wallets", perm: "finance" },
       { key: "payouts", href: "/admin/finance/payouts", perm: "finance", badge: (s) => s.payouts.filter((p) => p.status === "requested").length },
       { key: "invoices", href: "/admin/finance/invoices", perm: "finance", badge: (s) => s.invoices.filter((i) => i.status === "due" && Date.parse(i.dueAt) < Date.now()).length },

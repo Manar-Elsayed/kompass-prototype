@@ -64,7 +64,6 @@ export default function Dashboard() {
     { icon: Clock, n: db.offers.filter(isExpiringSoon).length, label: "todoExpiring", href: "/admin/leads?attention=expiring" },
     { icon: FileX2, n: db.partners.filter((p) => p.status === "approved" && !p.banned && !canBuyLeads(p)).length, label: "todoDocs", href: "/admin/partners" },
     { icon: FileWarning, n: db.fakeReports.filter((r) => r.status === "new").length, label: "todoReports", href: "/admin/leads/fake-reports" },
-    { icon: Banknote, n: db.dues.filter((d) => d.status === "pending").length, label: "todoDues", href: "/admin/finance/partner-dues" },
     { icon: AlertTriangle, n: db.invoices.filter(isOverdue).length, label: "todoInvoices", href: "/admin/finance/invoices" },
     { icon: UserPlus, n: db.partners.filter((p) => p.status === "pending" || p.status === "contract_sent").length, label: "todoApplications", href: "/admin/partners/applications" },
     { icon: Star, n: db.reviews.filter((r) => r.status === "pending").length, label: "todoReviews", href: "/admin/moderation/partner-reviews" },

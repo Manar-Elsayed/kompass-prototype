@@ -54,7 +54,6 @@ interface Actions {
   decideApplication: (id: string, decision: "contract_sent" | "approved" | "rejected", reason?: string) => void;
   /** Applicant signs the partnership contract in the portal; Kompass then checks it with the other documents. */
   signContract: (partnerId: string, name: string) => void;
-  decideDue: (id: string, status: "confirmed" | "canceled") => void;
   /** Admin-issued refund: recorded as refunded straight away and applied to the wallet. */
   issueRefund: (input: Pick<Refund, "partnerId" | "amount" | "reason" | "orderId" | "note">) => Refund;
   decideRefund: (id: string, status: "refunded" | "rejected") => void;
@@ -486,29 +485,6 @@ export const useStore = create<Store>()(
           nominations: [...s.nominations.filter((n) => n.canton !== canton), ...(partnerIds.length ? [{ canton, partnerIds }] : [])],
         })),
 
-      decideDue: (id, status) =>
-        set((s) => {
-          const due = s.dues.find((d) => d.id === id);
-          if (!due || due.status !== "pending") return {};
-          const at = nowIso();
-          // paying a credit invoice: the money was already in the wallet, so only the invoice changes
-          if (due.invoiceId)
-            return {
-              dues: s.dues.map((d) => (d.id === id ? { ...d, status, decidedAt: at } : d)),
-              invoices:
-                status === "confirmed"
-                  ? s.invoices.map((i) => (i.id === due.invoiceId && i.status === "due" ? { ...i, status: "paid", paidAt: at, paidMethod: due.method, paidReference: due.reference } : i))
-                  : s.invoices,
-            };
-          return {
-            dues: s.dues.map((d) => (d.id === id ? { ...d, status, decidedAt: at } : d)),
-            partners:
-              status === "confirmed"
-                ? s.partners.map((p) => (p.id === due.partnerId ? { ...p, wallet: p.wallet + due.amount } : p))
-                : s.partners,
-          };
-        }),
-
       submitReview: (input) =>
         set((s) => ({
           reviews: [{ ...input, id: uid("RV"), status: "pending", createdAt: nowIso() }, ...s.reviews],
@@ -733,10 +709,16 @@ export const useStore = create<Store>()(
 
       uploadPayment: (input) => {
         const s = get();
-        const due: PartnerDue = { ...input, id: `DUE-${String(301 + s.dues.length).padStart(4, "0")}`, status: "pending", createdAt: nowIso() };
+        // no approval step: the payment counts the moment the company sends it
+        const at = nowIso();
+        const due: PartnerDue = { ...input, id: `DUE-${String(301 + s.dues.length).padStart(4, "0")}`, status: "confirmed", createdAt: at, decidedAt: at };
         const partner = s.partners.find((p) => p.id === input.partnerId);
         set({
           dues: [due, ...s.dues],
+          // paying a credit invoice: the money was already in the wallet, so only the invoice changes
+          ...(input.invoiceId
+            ? { invoices: s.invoices.map((i) => (i.id === input.invoiceId && i.status === "due" ? { ...i, status: "paid" as const, paidAt: at, paidMethod: input.method, paidReference: input.reference } : i)) }
+            : { partners: credit(s.partners, input.partnerId, input.amount) }),
           notifications: notify(s, {
             kind: "due",
             title: input.invoiceId
@@ -772,11 +754,11 @@ export const useStore = create<Store>()(
       // companies and no-shows; v9 the partner portal flows (onboarding contract, message threads,
       // payouts, service areas); v10 two booking types (same / other person); v11 no-shows removed
       // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address; v14 fake-offer reports whose
-      // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout; v17 team invitations (an invited member who hasn't signed in yet); v18 invoice numbers from the prefix and the contract version each company signed; v19 what companies report about their offers (won / lost / couldn't reach); v22 every company review linked to its offer; v23 partners' last seen relative to when the demo loads; v24 a fourth document (insurance), only the contract blocks buying; v25 the contract is a policies agreement with no end date; v26 recent top-ups for the activity statuses. Older saves start again from the current seed,
+      // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout; v17 team invitations (an invited member who hasn't signed in yet); v18 invoice numbers from the prefix and the contract version each company signed; v19 what companies report about their offers (won / lost / couldn't reach); v22 every company review linked to its offer; v23 partners' last seen relative to when the demo loads; v24 a fourth document (insurance), only the contract blocks buying; v25 the contract is a policies agreement with no end date; v26 recent top-ups for the activity statuses; v27 payments count at once (no approval). Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 26,
+      version: 27,
       migrate: (persisted, version) => {
-        if (version >= 26) return persisted as Store;
+        if (version >= 27) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

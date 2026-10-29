@@ -1,19 +1,17 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Building2, CheckCircle2, Clock, Receipt } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import type { PartnerDue } from "@/lib/types";
 import { formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang, usePartnerMap } from "@/lib/mock/hooks";
-import { inLastDays } from "@/lib/mock/selectors";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/controls";
-import { DueStatusBadge } from "@/components/shared/due-status";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { RowActions, actionsColumn } from "@/components/admin/row-actions";
-import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { Mono, PageHeader } from "@/components/admin/ui";
 
 export default function PartnerDuesPage() {
   const t = useTranslations();
@@ -24,9 +22,6 @@ export default function PartnerDuesPage() {
   const router = useRouter();
   const href = (d: PartnerDue) => `/admin/finance/partner-dues/${d.id}`;
 
-  const pending = dues.filter((d) => d.status === "pending");
-  // approved in the last 30 days (by the decision date, not the upload date)
-  const confirmed30 = dues.filter((d) => d.status === "confirmed" && inLastDays(d.decidedAt ?? d.createdAt, 30));
 
   const columns: ColumnDef<PartnerDue, unknown>[] = [
     { id: "id", header: td("payment"), accessorFn: (d) => d.id, cell: (c) => <Mono>{c.getValue() as string}</Mono> },
@@ -55,16 +50,9 @@ export default function PartnerDuesPage() {
       ),
     },
     { id: "date", header: t("common.fields.date"), accessorFn: (d) => d.createdAt, cell: (c) => <span className="text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
-    {
-      id: "status",
-      header: t("common.fields.status"),
-      accessorFn: (d) => d.status,
-      cell: ({ row: { original: d } }) => <DueStatusBadge status={d.status} />,
-    },
     actionsColumn<PartnerDue>((d) => (
       <RowActions
         viewHref={href(d)}
-        // approve / reject only on the payment page, next to the proof the decision depends on
         actions={[{ label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${d.partnerId}`, separated: true }]}
       />
     )),
@@ -73,19 +61,16 @@ export default function PartnerDuesPage() {
   return (
     <>
       <PageHeader title={td("title")} subtitle={td("subtitle")} />
-      <div className="mb-4 grid gap-4 sm:grid-cols-3">
-        <KpiCard label={td("pendingTotal")} value={formatCHF(pending.reduce((a, d) => a + d.amount, 0), lang)} icon={<Clock />} tone="warning" footer={td("receiptsCount", { count: pending.length })} />
-        <KpiCard label={td("confirmedTotal")} value={formatCHF(confirmed30.reduce((a, d) => a + d.amount, 0), lang)} icon={<CheckCircle2 />} tone="success" footer={td("receiptsCount", { count: confirmed30.length })} />
-        <KpiCard label={t("common.table.all")} value={dues.length} icon={<Receipt />} />
-      </div>
       <DataTable
         data={dues}
         columns={columns}
         search={(d) => `${d.id} ${d.reference} ${d.invoiceId ?? ""} ${partnerMap[d.partnerId]?.name}`}
         searchPlaceholder={td("searchPh")}
-        filters={[{ id: "status", label: t("common.fields.status"), options: (["pending", "confirmed", "canceled"] as const).map((s) => ({ value: s, label: t(`common.dueStatus.${s}`) })), get: (d) => d.status }]}
+        filters={[
+          { id: "method", label: td("method"), options: (["bank_transfer", "twint", "card"] as const).map((m) => ({ value: m, label: td(m) })), get: (d) => d.method },
+          { id: "for", label: td("forLabel"), options: [{ value: "wallet", label: td("forWallet") }, { value: "invoice", label: td("forInvoiceShort") }], get: (d) => (d.invoiceId ? "invoice" : "wallet") },
+        ]}
         onRowClick={(d) => router.push(href(d))}
-        rowClassName={(d) => (d.status === "pending" ? "bg-warning-soft/25" : undefined)}
       />
 
     </>

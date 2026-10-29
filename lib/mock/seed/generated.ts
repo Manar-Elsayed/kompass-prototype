@@ -494,10 +494,11 @@ export const dues: PartnerDue[] = Array.from({ length: 22 }, (_, i) => {
     method: rng.pick(["bank_transfer", "bank_transfer", "twint", "card"] as const),
     reference: `KMP-${2026}-${pad(rng.int(1, 999), 4)}`,
     receipt: "/images/complaint.png",
-    status: i < 6 ? "pending" : rng.chance(0.85) ? "confirmed" : "canceled",
+    // payments count the moment they're sent (the draw stays so the data after it doesn't shift)
+    status: i < 6 ? ("confirmed" as const) : (rng.chance(0.85), "confirmed" as const),
     createdAt: daysAgo(i * 6 + rng.int(0, 4)),
   };
-});
+}).map((d) => ({ ...d, decidedAt: d.createdAt }));
 
 /* ---------- reviews ---------- */
 const KOMPASS_COMMENTS = [
