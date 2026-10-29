@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Ban, Building2, ClipboardList, Flag, Headset, Receipt, ShieldAlert, ShoppingCart, Store as StoreIcon, Undo2, Wallet, Zap } from "lucide-react";
+import { Ban, Building2, ClipboardList, Flag, Receipt, ShieldAlert, ShoppingCart, Undo2, Wallet } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import type { RefundStatus } from "@/lib/types";
 import { formatCHF, formatDate, formatDateTime } from "@/lib/utils";
@@ -81,15 +81,6 @@ export default function OrderDetail() {
     .filter((e): e is { at: string; text: string; icon: React.ReactElement } => !!e)
     .sort((a, b) => a.at.localeCompare(b.at));
 
-  const channelBadge =
-    order.channel === "shop" ? (
-      <Badge tone="primary"><StoreIcon /> {ts("shop")}</Badge>
-    ) : order.channel === "manual" ? (
-      <Badge tone="warning"><Headset /> {ts("manual")}</Badge>
-    ) : (
-      <Badge tone="accent"><Zap /> {ts("dynamic")}</Badge>
-    );
-
   return (
     <>
       <PageHeader
@@ -125,7 +116,7 @@ export default function OrderDetail() {
               <DL
                 items={[
                   { label: t("common.fields.price"), value: formatCHF(order.price, lang) },
-                  { label: ts("channel"), value: channelBadge },
+                  { label: ts("channel"), value: ts(order.channel) },
                   { label: t("common.fields.date"), value: formatDateTime(order.createdAt, lang) },
                   { label: ts("coupon"), value: order.couponCode ? <Mono className="text-success">{order.couponCode}</Mono> : "–" },
                   {
