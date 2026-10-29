@@ -83,7 +83,8 @@ export default function RemovalsPage() {
     },
     { id: "reason", header: tr("reason"), enableSorting: false, accessorFn: (rr) => rr.reason, cell: (c) => <p className="line-clamp-2 min-w-40 max-w-64 text-sm text-muted-foreground">{c.getValue() as string}</p> },
     { id: "date", header: tr("requested"), accessorFn: (rr) => rr.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
-    { id: "status", header: t("common.fields.status"), accessorFn: (rr) => rr.status, cell: (c) => <StatusBadge status={c.getValue() as string} /> },
+    // the decision is about the review: Removed or Not removed
+    { id: "status", header: t("common.fields.status"), accessorFn: (rr) => rr.status, cell: (c) => <StatusBadge status={c.getValue() as string} label={tr(`removalState.${c.getValue() as RemovalRequest["status"]}`)} /> },
     actionsColumn<RemovalRequest>((rr) => (
       <RowActions
         onView={() => setOpenId(rr.id)}
@@ -91,6 +92,7 @@ export default function RemovalsPage() {
           { label: t("admin.del.removal.button"), icon: <Trash2 />, tone: "danger", onSelect: () => removeReview(rr), hidden: rr.status !== "pending" },
           { label: tr("keepReview"), icon: <ShieldCheck />, onSelect: () => keepReview(rr), hidden: rr.status !== "pending" },
           { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${rr.partnerId}?tab=reviews`, separated: rr.status === "pending" },
+          { label: t("admin.rows.openLead"), icon: <ClipboardList />, href: reviewMap[rr.reviewId]?.offerId ? `/admin/leads/${reviewMap[rr.reviewId]!.offerId}` : undefined, hidden: !reviewMap[rr.reviewId]?.offerId },
         ]}
       />
     )),
@@ -111,7 +113,7 @@ export default function RemovalsPage() {
         onRowClick={(rr) => setOpenId(rr.id)}
         rowClassName={(rr) => (rr.status === "pending" ? "bg-warning-soft/25" : undefined)}
         filters={[
-          { id: "status", label: t("common.fields.status"), options: (["pending", "approved", "rejected"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (rr) => rr.status },
+          { id: "status", label: t("common.fields.status"), options: (["pending", "approved", "rejected"] as const).map((s) => ({ value: s, label: tr(`removalState.${s}`) })), get: (rr) => rr.status },
           { id: "stars", label: t("common.fields.rating"), options: [5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: "★".repeat(n) })), get: (rr) => String(reviewMap[rr.reviewId]?.stars ?? "") },
         ]}
       />
@@ -120,7 +122,7 @@ export default function RemovalsPage() {
         open={!!open}
         onOpenChange={(v) => !v && setOpenId(null)}
         title={open && (partnerMap[open.partnerId]?.name ?? "–")}
-        badge={open && <StatusBadge status={open.status} />}
+        badge={open && <StatusBadge status={open.status} label={tr(`removalState.${open.status}`)} />}
         subtitle={open && tr("requestedOn", { date: formatDate(open.createdAt, lang) })}
         footer={
           open?.status === "pending" ? (

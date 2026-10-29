@@ -1017,6 +1017,7 @@ export const admin: Built<typeof Def> = {
     requested: "Demandé",
     requestedOn: "Demandé le {date}",
     keepReview: "Garder l’avis",
+    removalState: { pending: "En attente", approved: "Supprimé", rejected: "Non supprimé" },
     keptToast: "L’avis reste sur la page de {company}",
     decideHint: "Vérifiez l’avis par rapport à la réservation avant de décider. L’entreprise voit votre décision dans son portail.",
   },
