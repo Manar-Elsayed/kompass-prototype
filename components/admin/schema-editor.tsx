@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/controls";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/controls";
 import { Icon, ICON_NAMES } from "@/components/shared/icon";
 import { RichText } from "./rich-text";
+import { FileButtons, useFileActions } from "@/components/shared/file-card";
 
 /* ------------------------------------------------------------------
    Schema-driven bilingual editor.
@@ -195,6 +196,7 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
   const t = useTranslations("common.actions");
   const ref = React.useRef<HTMLInputElement>(null);
   const [open, setOpen] = React.useState(false);
+  const files = useFileActions();
   const onFile = (f: File) => {
     if (f.size > 1_500_000) {
       toast.error("Max 1.5 MB (stored in your browser for the prototype)");
@@ -233,7 +235,9 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
               </div>
             </PopoverContent>
           </Popover>
+          {value && <FileButtons file={{ name: value.startsWith("data:") ? "image.png" : value.split("/").pop() || "image", url: value }} actions={files} />}
         </div>
+        {files.dialog}
         <input ref={ref} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
       </div>
     </Field>

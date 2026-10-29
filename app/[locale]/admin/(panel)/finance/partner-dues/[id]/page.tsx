@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Building2, Check, CheckCircle2, Clock, X } from "lucide-react";
+import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
@@ -12,7 +13,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/bits";
 import { DueStatusBadge } from "@/components/shared/due-status";
-import { PaymentProof } from "@/components/shared/payment-proof";
+import { ProofCard } from "@/components/shared/payment-proof";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
 import { useDueDecision } from "@/components/admin/due-actions";
 
@@ -24,6 +25,7 @@ export default function PaymentDetail() {
   const lang = useLang();
   const hydrated = useHydrated();
   const due = useStore((s) => s.dues.find((d) => d.id === id));
+  const patch = useStore((s) => s.patch);
   const partner = useStore((s) => s.partners.find((p) => p.id === due?.partnerId));
   const { approve, reject, dialog } = useDueDecision();
 
@@ -65,35 +67,25 @@ export default function PaymentDetail() {
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-        {/* what the company uploaded as proof */}
-        <Card>
-          <CardHeader title={td("proofTitle")} />
-          <CardBody>
-            <div className="mx-auto max-w-xl">
-              <PaymentProof due={due} partner={partner} />
-            </div>
-          </CardBody>
-        </Card>
+      <div className="space-y-4">
+        {/* where the check stands, across the full width so it's read first */}
+        {pending ? (
+          <p className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft/50 p-4 text-sm text-ink">
+            <Clock className="mt-0.5 size-4 shrink-0 text-warning" /> {td("noteWaiting")}
+          </p>
+        ) : (
+          <p className={due.status === "confirmed" ? "flex items-center gap-2 rounded-xl border border-success/30 bg-success-soft/40 p-4 text-sm font-semibold text-success" : "flex items-center gap-2 rounded-xl border border-danger/30 bg-danger-soft/40 p-4 text-sm font-semibold text-danger"}>
+            {due.status === "confirmed" ? <CheckCircle2 className="size-4" /> : <X className="size-4" />}
+            {td(due.status === "confirmed" ? "noteApproved" : "noteRejected", { date: formatDate(due.decidedAt ?? due.createdAt, lang) })}
+          </p>
+        )}
 
-        <div className="space-y-4">
-          {/* where the check stands */}
-          {pending ? (
-            <p className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft/50 p-4 text-sm text-ink">
-              <Clock className="mt-0.5 size-4 shrink-0 text-warning" /> {td("noteWaiting")}
-            </p>
-          ) : (
-            <p className={due.status === "confirmed" ? "flex items-center gap-2 rounded-xl border border-success/30 bg-success-soft/40 p-4 text-sm font-semibold text-success" : "flex items-center gap-2 rounded-xl border border-danger/30 bg-danger-soft/40 p-4 text-sm font-semibold text-danger"}>
-              {due.status === "confirmed" ? <CheckCircle2 className="size-4" /> : <X className="size-4" />}
-              {td(due.status === "confirmed" ? "noteApproved" : "noteRejected", { date: formatDate(due.decidedAt ?? due.createdAt, lang) })}
-            </p>
-          )}
-
+        {/* the payment and the wallet it changes, side by side */}
+        <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader title={td("summaryTitle")} />
             <CardBody>
               <DL
-                cols={1}
                 items={[
                   { label: t("common.fields.amount"), value: <span className="text-lg font-bold text-ink">{formatCHF(due.amount, lang)}</span> },
                   { label: td("forLabel"), value: due.invoiceId ? td("forInvoice", { id: due.invoiceId }) : td("forWallet") },
@@ -110,7 +102,6 @@ export default function PaymentDetail() {
               <CardHeader title={t("admin.rows.walletImpact")} />
               <CardBody>
                 <DL
-                  cols={1}
                   items={[
                     { label: t("common.fields.company"), value: <Link href={`/admin/partners/${partner.id}`} className="font-semibold text-primary hover:underline">{partner.name}</Link> },
                     { label: t("admin.rows.walletNow"), value: formatCHF(partner.wallet, lang) },
@@ -132,6 +123,22 @@ export default function PaymentDetail() {
             </Card>
           )}
         </div>
+
+        {/* what the company uploaded as proof */}
+        <Card>
+          <CardHeader title={td("proofTitle")} />
+          <CardBody>
+            <ProofCard
+              due={due}
+              partner={partner}
+              meta={`${td("uploaded")} ${formatDate(due.createdAt, lang)}`}
+              onUpload={(f) => {
+                patch("dues", due.id, { receipt: f.url && f.url !== "#" ? f.url : due.receipt });
+                toast.success(t("common.files.uploaded"));
+              }}
+            />
+          </CardBody>
+        </Card>
       </div>
       {dialog}
     </>

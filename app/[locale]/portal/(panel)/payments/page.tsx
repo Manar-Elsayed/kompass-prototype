@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge } from "@/components/shared/bits";
 import { DueStatusBadge } from "@/components/shared/due-status";
-import { PaymentProof } from "@/components/shared/payment-proof";
+import { ProofCard } from "@/components/shared/payment-proof";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 import { DetailSheet, SheetSection } from "@/components/admin/row-actions";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
@@ -256,7 +256,7 @@ function Payments() {
       >
         {due && (
           <>
-            <PaymentProof due={due} partner={partner} />
+            <ProofCard due={due} partner={partner} />
             <SheetSection>
               <DL
                 items={[
@@ -639,7 +639,7 @@ function UploadDialog({ onClose, invoiceId: forInvoice }: { onClose: () => void;
             loading={busy}
             onClick={async () => {
               setBusy(true);
-              await mock(() => uploadPayment({ partnerId: partner.id, amount: Number(amount), method, reference, receipt: receipt?.url ?? "/images/complaint.png", invoiceId: invoice?.id }));
+              await mock(() => uploadPayment({ partnerId: partner.id, amount: Number(amount), method, reference, receipt: receipt?.url ?? "", invoiceId: invoice?.id }));
               setBusy(false);
               toast.success(t("sent"));
               onClose();

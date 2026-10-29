@@ -1,16 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, Maximize2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import type { Partner, PartnerDue } from "@/lib/types";
 import { cn, formatCHF, formatDateTime } from "@/lib/utils";
 import { useLang } from "@/lib/mock/hooks";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { KOMPASS_IBAN } from "@/components/shared/money-doc";
+import { FileCard, type FileRef } from "@/components/shared/file-card";
 
-/** Stand-in used by the demo data and by uploads without a file. */
+/** Stand-in used by the demo payments: their proof is drawn from the payment itself. */
 const PLACEHOLDER = "/images/complaint.png";
 const KOMPASS_NAME = "Kompass Umzug GmbH";
 
@@ -26,39 +24,28 @@ const maskIban = (iban: string) => {
 };
 
 /**
- * The proof of payment a company attached: its own file when it uploaded one, otherwise the
- * confirmation its bank, TWINT or card would show, drawn from the payment itself. Click to enlarge.
+ * The proof of payment as a file: what the company uploaded, or for the demo payments the
+ * confirmation its bank, TWINT or card would show. `null` when the company sent no file.
  */
-export function PaymentProof({ due, partner }: { due: PartnerDue; partner?: Pick<Partner, "name" | "bank"> }) {
+export function proofFile(due: PartnerDue): FileRef | null {
+  if (!due.receipt) return null;
+  if (due.receipt === PLACEHOLDER) return { name: `${due.method === "bank_transfer" ? "ebanking" : due.method}-${due.reference}.png` };
+  const pdf = /^data:application\/pdf/.test(due.receipt) || /\.pdf$/i.test(due.receipt);
+  return { name: `proof-${due.reference}.${pdf ? "pdf" : "png"}`, url: due.receipt };
+}
+
+/** The proof card: View, Download and (for admin) Upload / Replace; an empty slot says nothing was sent. */
+export function ProofCard({ due, partner, onUpload, meta }: { due: PartnerDue; partner?: Pick<Partner, "name" | "bank">; onUpload?: (f: FileRef) => void; meta?: React.ReactNode }) {
   const t = useTranslations("common.proof");
-  const [big, setBig] = useState(false);
-  const uploaded = due.receipt && due.receipt !== PLACEHOLDER;
-
-  const view = (large: boolean) =>
-    uploaded ? (
-      <div className={cn("relative overflow-hidden rounded-xl border bg-surface-2", large ? "aspect-[3/4] w-full" : "aspect-[4/3]")}>
-        <Image src={due.receipt} alt={t("title")} fill className="object-contain" sizes={large ? "640px" : "480px"} />
-      </div>
-    ) : (
-      <Confirmation due={due} partner={partner} large={large} />
-    );
-
+  const file = proofFile(due);
   return (
-    <>
-      <button type="button" onClick={() => setBig(true)} className="group relative block w-full text-start" aria-label={t("open")} title={t("open")}>
-        {view(false)}
-        {/* icon only, in the bottom corner, so it never covers the header or the date */}
-        <span className="absolute bottom-2 end-2 flex size-8 items-center justify-center rounded-lg border bg-surface/95 text-ink shadow-sm transition group-hover:bg-surface group-hover:text-primary">
-          <Maximize2 className="size-4" />
-        </span>
-      </button>
-      <Dialog open={big} onOpenChange={setBig}>
-        <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto">
-          <DialogTitle className="sr-only">{t("title")}</DialogTitle>
-          {view(true)}
-        </DialogContent>
-      </Dialog>
-    </>
+    <FileCard
+      file={file}
+      meta={meta}
+      render={file && !file.url ? <Confirmation due={due} partner={partner} large /> : undefined}
+      onUpload={onUpload}
+      emptyText={t("none")}
+    />
   );
 }
 
@@ -104,8 +91,7 @@ function Confirmation({ due, partner, large }: { due: PartnerDue; partner?: Pick
         <span>{head.brand}</span>
         <span className="opacity-70">{when}</span>
       </div>
-      {/* the small view keeps room at the bottom for the enlarge icon */}
-      <div className={cn("px-4", large ? "py-6" : "pb-12 pt-4")}>
+      <div className={cn("px-4", large ? "py-6" : "pb-4 pt-4")}>
         <div className="flex items-center gap-2 text-success">
           <CheckCircle2 className={large ? "size-6" : "size-5"} />
           <span className="font-semibold">{head.title}</span>

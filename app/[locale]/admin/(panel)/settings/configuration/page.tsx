@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { FileText, Upload } from "lucide-react";
+import { FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import type { Config } from "@/lib/types";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { Switch } from "@/components/ui/controls";
 import { PageHeader } from "@/components/admin/ui";
+import { FileButtons, UploadButton, useFileActions } from "@/components/shared/file-card";
 
 export default function ConfigurationPage() {
   const t = useTranslations();
@@ -27,6 +28,7 @@ export default function ConfigurationPage() {
   const year = new Date().getFullYear();
   const setConfig = useStore((s) => s.setConfig);
   const [draft, setDraft] = useState<Config>(config);
+  const files = useFileActions();
   const [busy, setBusy] = useState(false);
   const dirty = JSON.stringify(draft) !== JSON.stringify(config);
   const num = (k: keyof Config) => (e: React.ChangeEvent<HTMLInputElement>) => setDraft({ ...draft, [k]: Number(e.target.value) });
@@ -92,9 +94,13 @@ export default function ConfigurationPage() {
                 <p className="text-sm font-semibold text-ink">{tc("contract")}</p>
                 <p className="flex items-center gap-2 text-xs text-muted-foreground" dir="ltr">{draft.contractTemplate} <Badge tone="success">{tc("current")}</Badge></p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setDraft({ ...draft, contractTemplate: `partner-contract-v${Number(draft.contractTemplate.match(/v(\d+)/)?.[1] ?? 3) + 1}.pdf` })}>
-                <Upload /> {t("common.actions.replace")}
-              </Button>
+              <FileButtons file={{ name: draft.contractTemplate }} actions={files} />
+              {/* a new template is always the next version, whatever the uploaded file is called */}
+              <UploadButton
+                accept=".pdf"
+                label={t("common.actions.replace")}
+                onFile={() => setDraft({ ...draft, contractTemplate: `partner-contract-v${Number(draft.contractTemplate.match(/v(\d+)/)?.[1] ?? 3) + 1}.pdf` })}
+              />
             </div>
             <div className="text-sm">
               <p className="mb-1.5 text-xs font-semibold text-muted-foreground">{tc("signedVersions")}</p>
@@ -118,6 +124,7 @@ export default function ConfigurationPage() {
           <CardBody>{toggleRow("comingSoonMode", tc("comingSoon"), tc("comingSoonHint"))}</CardBody>
         </Card>
       </div>
+      {files.dialog}
     </>
   );
 }
