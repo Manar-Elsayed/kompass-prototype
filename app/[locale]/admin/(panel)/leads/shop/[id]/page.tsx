@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Ban, Building2, ClipboardList, Flag, Headset, Receipt, ShieldAlert, ShoppingCart, Store as StoreIcon, Undo2, Wallet, Zap } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import type { RefundStatus } from "@/lib/types";
-import { formatCHF, formatDateTime } from "@/lib/utils";
+import { formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { receiptRows } from "@/lib/mock/selectors";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, usePartnerMap, useServiceMap } from "@/lib/mock/hooks";
@@ -96,10 +96,9 @@ export default function OrderDetail() {
         title={
           <span className="flex flex-wrap items-center gap-3">
             <Mono className="text-2xl">{order.id}</Mono>
-            {channelBadge}
           </span>
         }
-        subtitle={`${partner?.name ?? "–"} · ${formatDateTime(order.createdAt, lang)}`}
+        subtitle={partner?.name ?? "–"}
         actions={
           <>
             <Button asChild variant="outline"><Link href={`/admin/partners/${order.partnerId}`}><Building2 /> {t("admin.rows.openCompany")}</Link></Button>
@@ -164,7 +163,7 @@ export default function OrderDetail() {
                     {t("admin.leads.id")} <Link href={`/admin/leads/${offer.id}`} className="font-mono text-primary hover:underline" dir="ltr">{offer.id}</Link>
                   </span>
                 }
-                description={`${svc ? L(svc.name) : ""} · ${formatDateTime(offer.executionDate, lang)}`}
+                description={`${svc ? L(svc.name) : ""} · ${t("admin.leads.execution")}: ${formatDate(offer.executionDate, lang)}`}
                 action={<StatusBadge status={offer.status} />}
               />
               <CardBody className="space-y-4">
