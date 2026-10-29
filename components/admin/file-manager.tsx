@@ -2,12 +2,12 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { FileText, ImageIcon, Lock, Trash2, Upload } from "lucide-react";
+import { FileText, ImageIcon, Lock, Search, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { DOC_KEYS, type CompanyFile, type FileCategory } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
-import { useLang, usePartnerMap } from "@/lib/mock/hooks";
+import { useLang } from "@/lib/mock/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
@@ -28,25 +28,24 @@ const fmtSize = (b: number) => (b >= 1_048_576 ? `${(b / 1_048_576).toFixed(1)} 
 const isImage = (e: Entry) => e.category === "logo" || e.category === "photo";
 
 /**
- * Files kept for companies: logos, photos and other documents, plus each company's three required
- * documents (managed on its Documents tab). Scoped to one company when `partnerId` is given.
+ * One company's folder: logos, photos and other documents, plus its required documents (managed on
+ * its Documents tab), with a search, a category filter and Upload.
  */
-export function FileManager({ partnerId }: { partnerId?: string }) {
+export function FileManager({ partnerId }: { partnerId: string }) {
   const t = useTranslations("admin.files");
   const tp = useTranslations("admin.partners");
   const lang = useLang();
   const files = useStore((s) => s.files);
   const partners = useStore((s) => s.partners);
   const remove = useStore((s) => s.remove);
-  const partnerMap = usePartnerMap();
   const { confirm, dialog } = useConfirm();
   const fileActions = useFileActions();
-  const [company, setCompany] = useState("all");
+  const [q, setQ] = useState("");
   const [category, setCategory] = useState<"all" | FileCategory | "required">("all");
   const [uploading, setUploading] = useState(false);
 
   const entries: Entry[] = useMemo(() => {
-    const scope = partners.filter((p) => (partnerId ? p.id === partnerId : true));
+    const scope = partners.filter((p) => p.id === partnerId);
     const required: Entry[] = scope.flatMap((p) =>
       DOC_KEYS.flatMap((k) => {
         const d = p.documents[k];
@@ -55,12 +54,12 @@ export function FileManager({ partnerId }: { partnerId?: string }) {
     );
     // uploaded files first (newest first), then the required documents
     const byDate = (a: Entry, b: Entry) => b.uploadedAt.localeCompare(a.uploadedAt);
-    return [...files.filter((f) => (partnerId ? f.partnerId === partnerId : true)).sort(byDate), ...required.sort(byDate)];
+    return [...files.filter((f) => f.partnerId === partnerId).sort(byDate), ...required.sort(byDate)];
   }, [files, partners, partnerId, tp]);
 
   const shown = entries.filter(
     (e) =>
-      (partnerId || company === "all" || e.partnerId === company) &&
+      (!q.trim() || e.name.toLowerCase().includes(q.trim().toLowerCase())) &&
       (category === "all" || (category === "required" ? e.required : !e.required && e.category === category)),
   );
 
@@ -78,20 +77,19 @@ export function FileManager({ partnerId }: { partnerId?: string }) {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end gap-2">
-        {!partnerId && (
-          <div className="w-56">
-            <Select value={company} onValueChange={setCompany} options={[{ value: "all", label: t("allCompanies") }, ...partners.filter((p) => p.status !== "rejected").map((p) => ({ value: p.id, label: p.name }))]} />
-          </div>
-        )}
-        <div className="w-48">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="relative min-w-56 flex-1">
+          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("searchFiles")} className="ps-9" />
+        </div>
+        <div className="w-full sm:w-48">
           <Select
             value={category}
             onValueChange={(v) => setCategory(v as typeof category)}
             options={[{ value: "all", label: t("allCategories") }, ...CATEGORIES.map((c) => ({ value: c, label: t(`categories.${c}`) })), { value: "required", label: t("categories.required") }]}
           />
         </div>
-        <Button className="ms-auto" onClick={() => setUploading(true)}>
+        <Button onClick={() => setUploading(true)}>
           <Upload /> {t("upload")}
         </Button>
       </div>
@@ -106,7 +104,6 @@ export function FileManager({ partnerId }: { partnerId?: string }) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-ink" title={e.name}>{e.name}</p>
-                {!partnerId && <p className="truncate text-xs text-muted-foreground">{partnerMap[e.partnerId]?.name}</p>}
                 <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                   <Badge tone={e.required ? "primary" : "neutral"}>{e.required ? t("categories.required") : t(`categories.${e.category}`)}</Badge>
                   {e.size > 0 && fmtSize(e.size)} · {formatDate(e.uploadedAt, lang)} · {t(`by.${e.uploadedBy}`)}
@@ -126,7 +123,7 @@ export function FileManager({ partnerId }: { partnerId?: string }) {
       ) : (
         <EmptyState icon={<ImageIcon />} title={t("empty")} />
       )}
-      {uploading && <UploadFileDialog partnerId={partnerId ?? (company !== "all" ? company : undefined)} fixed={!!partnerId} onClose={() => setUploading(false)} />}
+      {uploading && <UploadFileDialog partnerId={partnerId} fixed onClose={() => setUploading(false)} />}
       {dialog}
       {fileActions.dialog}
     </div>

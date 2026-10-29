@@ -327,6 +327,8 @@ export interface Partner {
   notifyPrefs?: NotifyPrefs;
   /** Portal notifications newer than this are unread. */
   feedReadAt?: string;
+  /** When Kompass created this company's files folder before any file was in it. */
+  filesFolderAt?: string;
   lastSeen: string;
   createdAt: string;
 }
