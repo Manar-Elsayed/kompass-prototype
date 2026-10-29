@@ -274,8 +274,10 @@ export interface Payout {
 export type PartnerStatus = "pending" | "contract_sent" | "approved" | "rejected";
 
 /** The three documents every company needs. A company can buy leads only while all three are valid and unexpired. */
-export type DocKey = "contract" | "insurance" | "register";
-export const DOC_KEYS: readonly DocKey[] = ["contract", "insurance", "register"];
+export type DocKey = "contract" | "insurance" | "extraInsurance" | "register";
+export const DOC_KEYS: readonly DocKey[] = ["contract", "insurance", "extraInsurance", "register"];
+/** Documents a company may still send after approval; until then it can buy, but is reminded. */
+export const LATER_DOC_KEYS: readonly DocKey[] = ["insurance", "extraInsurance", "register"];
 /** valid = checked by Kompass; pending_review = (re)uploaded by the company, not yet checked; rejected = not accepted. */
 export type DocStatus = "valid" | "pending_review" | "rejected";
 export interface CompanyDoc {

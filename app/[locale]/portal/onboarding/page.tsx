@@ -6,6 +6,7 @@ import { ArrowRight, Check, Clock, FileSignature, FileText, ImagePlus, LogOut, M
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
+import { LATER_DOC_KEYS } from "@/lib/types";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useHydrated, useL, useLang } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
@@ -74,12 +75,13 @@ function Progress({ partner }: { partner: Partner }) {
   const lang = useLang();
   const { compose, dialog } = useCompose();
   const signed = !!partner.contractSignedAt;
-  const docsUploaded = (["insurance", "register"] as const).every((k) => partner.documents[k] && partner.documents[k]!.status !== "rejected");
-  const docsRejected = (["insurance", "register"] as const).some((k) => partner.documents[k]?.status === "rejected");
+  const docsUploaded = LATER_DOC_KEYS.every((k) => partner.documents[k] && partner.documents[k]!.status !== "rejected");
+  const docsRejected = LATER_DOC_KEYS.some((k) => partner.documents[k]?.status === "rejected");
 
   const contract: StepState = signed ? "done" : partner.status === "contract_sent" ? "current" : "upcoming";
   const docs: StepState = docsUploaded ? "done" : "current";
-  const review: StepState = signed && docsUploaded ? "current" : "upcoming";
+  // the documents may follow after approval, so a signed contract is enough for Kompass's check
+  const review: StepState = signed ? "current" : "upcoming";
   const done = 1 + Number(contract === "done") + Number(docs === "done");
 
   return (
@@ -118,7 +120,7 @@ function Progress({ partner }: { partner: Partner }) {
 
           <Step n={3} state={docs} title={t("steps.documents")} last={false}>
             <p className="mb-3 text-sm text-muted-foreground">{docsRejected ? t("docsRejected") : t("docsBody")}</p>
-            <CompanyDocuments partner={partner} as="company" keys={["insurance", "register"]} onboarding />
+            <CompanyDocuments partner={partner} as="company" keys={LATER_DOC_KEYS} onboarding />
           </Step>
 
           <Step n={4} state={review} title={t("steps.review")} badge={review === "current" ? t("state.review") : undefined} last>

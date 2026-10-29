@@ -22,9 +22,10 @@ const toInput = (iso?: string) => (iso ? iso.slice(0, 10) : "");
 const fromInput = (v: string) => (v ? new Date(`${v}T12:00:00`).toISOString() : undefined);
 
 /**
- * The three required documents with their file, check status and expiry. Admin can accept / reject an
- * upload, set the expiry and upload a replacement; a company can upload a new version, which waits
- * for Kompass to check it. Leads can be bought only while all three are checked and unexpired.
+ * The four required documents with their file, check status and expiry. Admin can accept / reject an
+ * upload and set the expiry, and can upload the signed contract once (when it came on paper); it never
+ * replaces a company's file. A company uploads its own documents, which wait for Kompass to check them.
+ * Only the contract blocks buying leads; insurance and register extract may follow after approval.
  * During onboarding the portal lists only the documents the applicant uploads (`keys`), without the
  * "blocked" warning, since the company can't buy leads yet anyway.
  * The company can't replace the contract: it may upload one only while there is none. It replaces its
@@ -43,7 +44,12 @@ export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: {
 
   return (
     <div>
-      {!state.ok && !onboarding && <p className="mb-3 rounded-lg bg-danger-soft/50 px-3 py-2 text-sm font-medium text-danger">{td("blocked")}</p>}
+      {!onboarding && !state.contractOk ? (
+        <p className="mb-3 rounded-lg bg-danger-soft/50 px-3 py-2 text-sm font-medium text-danger">{td("blocked")}</p>
+      ) : !onboarding && !state.ok ? (
+        // the company can buy, but still owes documents
+        <p className="mb-3 rounded-lg bg-warning-soft/60 px-3 py-2 text-sm font-medium text-ink">{td("stillNeeded", { count: state.missing.length + state.expired.length })}</p>
+      ) : null}
       <ul className="space-y-2">
         {keys.map((key) => {
           const d = partner.documents[key];
@@ -64,16 +70,23 @@ export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: {
                 </div>
                 {d && <Badge tone={d.status === "valid" ? "success" : d.status === "rejected" ? "danger" : "info"}>{td(`status.${d.status}`)}</Badge>}
                 {d && <FileButtons file={{ name: d.file }} actions={files} />}
-                {as === "company" && key === "contract" ? (
+                {as === "admin" ? (
+                  // Kompass adds the signed contract when it came on paper; every other file comes from the company
+                  key === "contract" && (
+                    <Button size="sm" variant="outline" disabled={!!d} title={d ? td("contractOnFile") : undefined} onClick={() => setUploading(key)}>
+                      <Upload /> {td("upload")}
+                    </Button>
+                  )
+                ) : key === "contract" ? (
                   <Button size="sm" variant="outline" disabled={!!d} onClick={() => setUploading(key)}>
                     <Upload /> {td("upload")}
                   </Button>
-                ) : as === "company" && d && !(expired || soon || d.status === "rejected") ? (
+                ) : d && !(expired || soon || d.status === "rejected") ? (
                   <Button size="sm" variant="outline" disabled title={td("replaceLocked", { days: DOC_WARN_DAYS })}>
                     <Upload /> {td("replace")}
                   </Button>
                 ) : (
-                  <Button size="sm" variant={as === "company" && d && (expired || d.status === "rejected") ? "accent" : "outline"} onClick={() => setUploading(key)}>
+                  <Button size="sm" variant={d && (expired || d.status === "rejected") ? "accent" : "outline"} onClick={() => setUploading(key)}>
                     <Upload /> {d ? td("replace") : td("upload")}
                   </Button>
                 )}

@@ -115,7 +115,7 @@ const current = (id: string) => RETIRED[id] ?? id;
 /* ---------- partners ---------- */
 // Raw records keep the original shape (contract expiry + file names) so the RNG stream is unchanged;
 // they are turned into dated, checked documents below with a separate stream.
-type RawPartner = Omit<Partner, "documents"> & { expiresAt?: string; documents: { contract?: string; insurance?: string; register?: string } };
+type RawPartner = Omit<Partner, "documents"> & { expiresAt?: string; documents: { contract?: string; insurance?: string; extraInsurance?: string; register?: string } };
 const rawPartners: RawPartner[] = PARTNER_NAMES.map((name, i) => {
   const loc = CITIES[i % CITIES.length];
   const status: Partner["status"] = i < 19 ? "approved" : i < 22 ? "pending" : i < 24 ? "contract_sent" : "rejected";
@@ -152,7 +152,7 @@ const rawPartners: RawPartner[] = PARTNER_NAMES.map((name, i) => {
     bank: { name: rng.pick(BANKS), owner: name, iban: `CH${pad(rng.int(10, 99))} 0${rng.int(100, 999)} ${rng.int(1000, 9999)} ${rng.int(1000, 9999)} ${rng.int(1000, 9999)} ${rng.int(1, 9)}` },
     documents:
       status === "approved"
-        ? { contract: "contract-signed.pdf", insurance: "insurance-2026.pdf", register: "hr-extract.pdf" }
+        ? { contract: "contract-signed.pdf", insurance: "insurance-2026.pdf", extraInsurance: i % 5 === 3 ? undefined : "insurance-policy.pdf", register: "hr-extract.pdf" }
         : status === "contract_sent"
           ? { insurance: "insurance.pdf", register: "hr-extract.pdf" }
           : { register: rng.chance(0.5) ? "hr-extract.pdf" : undefined },
@@ -195,6 +195,7 @@ export const partners: Partner[] = rawPartners.map(({ expiresAt, documents: uplo
           ? { file: "insurance-2027.pdf", uploadedAt: daysAgo(1), status: "pending_review", expiresAt: daysAhead(365) }
           : doc(uploaded.insurance, "valid", daysAhead(demo ? 140 : drng.int(-20, 380))),
       register: doc(uploaded.register, "valid", daysAhead(demo ? 300 : drng.int(15, 420))),
+      extraInsurance: doc(uploaded.extraInsurance, "valid", daysAhead(demo ? 200 : 120 + (i % 7) * 40)),
     },
   };
 });

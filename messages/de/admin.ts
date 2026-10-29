@@ -418,6 +418,7 @@ export const admin: Built<typeof Def> = {
     documents: "Dokumente & Vertrag",
     contract: "Unterzeichneter Vertrag",
     insurance: "Haftpflichtversicherung",
+    extraInsurance: "Versicherung",
     register: "Handelsregisterauszug",
     notUploaded: "Nicht hochgeladen",
     servicesOffered: "Angebotene Dienstleistungen",
@@ -455,7 +456,7 @@ export const admin: Built<typeof Def> = {
     noReviews: "Noch keine Bewertungen",
     docs: {
       title: "Dokumente",
-      hint: "Eine Firma kann nur Anfragen kaufen, solange alle drei Dokumente geprüft und nicht abgelaufen sind.",
+      hint: "Eine Firma kann Anfragen kaufen, sobald ihr unterzeichneter Vertrag geprüft und gültig ist. Die anderen Dokumente sind ebenfalls nötig, können aber nach der Freigabe hochgeladen werden.",
       state: {
         ok: "Genehmigt",
         expiring: "Läuft bald ab",
@@ -476,7 +477,9 @@ export const admin: Built<typeof Def> = {
         pending_review: "Zu prüfen",
         rejected: "Abgelehnt",
       },
-      blocked: "Anfragekäufe sind gesperrt, bis die Dokumente in Ordnung sind.",
+      blocked: "Anfragekäufe sind gesperrt, bis der unterzeichnete Vertrag geprüft und gültig ist.",
+      stillNeeded: "{count, plural, one {# Dokument fehlt noch oder ist abgelaufen.} other {# Dokumente fehlen noch oder sind abgelaufen.}} Die Firma kann trotzdem Anfragen kaufen.",
+      contractOnFile: "Der unterzeichnete Vertrag liegt bereits vor.",
       uploaded: "hochgeladen am {date}",
       expires: "Gültig bis {date}",
       expiredOn: "Abgelaufen am {date}",
@@ -534,6 +537,7 @@ export const admin: Built<typeof Def> = {
   applications: {
     aboutTitle: "Über die Firma",
     title: "Partnerbewerbungen",
+    canFollow: "Noch nicht hochgeladen · kann nach der Freigabe folgen",
     subtitle: "Dokumente prüfen, Vertrag senden und neue Partner freischalten.",
     received: "Eingegangen",
     sendContract: "Vertrag senden",

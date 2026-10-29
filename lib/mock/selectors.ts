@@ -266,11 +266,17 @@ export function documentState(p: Pick<Partner, "documents">) {
   }
   const ok = !missing.length && !expired.length && !review.length;
   const state: DocState = missing.length || review.length ? "missing" : expired.length ? "expired" : expiring.length ? "expiring" : "ok";
-  return { ok, state, missing, expired, expiring, review, next };
+  // buying needs only a checked, unexpired contract; the other documents can follow after approval
+  const contract = p.documents.contract;
+  const contractOk = !!contract && contract.status === "valid" && !(contract.expiresAt && Date.parse(contract.expiresAt) < now);
+  return { ok, contractOk, state, missing, expired, expiring, review, next };
 }
 
-/** A company may buy (or be assigned) leads only when approved, not banned and its documents are in order. */
-export const canBuyLeads = (p: Pick<Partner, "status" | "banned" | "documents">) => p.status === "approved" && !p.banned && documentState(p).ok;
+/**
+ * A company may buy (or be assigned) leads when approved, not banned and its contract is signed and
+ * valid. Insurance and register extract are required too, but may follow after approval.
+ */
+export const canBuyLeads = (p: Pick<Partner, "status" | "banned" | "documents">) => p.status === "approved" && !p.banned && documentState(p).contractOk;
 
 /**
  * Performance used to rank companies for recommendations: leads bought in the last 90 days,

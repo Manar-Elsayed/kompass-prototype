@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { Partner } from "@/lib/types";
 import { cn, formatDate, timeAgo } from "@/lib/utils";
+import { LATER_DOC_KEYS } from "@/lib/types";
 import { useStore } from "@/lib/mock/store";
 import { applicationStage } from "@/lib/mock/selectors";
 import { useHydrated, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
@@ -64,7 +65,7 @@ export default function ApplicationDetail() {
 
   const open = p.status !== "rejected";
   // what the checklist shows; approving with gaps is allowed (e.g. paper contract) but flagged
-  const checks: { label: string; ok: boolean; detail: string; file?: string }[] = [
+  const checks: { label: string; ok: boolean; detail: string; file?: string; later?: boolean }[] = [
     {
       label: t("admin.partners.contract"),
       ok: !!p.contractSignedAt,
@@ -75,17 +76,19 @@ export default function ApplicationDetail() {
           ? ta("awaitingSignature")
           : ta("noContractYet"),
     },
-    ...(["insurance", "register"] as const).map((k) => {
+    ...LATER_DOC_KEYS.map((k) => {
       const d = p.documents[k];
       return {
         label: t(`admin.partners.${k}`),
         ok: !!d && d.status !== "rejected",
         file: d?.file,
-        detail: d ? `${d.file} · ${t(`admin.partners.docs.status.${d.status}`)}` : t("admin.partners.notUploaded"),
+        detail: d ? `${d.file} · ${t(`admin.partners.docs.status.${d.status}`)}` : ta("canFollow"),
+        later: true,
       };
     }),
   ];
-  const missing = checks.filter((c) => !c.ok).map((c) => c.label);
+  // only the contract is needed to approve; the other documents can follow
+  const missing = checks.filter((c) => !c.ok && !c.later).map((c) => c.label);
 
   const sendContract = () => {
     decide(p.id, "contract_sent");
