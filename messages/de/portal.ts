@@ -11,9 +11,10 @@ export const portal: Built<typeof Def> = {
     support: "Support kontaktieren",
     supportSubject: "Unser Konto ist gesperrt",
     menu: "Menü",
-    docsBlocked: "Dokumente fehlen oder sind abgelaufen: {docs}. Sie können keine Anfragen kaufen, bis sie erneuert sind.",
-    docsReview: "Kompass prüft Ihre neuen Dokumente ({docs}). Sobald sie akzeptiert sind, können Sie wieder Anfragen kaufen.",
-    docsExpiring: "{doc} läuft am {date} ab. Laden Sie die Erneuerung hoch, um weiter Anfragen zu kaufen.",
+    contractBlocked: "Ihr unterzeichneter Vertrag liegt noch nicht vor oder ist noch nicht geprüft. Sie können Anfragen kaufen, sobald Kompass ihn angenommen hat.",
+    docsMissing: "Fehlende oder abgelaufene Dokumente: {docs}. Bitte laden Sie sie hoch; Sie können weiterhin Anfragen kaufen.",
+    docsReview: "Kompass prüft Ihre neuen Dokumente ({docs}).",
+    docsExpiring: "{doc} läuft am {date} ab. Bitte laden Sie rechtzeitig die Erneuerung hoch.",
     updateDocs: "Dokumente aktualisieren",
   },
   nav: {
@@ -71,7 +72,8 @@ export const portal: Built<typeof Def> = {
       title: "Zu erledigen",
       subtitle: "{count, plural, one {# Punkt braucht} other {# Punkte brauchen}} Ihre Aufmerksamkeit",
       allDone: "Alles erledigt. Im Moment ist nichts zu tun.",
-      docsBlocked: "{docs} fehlt oder ist abgelaufen: Bis zur Erneuerung können Sie keine Anfragen kaufen.",
+      contractBlocked: "Ihr unterzeichneter Vertrag muss noch von Kompass geprüft werden, bevor Sie Anfragen kaufen können.",
+      docsMissing: "{docs} fehlt oder ist abgelaufen. Laden Sie es hoch, sobald Sie können; Sie können weiterhin Anfragen kaufen.",
       docsExpiring: "{doc} läuft am {date} ab. Laden Sie die Erneuerung rechtzeitig hoch.",
       upload: "Hochladen",
       invoiceOverdue: "Rechnung {id} ({amount}) war am {date} fällig.",
@@ -553,7 +555,7 @@ export const portal: Built<typeof Def> = {
     },
     goToPortal: "Zum Portal",
     contract: {
-      title: "Partnerschaftsvertrag Kompass",
+      title: "Kompass-Partnervereinbarung: Richtlinien und Anweisungen",
       parties: {
         title: "Vertragsparteien",
         body: "Dieser Vertrag wird abgeschlossen zwischen der Kompass Umzug GmbH, Bahnhofstrasse 21, 8001 Zürich („Kompass“), und {company}, {address}, Handelsregisternummer {reg}, vertreten durch {owner} („Partner“).",
@@ -564,23 +566,23 @@ export const portal: Built<typeof Def> = {
       },
       leads: {
         title: "Anfragen",
-        body: "Jede Anfrage wird an höchstens so viele Firmen verkauft, wie der Kunde gewünscht hat. Der Partner kauft Anfragen im Partnerportal zum dort angegebenen Preis. Kontaktdaten werden erst nach dem Kauf angezeigt und dürfen nur für diese Anfrage verwendet werden. Offerten können während höchstens {days} Tagen eingereicht werden.",
-      },
-      payment: {
-        title: "Bezahlung",
-        body: "Anfragen werden aus einem Prepaid-Wallet bezahlt. Die Preise verstehen sich inklusive {vat} % MWST. Ein Kauf wird nur zurückerstattet, wenn Kompass die Anfrage als Fake bestätigt; storniert ein Kunde eine echte Anfrage, erfolgt keine Rückerstattung. Nicht verwendetes Guthaben kann auf das Bankkonto des Partners ausbezahlt werden.",
+        body: "Jede Anfrage geht an höchstens so viele Firmen, wie die Kundin oder der Kunde gewünscht hat. Der Partner kauft Anfragen im Partnerportal. Kontaktdaten werden erst nach dem Kauf angezeigt und dürfen nur für diese Anfrage verwendet werden. Offerten zu einer Anfrage können bis zu {days} Tage lang gesendet werden.",
       },
       documents: {
         title: "Dokumente",
-        body: "Der Partner hinterlegt eine gültige Haftpflichtversicherung und einen aktuellen Handelsregisterauszug. Solange ein Dokument fehlt oder abgelaufen ist, kann der Partner keine Anfragen kaufen.",
+        body: "Der Partner unterzeichnet diese Richtlinien, bevor er Anfragen kaufen kann. Zudem hinterlegt er eine Haftpflichtversicherung, eine Versicherung und einen aktuellen Handelsregisterauszug; diese können nach der Freigabe folgen, und Kompass erinnert an Fehlendes oder Abgelaufenes.",
       },
       conduct: {
         title: "Qualität",
         body: "Der Partner kontaktiert Kunden rasch, erstellt ehrliche Offerten und erscheint wie vereinbart. Kompass kann den Partner verwarnen, sperren oder die Partnerschaft beenden, wenn Kunden wiederholt Nichterscheinen oder Fehlverhalten melden.",
       },
-      termination: {
-        title: "Laufzeit und Kündigung",
-        body: "Der Vertrag gilt für ein Jahr und verlängert sich automatisch. Beide Parteien können ihn mit einer Frist von einem Monat auf das Ende eines Monats kündigen. Es gilt Schweizer Recht; Gerichtsstand ist Zürich.",
+      privacy: {
+        title: "Kundendaten",
+        body: "Der Partner verwendet Kundendaten nur, um die gekaufte Anfrage zu beantworten, behandelt sie vertraulich und löscht sie, sobald sie nicht mehr benötigt werden.",
+      },
+      validity: {
+        title: "Gültigkeit",
+        body: "Diese Richtlinien gelten ab der Unterzeichnung, solange die Partnerschaft besteht; sie haben keine feste Laufzeit und kein Enddatum. Wenn Kompass sie aktualisiert, wird der Partner gebeten, die neue Version anzunehmen. Beide Seiten können die Partnerschaft jederzeit beenden. Es gilt Schweizer Recht; Gerichtsstand ist Zürich.",
       },
     },
   },

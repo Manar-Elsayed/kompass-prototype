@@ -134,8 +134,11 @@ function ToDo() {
   const items: Todo[] = [];
   const docs = documentState(partner);
   const names = (keys: DocKey[]) => keys.map((k) => tp(k)).join(", ");
-  if (docs.missing.length || docs.expired.length)
-    items.push({ id: "docs", tone: "danger", icon: <FileWarning />, text: t("docsBlocked", { docs: names([...docs.missing, ...docs.expired]) }), cta: t("upload"), href: "/portal/profile?tab=documents" });
+  // only the signed contract blocks buying; other documents are reminders
+  if (!docs.contractOk)
+    items.push({ id: "docs", tone: "danger", icon: <FileWarning />, text: t("contractBlocked"), cta: t("open"), href: "/portal/profile?tab=documents" });
+  else if (docs.missing.length || docs.expired.length)
+    items.push({ id: "docs", tone: "warning", icon: <FileWarning />, text: t("docsMissing", { docs: names([...docs.missing, ...docs.expired]) }), cta: t("upload"), href: "/portal/profile?tab=documents" });
   else if (docs.expiring.length && docs.next)
     items.push({ id: "docs", tone: "warning", icon: <FileWarning />, text: t("docsExpiring", { doc: tp(docs.next.key), date: formatDate(docs.next.date, lang) }), cta: t("upload"), href: "/portal/profile?tab=documents" });
 

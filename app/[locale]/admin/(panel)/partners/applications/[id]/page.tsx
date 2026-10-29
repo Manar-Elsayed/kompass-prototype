@@ -20,11 +20,10 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/controls";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EmptyState, StatusBadge } from "@/components/shared/bits";
+import { ConfirmDialog, EmptyState, StatusBadge } from "@/components/shared/bits";
 import { Icon } from "@/components/shared/icon";
 import { FileButtons, useFileActions } from "@/components/shared/file-card";
 import { DL, ProfileHeader } from "@/components/admin/ui";
-import { ExpiryDialog } from "@/components/admin/expiry-dialog";
 
 /** One application: everything the company submitted, what is still missing, and the decision. */
 export default function ApplicationDetail() {
@@ -220,8 +219,9 @@ export default function ApplicationDetail() {
       </div>
 
       {approving && (
-        <ExpiryDialog
+        <ConfirmDialog
           open
+          tone="success"
           onOpenChange={(v) => !v && setApproving(false)}
           title={ta("approveTitle", { name: p.name })}
           body={
@@ -235,8 +235,8 @@ export default function ApplicationDetail() {
             </>
           }
           confirmLabel={t("common.actions.approve")}
-          onSave={(iso) => {
-            decide(p.id, "approved", iso);
+          onConfirm={() => {
+            decide(p.id, "approved");
             toast.success(ta("approved", { name: p.name }));
             setApproving(false);
             // the new partner is managed on its partner page from now on
@@ -249,7 +249,7 @@ export default function ApplicationDetail() {
           partner={p}
           onClose={() => setRejecting(false)}
           onReject={(reason) => {
-            decide(p.id, "rejected", undefined, reason);
+            decide(p.id, "rejected", reason);
             toast.success(ta("declined", { name: p.name }));
             setRejecting(false);
           }}

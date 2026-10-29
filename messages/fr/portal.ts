@@ -11,9 +11,10 @@ export const portal: Built<typeof Def> = {
     support: "Contacter le support",
     supportSubject: "Notre compte est suspendu",
     menu: "Menu",
-    docsBlocked: "Documents manquants ou expirés : {docs}. Vous ne pouvez pas acheter de demandes tant qu’ils ne sont pas renouvelés.",
-    docsReview: "Kompass vérifie vos nouveaux documents ({docs}). Vous pourrez à nouveau acheter des demandes une fois ceux-ci acceptés.",
-    docsExpiring: "{doc} expire le {date}. Téléversez le renouvellement pour continuer à acheter des demandes.",
+    contractBlocked: "Votre contrat signé n’est pas encore enregistré ou vérifié. Vous pourrez acheter des demandes dès que Kompass l’aura accepté.",
+    docsMissing: "Documents manquants ou expirés : {docs}. Veuillez les téléverser ; vous pouvez continuer à acheter des demandes.",
+    docsReview: "Kompass vérifie vos nouveaux documents ({docs}).",
+    docsExpiring: "{doc} expire le {date}. Veuillez téléverser le renouvellement à temps.",
     updateDocs: "Mettre à jour les documents",
   },
   nav: {
@@ -71,7 +72,8 @@ export const portal: Built<typeof Def> = {
       title: "À faire",
       subtitle: "{count, plural, one {# point requiert} other {# points requièrent}} votre attention",
       allDone: "Tout est à jour. Rien ne requiert votre attention pour le moment.",
-      docsBlocked: "{docs} : document manquant ou expiré. Vous ne pouvez pas acheter de demandes avant son renouvellement.",
+      contractBlocked: "Votre contrat signé doit encore être vérifié par Kompass avant que vous puissiez acheter des demandes.",
+      docsMissing: "{docs} manquant ou expiré. Téléversez-le dès que possible ; vous pouvez continuer à acheter des demandes.",
       docsExpiring: "{doc} expire le {date}. Téléversez le renouvellement à temps.",
       upload: "Téléverser",
       invoiceOverdue: "La facture {id} ({amount}) est arrivée à échéance le {date}.",
@@ -553,7 +555,7 @@ export const portal: Built<typeof Def> = {
     },
     goToPortal: "Accéder à votre portail",
     contract: {
-      title: "Contrat de partenariat Kompass",
+      title: "Accord de partenariat Kompass : règles et instructions",
       parties: {
         title: "Parties",
         body: "Le présent contrat est conclu entre Kompass Umzug GmbH, Bahnhofstrasse 21, 8001 Zürich (« Kompass ») et {company}, {address}, registre du commerce {reg}, représentée par {owner} (« le Partenaire »).",
@@ -564,23 +566,23 @@ export const portal: Built<typeof Def> = {
       },
       leads: {
         title: "Demandes",
-        body: "Chaque demande est vendue au maximum au nombre d’entreprises souhaité par le client. Le Partenaire achète les demandes dans le portail partenaires au prix qui y est indiqué. Les coordonnées ne sont visibles qu’après l’achat et ne peuvent être utilisées que pour cette demande. Les offres peuvent être soumises au client pendant {days} jours au maximum.",
-      },
-      payment: {
-        title: "Paiement",
-        body: "Les demandes sont payées depuis un portefeuille prépayé. Les prix incluent la TVA de {vat} %. Un achat n’est remboursé que si Kompass confirme que la demande est fausse. L’annulation d’une demande réelle par le client ne donne pas droit à un remboursement. Le solde non utilisé peut être versé sur le compte bancaire du Partenaire.",
+        body: "Chaque demande est transmise au maximum au nombre d’entreprises souhaité par le client. Le Partenaire achète les demandes dans le portail partenaire. Les coordonnées ne s’affichent qu’après l’achat et ne peuvent être utilisées que pour cette demande. Les offres pour une demande peuvent être envoyées pendant {days} jours au maximum.",
       },
       documents: {
         title: "Documents",
-        body: "Le Partenaire dispose d’une assurance responsabilité civile valable et d’un extrait actuel du registre du commerce, déposés auprès de Kompass. Tant qu’un document manque ou est expiré, le Partenaire ne peut pas acheter de demandes.",
+        body: "Le Partenaire signe ces règles avant de pouvoir acheter des demandes. Il fournit aussi une assurance responsabilité civile, une assurance et un extrait récent du registre du commerce ; ces documents peuvent suivre après l’approbation, et Kompass rappelle tout document manquant ou expiré.",
       },
       conduct: {
         title: "Qualité",
         body: "Le Partenaire contacte rapidement les clients, établit des offres honnêtes et se présente comme convenu. Kompass peut adresser un avertissement, suspendre le partenariat ou y mettre fin si des clients signalent des absences répétées ou un comportement inapproprié.",
       },
-      termination: {
-        title: "Durée et résiliation",
-        body: "Le contrat est conclu pour une durée d’un an et se renouvelle tacitement. Chaque partie peut le résilier moyennant un préavis d’un mois pour la fin d’un mois. Le droit suisse est applicable. Le for juridique est à Zurich.",
+      privacy: {
+        title: "Données des clients",
+        body: "Le Partenaire utilise les données des clients uniquement pour répondre à la demande achetée, les traite de manière confidentielle et les supprime lorsqu’elles ne sont plus nécessaires.",
+      },
+      validity: {
+        title: "Validité",
+        body: "Ces règles s’appliquent dès la signature, aussi longtemps que dure le partenariat ; elles n’ont ni durée fixe ni date de fin. Lorsque Kompass les met à jour, le Partenaire est invité à accepter la nouvelle version. Chaque partie peut mettre fin au partenariat à tout moment. Le droit suisse s’applique ; le for est à Zurich.",
       },
     },
   },

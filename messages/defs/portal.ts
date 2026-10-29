@@ -8,9 +8,10 @@ export const portal = {
     support: "Contact support",
     supportSubject: "Our account is suspended",
     menu: "Menu",
-    docsBlocked: "Documents missing or expired: {docs}. You can’t buy offers until they’re renewed.",
-    docsReview: "Kompass is checking your new documents ({docs}). You can buy offers again once they’re accepted.",
-    docsExpiring: "{doc} expires on {date}. Upload the renewal to keep buying offers.",
+    contractBlocked: "Your signed contract isn’t on file or checked yet. You can buy offers once Kompass has accepted it.",
+    docsMissing: "Documents missing or expired: {docs}. Please upload them; you can keep buying offers meanwhile.",
+    docsReview: "Kompass is checking your new documents ({docs}).",
+    docsExpiring: "{doc} expires on {date}. Please upload the renewal in time.",
     updateDocs: "Update documents",
   },
   nav: {
@@ -68,7 +69,8 @@ export const portal = {
       title: "To do",
       subtitle: "{count, plural, one {# thing needs} other {# things need}} your attention",
       allDone: "All caught up. Nothing needs your attention right now.",
-      docsBlocked: "{docs} missing or expired: you can’t buy offers until it’s renewed.",
+      contractBlocked: "Your signed contract still needs Kompass’s check before you can buy offers.",
+      docsMissing: "{docs} missing or expired. Upload when you can; you can keep buying offers.",
       docsExpiring: "{doc} expires on {date}. Upload the renewal in time.",
       upload: "Upload",
       invoiceOverdue: "Invoice {id} ({amount}) was due on {date}.",
@@ -550,7 +552,7 @@ export const portal = {
     },
     goToPortal: "Go to your portal",
     contract: {
-      title: "Kompass partnership contract",
+      title: "Kompass partner agreement: policies and instructions",
       parties: {
         title: "Parties",
         body: "This contract is between Kompass Umzug GmbH, Bahnhofstrasse 21, 8001 Zürich (“Kompass”) and {company}, {address}, commercial register {reg}, represented by {owner} (“the Partner”).",
@@ -561,23 +563,23 @@ export const portal = {
       },
       leads: {
         title: "Offers",
-        body: "Each request is sold to at most as many companies as the customer asked for. The Partner buys offers in the partner portal at the price shown there. Contact details are shown only after the purchase and may be used only for this request. Offers on a request can be sent for up to {days} days.",
-      },
-      payment: {
-        title: "Payment",
-        body: "Offers are paid from a prepaid wallet. Prices include {vat}% VAT. A purchase is refunded only if Kompass confirms the request as fake; a customer cancelling a real request is not refunded. Unused credit can be paid out to the Partner’s bank account.",
+        body: "Each request goes to at most as many companies as the customer asked for. The Partner buys offers in the partner portal. Contact details are shown only after the purchase and may be used only for this request. Offers on a request can be sent for up to {days} days.",
       },
       documents: {
         title: "Documents",
-        body: "The Partner keeps a valid liability insurance and a current commercial register extract on file. While a document is missing or expired, the Partner can’t buy offers.",
+        body: "The Partner signs these policies before it can buy offers. It also keeps a liability insurance, an insurance and a current commercial register extract on file; these can follow after approval, and Kompass reminds the Partner of anything missing or expired.",
       },
       conduct: {
         title: "Quality",
         body: "The Partner contacts customers quickly, gives honest offers and shows up as agreed. Kompass may warn, suspend or end the partnership if customers report repeated no-shows or misconduct.",
       },
-      termination: {
-        title: "Term and termination",
-        body: "The contract runs for one year and renews automatically. Either party can end it with one month’s notice to the end of a month. Swiss law applies; the place of jurisdiction is Zürich.",
+      privacy: {
+        title: "Customer data",
+        body: "The Partner uses customer details only to answer the request it bought, keeps them confidential and deletes them when they are no longer needed.",
+      },
+      validity: {
+        title: "Validity",
+        body: "These policies apply from signing for as long as the partnership lasts; they have no fixed term or end date. When Kompass updates them, the Partner is asked to accept the new version. Either party can end the partnership at any time. Swiss law applies; the place of jurisdiction is Zürich.",
       },
     },
   },

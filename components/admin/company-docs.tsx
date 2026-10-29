@@ -94,12 +94,12 @@ export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: {
               {d && d.status !== "rejected" && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3 text-sm">
                   <span className={cn("me-auto", expired ? "font-semibold text-danger" : soon ? "font-semibold text-warning" : "text-muted-foreground")}>
-                    {d.expiresAt ? td(expired ? "expiredOn" : "expires", { date: formatDate(d.expiresAt, lang) }) : td("noExpiry")}
+                    {key === "contract" ? td("contractNoExpiry") : d.expiresAt ? td(expired ? "expiredOn" : "expires", { date: formatDate(d.expiresAt, lang) }) : td("noExpiry")}
                   </span>
                   {as === "company" && key !== "contract" && !expired && !soon && d.expiresAt && (
                     <span className="text-xs text-muted-foreground">{td("replaceLocked", { days: DOC_WARN_DAYS })}</span>
                   )}
-                  {as === "admin" && (
+                  {as === "admin" && key !== "contract" && (
                     <Input
                       type="date"
                       aria-label={td("expiryLabel")}
@@ -138,6 +138,7 @@ function UploadDocDialog({ partner, docKey, as, onClose }: { partner: Partner; d
   const [file, setFile] = useState("");
   const [expiry, setExpiryValue] = useState(toInput(partner.documents[docKey]?.expiresAt));
   const [busy, setBusy] = useState(false);
+  const needsExpiry = docKey === "insurance" || docKey === "extraInsurance";
 
   const save = async () => {
     setBusy(true);
@@ -161,12 +162,14 @@ function UploadDocDialog({ partner, docKey, as, onClose }: { partner: Partner; d
             <input ref={ref} type="file" accept=".pdf,image/*" hidden onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0].name)} />
           </div>
         </Field>
-        <Field label={td("expiryLabel")} required={docKey !== "register"}>
-          <Input type="date" value={expiry} onChange={(e) => setExpiryValue(e.target.value)} />
-        </Field>
+        {docKey !== "contract" && (
+          <Field label={td("expiryLabel")} required={needsExpiry}>
+            <Input type="date" value={expiry} onChange={(e) => setExpiryValue(e.target.value)} />
+          </Field>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{tc("cancel")}</Button>
-          <Button onClick={save} disabled={!file || (docKey !== "register" && !expiry)} loading={busy}><Upload /> {td("upload")}</Button>
+          <Button onClick={save} disabled={!file || (needsExpiry && !expiry)} loading={busy}><Upload /> {td("upload")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
