@@ -965,7 +965,6 @@ export const admin: Built<typeof Def> = {
     reviewShown: "L’avis est de nouveau sur le site",
     reviewHidden: "L’avis est masqué sur le site",
     unpublishedNote: "Masqué sur le site. Activez-le pour l’afficher à nouveau.",
-    openBooking: "Ouvrir la réservation",
     booking: "Réservation",
     noBooking: "Aucune réservation liée",
     publishedPartner: "Affiché sur le profil public de l’entreprise.",

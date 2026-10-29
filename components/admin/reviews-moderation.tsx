@@ -128,7 +128,7 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
           { label: t("common.actions.approve"), icon: <Check />, onSelect: () => decide(r, "approved"), hidden: r.status === "approved" },
           { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => decide(r, "rejected"), hidden: r.status === "rejected" },
           { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${r.target}`, hidden: scope !== "partner", separated: true },
-          { label: t("admin.rows.openBooking"), icon: <ClipboardList />, href: r.offerId ? `/admin/leads/${r.offerId}` : undefined, hidden: !r.offerId },
+          { label: t("admin.rows.openLead"), icon: <ClipboardList />, href: r.offerId ? `/admin/leads/${r.offerId}` : undefined, hidden: !r.offerId },
           { label: t("common.actions.delete"), icon: <Trash2 />, tone: "danger", onSelect: () => del(r), separated: true },
         ]}
       />
@@ -153,6 +153,9 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
         filters={[
           { id: "status", label: t("common.fields.status"), options: (["pending", "approved", "rejected"] as const).map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (r) => r.status },
           { id: "stars", label: t("common.fields.rating"), options: [5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: "★".repeat(n) })), get: (r) => String(r.stars) },
+          ...(scope === "partner"
+            ? [{ id: "company", label: tr("target"), options: [...new Set(reviews.map((r) => r.target))].map((id) => ({ value: id, label: partnerMap[id]?.name ?? id })).sort((a, b) => a.label.localeCompare(b.label, lang)), get: (r: Review) => r.target }]
+            : []),
           { id: "live", label: t("admin.rows.onWebsite"), options: [{ value: "shown", label: t("admin.rows.shown") }, { value: "hidden", label: t("admin.rows.hiddenShort") }], get: (r) => (isLiveReview(r) ? "shown" : r.status === "approved" ? "hidden" : "") },
         ]}
       />

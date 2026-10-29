@@ -127,7 +127,7 @@ function PartnerDetail() {
         actions={[
           { label: t("common.actions.approve"), icon: <CheckCircle2 />, onSelect: () => decideReview(r.id, "approved"), hidden: r.status === "approved" },
           { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => decideReview(r.id, "rejected"), hidden: r.status === "rejected" },
-          { label: t("admin.rows.openBooking"), icon: <ClipboardList />, href: r.offerId ? `/admin/leads/${r.offerId}` : undefined, hidden: !r.offerId, separated: true },
+          { label: t("admin.rows.openLead"), icon: <ClipboardList />, href: r.offerId ? `/admin/leads/${r.offerId}` : undefined, hidden: !r.offerId, separated: true },
           {
             label: t("common.actions.delete"),
             icon: <Trash2 />,
