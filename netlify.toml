@@ -1,0 +1,17 @@
+# Netlify deploy settings. Netlify builds Next.js with its own runtime
+# (OpenNext), which runs proxy.ts and server rendering.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Next 16 needs Node 20.9+
+  NODE_VERSION = "22"
+
+# Every page lives under a locale (/en, /de, /fr, /it). proxy.ts normally
+# redirects "/" to "/en"; this is a fallback in case it does not run.
+[[redirects]]
+  from = "/"
+  to = "/en"
+  status = 302
+  force = true
