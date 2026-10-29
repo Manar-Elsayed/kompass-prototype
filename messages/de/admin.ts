@@ -1277,7 +1277,7 @@ export const admin: Built<typeof Def> = {
     contract: "Vorlage Partnervertrag",
     comingSoon: "Modus „Demnächst“",
     comingSoonHint: "Öffentliche Website durch eine „Demnächst“-Seite ersetzen (die Live-Website läuft derzeit in diesem Modus).",
-    vatHint: "Steht auf jeder Rechnung und jedem Beleg.",
+    vatHint: "Steht auf jeder Rechnung und jedem Beleg und im Partnervertrag.",
     invoicePrefixHint: "Beginn jeder Rechnungs- und Belegnummer, z. B. {invoice} und {receipt}. Nur Buchstaben und Ziffern.",
     supportEmailHint: "Steht auf Rechnungen und Belegen für Fragen dazu.",
     contractSection: "Partnervertrag",

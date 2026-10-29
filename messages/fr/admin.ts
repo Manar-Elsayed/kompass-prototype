@@ -1277,7 +1277,7 @@ export const admin: Built<typeof Def> = {
     contract: "Modèle de contrat partenaire",
     comingSoon: "Mode « Bientôt disponible »",
     comingSoonHint: "Remplacer le site public par une page « Bientôt disponible » (le site en production fonctionne actuellement dans ce mode).",
-    vatHint: "Figure sur chaque facture et chaque reçu.",
+    vatHint: "Figure sur chaque facture et chaque reçu, et dans le contrat partenaire.",
     invoicePrefixHint: "Début de chaque numéro de facture et de reçu, p. ex. {invoice} et {receipt}. Lettres et chiffres uniquement.",
     supportEmailHint: "Imprimé sur les factures et les reçus pour les questions à leur sujet.",
     contractSection: "Contrat partenaire",

@@ -1274,7 +1274,7 @@ export const admin = {
     contract: "Partner contract template",
     comingSoon: "“Coming soon” mode",
     comingSoonHint: "Replace the public website with a coming-soon page (the live site currently runs in this mode).",
-    vatHint: "Used on every invoice and receipt.",
+    vatHint: "Used on every invoice and receipt, and quoted in the partner contract.",
     invoicePrefixHint: "Starts every invoice and receipt number, e.g. {invoice} and {receipt}. Letters and digits only.",
     supportEmailHint: "Printed on invoices and receipts for questions about them.",
     contractSection: "Partner contract",
