@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Mail, MailX, Pencil, Trash2, UserCheck, UserPlus, UserX } from "lucide-react";
+import { Mail, MailX, Pencil, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import type { AdminUser, Permission } from "@/lib/types";
 import { timeAgo } from "@/lib/utils";
@@ -176,7 +176,7 @@ export default function TeamPage() {
           { label: t("common.actions.edit"), icon: <Pencil />, onSelect: () => edit(u) },
           // only people who haven't signed in yet have an invitation to send again
           { label: t("admin.rows.resendInvite"), icon: <Mail />, onSelect: () => resend(u), hidden: !isInvited(u) },
-          { label: t(u.active ? "admin.rows.deactivate" : "admin.rows.activate"), icon: u.active ? <UserX /> : <UserCheck />, onSelect: () => setActive(u, !u.active), hidden: u.id === me?.id || isInvited(u) || isLastSuper(u) },
+          // activating / deactivating is the Status switch on the row, so it is not repeated here
           isInvited(u)
             ? {
                 label: tu("cancelInvite"),
@@ -240,6 +240,8 @@ export default function TeamPage() {
             ],
             get: (u) => (isInvited(u) ? "invited" : u.active ? "active" : "inactive"),
           },
+          // only roles someone on the team has
+          { id: "role", label: t("common.fields.role"), options: roles.filter((r) => users.some((u) => u.roleId === r.id)).map((r) => ({ value: r.id, label: L(r.name) })), get: (u) => u.roleId },
         ]}
       />
       <Dialog open={!!form} onOpenChange={(v) => !v && setForm(null)}>
