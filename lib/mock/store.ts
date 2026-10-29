@@ -673,10 +673,10 @@ export const useStore = create<Store>()(
           // the company reports about this offer are settled by the decision
           fakeReports:
             reason === "fake"
-              ? s.fakeReports.map((r) => (s.orders.find((o) => o.id === r.orderId)?.offerId === id && !["confirmed", "canceled"].includes(r.status) ? { ...r, status: "confirmed" } : r))
+              ? s.fakeReports.map((r) => (s.orders.find((o) => o.id === r.orderId)?.offerId === id && !["canceled", "rejected"].includes(r.status) ? { ...r, status: "canceled" } : r))
               : s.fakeReports,
         }));
-        // money only moves for fake offers: a customer changing their mind is not refundable
+        // offers are only cancelled as fake: every listed purchase gets its price back
         if (reason !== "fake") return;
         const { orders, fakeReports, refunds, issueRefund, decideRefund } = get();
         for (const order of orders.filter((o) => o.offerId === id && refundOrderIds.includes(o.id))) {
@@ -713,7 +713,7 @@ export const useStore = create<Store>()(
           const order = s.orders.find((o) => o.id === orderId);
           const partner = s.partners.find((p) => p.id === order?.partnerId);
           return {
-            fakeReports: [{ id: `FR-${101 + s.fakeReports.length}`, orderId, reason, status: "open", createdAt: nowIso() }, ...s.fakeReports],
+            fakeReports: [{ id: `FR-${101 + s.fakeReports.length}`, orderId, reason, status: "new", createdAt: nowIso() }, ...s.fakeReports],
             notifications: notify(s, {
               kind: "report",
               title: { en: `Fake-offer report from ${partner?.name ?? "partner"}`, de: `Meldung einer gefälschten Anfrage von ${partner?.name ?? "Partner"}`, fr: `Signalement de fausse demande par ${partner?.name ?? "un partenaire"}`, it: `Segnalazione di richiesta falsa da ${partner?.name ?? "partner"}` },
@@ -765,9 +765,9 @@ export const useStore = create<Store>()(
       // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address; v14 fake-offer reports whose
       // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout; v17 team invitations (an invited member who hasn't signed in yet); v18 invoice numbers from the prefix and the contract version each company signed; v19 what companies report about their offers (won / lost / couldn't reach). Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 20,
+      version: 21,
       migrate: (persisted, version) => {
-        if (version >= 20) return persisted as Store;
+        if (version >= 21) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

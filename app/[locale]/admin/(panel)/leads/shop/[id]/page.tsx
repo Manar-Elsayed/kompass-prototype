@@ -73,7 +73,7 @@ export default function OrderDetail() {
     refund?.status === "refunded" && { at: refund.decidedAt ?? refund.createdAt, text: t("admin.fake.refunded", { amount: refund.amount, name: partner?.name ?? "?" }), icon: <Undo2 className="size-3.5" /> },
     offer?.cancelledAt && {
       at: offer.cancelledAt,
-      text: t(`admin.leads.detail.${offer.cancelReason === "fake" ? "evCancelledFake" : "evCancelledCustomer"}`),
+      text: t("admin.leads.detail.evCancelledFake"),
       icon: <Ban className="size-3.5" />,
     },
   ]

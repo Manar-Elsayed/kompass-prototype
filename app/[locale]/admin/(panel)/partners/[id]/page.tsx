@@ -94,7 +94,7 @@ function PartnerDetail() {
   const orders = db.orders.filter((o) => o.partnerId === p.id);
   const reports = db.fakeReports.filter((r) => orders.some((o) => o.id === r.orderId));
   // a booking is "fake" once its offer was cancelled as fake, or while the company has reported it
-  const isFakeBooking = (o: Order) => offerMap[o.offerId]?.cancelReason === "fake" || reports.some((r) => r.orderId === o.id && r.status !== "canceled");
+  const isFakeBooking = (o: Order) => offerMap[o.offerId]?.cancelReason === "fake" || reports.some((r) => r.orderId === o.id && r.status !== "rejected");
   const fakeBookings = orders.filter(isFakeBooking);
   const bookings = orders.filter((o) => !isFakeBooking(o));
   const refundOf = (o: Order) => db.refunds.find((r) => r.orderId === o.id && r.status !== "rejected");

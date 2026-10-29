@@ -47,7 +47,7 @@ export const NAV: NavGroup[] = [
     items: [
       { key: "offers", href: "/admin/leads", perm: "leads", badge: (s) => s.offers.filter((o) => o.status === "new").length },
       { key: "shop", href: "/admin/leads/shop", perm: "leads" },
-      { key: "fakeReports", href: "/admin/leads/fake-reports", perm: "leads", badge: (s) => s.fakeReports.filter((r) => r.status === "open").length },
+      { key: "fakeReports", href: "/admin/leads/fake-reports", perm: "leads", badge: (s) => s.fakeReports.filter((r) => r.status === "new").length },
       { key: "offerTypes", href: "/admin/leads/services", perm: "leads" },
     ],
   },
