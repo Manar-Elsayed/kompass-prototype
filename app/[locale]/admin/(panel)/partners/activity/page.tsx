@@ -3,10 +3,10 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import type { Partner } from "@/lib/types";
-import { formatCHF, timeAgo } from "@/lib/utils";
+import { formatCHF, formatDate, timeAgo } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang } from "@/lib/mock/hooks";
-import { inLastDays, refNow } from "@/lib/mock/selectors";
+import { activityStatus, inLastDays, lastPaymentAt, type ActivityStatus } from "@/lib/mock/selectors";
 import { Avatar } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
@@ -14,7 +14,8 @@ import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { useCompanyActions } from "@/components/admin/company-actions";
 import { PageHeader } from "@/components/admin/ui";
 
-type Row = Partner & { leads30: number; spend30: number; health: "healthy" | "atRisk" | "dormant" };
+type Row = Partner & { leads30: number; spend30: number; lastPayment?: string; activity: ActivityStatus };
+const STATUSES: ActivityStatus[] = ["active", "slowing", "dormant", "inactive"];
 
 export default function ActivityPage() {
   const t = useTranslations();
@@ -22,22 +23,24 @@ export default function ActivityPage() {
   const router = useRouter();
   const partners = useStore((s) => s.partners).filter((p) => p.status === "approved");
   const orders = useStore((s) => s.orders);
-  const now = refNow();
+  const topups = useStore((s) => s.topups);
+  const dues = useStore((s) => s.dues);
   const { actionsFor, dialogs } = useCompanyActions();
 
   const rows: Row[] = partners.map((p) => {
     const mine = orders.filter((o) => o.partnerId === p.id);
     const recent = mine.filter((o) => inLastDays(o.createdAt, 30));
-    const daysSince = (now - Date.parse(p.lastSeen)) / 86_400_000;
+    const lastPayment = lastPaymentAt({ topups, dues }, p.id);
     return {
       ...p,
       leads30: recent.length,
       spend30: recent.reduce((a, o) => a + o.price, 0),
-      health: p.banned || daysSince > 14 ? "dormant" : recent.length < 2 ? "atRisk" : "healthy",
+      lastPayment,
+      activity: activityStatus(p, recent.length, lastPayment),
     };
   });
 
-  const tone = { healthy: "success", atRisk: "warning", dormant: "neutral" } as const;
+  const tone = { active: "success", slowing: "warning", dormant: "neutral", inactive: "danger" } as const;
 
   const columns: ColumnDef<Row, unknown>[] = [
     { id: "name", header: t("common.fields.company"), accessorFn: (r) => r.name, cell: ({ row: { original: r } }) => (
@@ -53,8 +56,31 @@ export default function ActivityPage() {
     { id: "leads30", header: t("admin.activity.last30"), accessorFn: (r) => r.leads30, cell: (c) => <span className="font-semibold">{c.getValue() as number}</span> },
     { id: "spend", header: t("admin.activity.spent30"), accessorFn: (r) => r.spend30, cell: (c) => formatCHF(c.getValue() as number, lang) },
     { id: "lastSeen", header: t("common.fields.lastSeen"), accessorFn: (r) => r.lastSeen, cell: (c) => <span className="text-muted-foreground">{timeAgo(c.getValue() as string, lang)}</span> },
-    { id: "health", header: t("admin.activity.health"), accessorFn: (r) => r.health, cell: (c) => <Badge dot tone={tone[c.getValue() as Row["health"]]}>{t(`admin.activity.${c.getValue()}`)}</Badge> },
-    actionsColumn<Row>((r) => <RowActions viewHref={`/admin/partners/${r.id}`} actions={actionsFor(r)} />),
+    {
+      id: "lastPayment",
+      header: t("admin.activity.lastPayment"),
+      // never-paid companies sort as the oldest
+      accessorFn: (r) => r.lastPayment ?? "",
+      cell: ({ row: { original: r } }) =>
+        r.lastPayment ? (
+          <div className="whitespace-nowrap">
+            <p>{formatDate(r.lastPayment, lang)}</p>
+            <p className="text-xs text-muted-foreground">{timeAgo(r.lastPayment, lang)}</p>
+          </div>
+        ) : (
+          <span className="text-muted-foreground">{t("admin.activity.never")}</span>
+        ),
+    },
+    {
+      id: "status",
+      header: t("common.fields.status"),
+      accessorFn: (r) => STATUSES.indexOf(r.activity),
+      cell: ({ row: { original: r } }) => (
+        <Badge dot tone={tone[r.activity]} title={t(`admin.activity.hints.${r.activity}`)}>{t(`admin.activity.status.${r.activity}`)}</Badge>
+      ),
+    },
+    // no money actions here: this page is about engagement, credit is given from Wallets
+    actionsColumn<Row>((r) => <RowActions viewHref={`/admin/partners/${r.id}`} actions={actionsFor(r, { money: false })} />),
   ];
 
   return (
@@ -67,7 +93,7 @@ export default function ActivityPage() {
         searchPlaceholder={t("admin.activity.searchPh")}
         initialSort={[{ id: "leads30", desc: true }]}
         onRowClick={(r) => router.push(`/admin/partners/${r.id}`)}
-        filters={[{ id: "health", label: t("admin.activity.health"), options: (["healthy", "atRisk", "dormant"] as const).map((h) => ({ value: h, label: t(`admin.activity.${h}`) })), get: (r) => r.health }]}
+        filters={[{ id: "status", label: t("common.fields.status"), options: STATUSES.map((h) => ({ value: h, label: t(`admin.activity.status.${h}`) })), get: (r) => r.activity }]}
       />
       {dialogs}
     </>
