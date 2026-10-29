@@ -1015,6 +1015,7 @@ export const admin = {
     requested: "Requested",
     requestedOn: "Requested on {date}",
     keepReview: "Keep review",
+    removalState: { pending: "Pending", approved: "Removed", rejected: "Not removed" },
     keptToast: "The review stays on {company}’s page",
     decideHint: "Check the review against the booking before you decide. The company sees your decision in its portal.",
   },

@@ -1018,6 +1018,7 @@ export const admin: Built<typeof Def> = {
     requested: "Beantragt",
     requestedOn: "Beantragt am {date}",
     keepReview: "Bewertung behalten",
+    removalState: { pending: "Ausstehend", approved: "Entfernt", rejected: "Nicht entfernt" },
     keptToast: "Die Bewertung bleibt auf der Seite von {company}",
     decideHint: "Prüfen Sie die Bewertung anhand der Buchung, bevor Sie entscheiden. Die Firma sieht Ihren Entscheid in ihrem Portal.",
   },

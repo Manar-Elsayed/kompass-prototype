@@ -116,11 +116,11 @@ const STATUS_TONE: Record<string, "neutral" | "primary" | "accent" | "success" |
 };
 
 /** Standardised status badge — one vocabulary for the whole ecosystem. */
-export function StatusBadge({ status, className }: { status: string; className?: string }) {
+export function StatusBadge({ status, label, className }: { status: string; label?: React.ReactNode; className?: string }) {
   const t = useTranslations("common.status");
   return (
     <Badge tone={STATUS_TONE[status] ?? "neutral"} dot className={className}>
-      {t.has(status) ? t(status) : status}
+      {label ?? (t.has(status) ? t(status) : status)}
     </Badge>
   );
 }
