@@ -717,8 +717,12 @@ export const useStore = create<Store>()(
         set((s) => {
           const order = s.orders.find((o) => o.id === orderId);
           const partner = s.partners.find((p) => p.id === order?.partnerId);
+          // the report is the company's refund claim: it waits as Pending until Kompass decides
+          const nextRefund = Math.max(0, ...s.refunds.map((r) => Number(r.id.slice(3)) || 0)) + 1;
+          const claim: Refund | undefined = order && { id: `RF-${String(nextRefund).padStart(3, "0")}`, partnerId: order.partnerId, amount: order.price, reason: "fake_lead", orderId, note: reason, status: "pending", createdAt: nowIso() };
           return {
             fakeReports: [{ id: `FR-${101 + s.fakeReports.length}`, orderId, reason, status: "new", createdAt: nowIso() }, ...s.fakeReports],
+            ...(claim ? { refunds: [claim, ...s.refunds] } : {}),
             notifications: notify(s, {
               kind: "report",
               title: { en: `Fake-offer report from ${partner?.name ?? "partner"}`, de: `Meldung einer gefälschten Anfrage von ${partner?.name ?? "Partner"}`, fr: `Signalement de fausse demande par ${partner?.name ?? "un partenaire"}`, it: `Segnalazione di richiesta falsa da ${partner?.name ?? "partner"}` },

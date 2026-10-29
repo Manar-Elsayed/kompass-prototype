@@ -34,7 +34,7 @@ export default function FakeReportsPage() {
   const companyOf = (r: FakeReport) => partnerMap[orderMap[r.orderId]?.partnerId]?.name ?? "–";
   // the refund of the reported purchase, if Kompass made or decided one
   const refundOf = (r: FakeReport) => refunds.find((x) => x.orderId === r.orderId && x.status === "refunded") ?? refunds.find((x) => x.orderId === r.orderId);
-  const REFUND_TONE: Record<RefundStatus | "none", "success" | "warning" | "danger" | "neutral"> = { refunded: "success", pending: "warning", rejected: "danger", none: "neutral" };
+  const REFUND_TONE: Record<RefundStatus, "success" | "warning" | "danger"> = { refunded: "success", pending: "warning", rejected: "danger" };
 
   const columns: ColumnDef<FakeReport, unknown>[] = [
     {
@@ -77,11 +77,11 @@ export default function FakeReportsPage() {
     {
       id: "refund",
       header: t("admin.fake.refundCol"),
-      accessorFn: (r) => refundOf(r)?.status ?? "none",
+      accessorFn: (r) => refundOf(r)?.status ?? "pending",
       // the price the company paid, and whether it got it back
       cell: ({ row: { original: r } }) => {
         const x = refundOf(r);
-        const state = x?.status ?? "none";
+        const state = x?.status ?? "pending";
         return (
           <div className="whitespace-nowrap">
             <p className="font-semibold">{formatCHF(orderMap[r.orderId]?.price ?? 0, lang)}</p>
@@ -133,7 +133,7 @@ export default function FakeReportsPage() {
         searchPlaceholder={t("admin.fake.searchPh")}
         filters={[
           { id: "status", label: t("common.fields.status"), options: FAKE_FLOW.map((s) => ({ value: s, label: t(`common.fakeStatus.${s}`) })), get: (r) => r.status },
-          { id: "refund", label: t("admin.fake.refundCol"), options: (["refunded", "pending", "rejected", "none"] as const).map((s) => ({ value: s, label: t(`admin.fake.refundState.${s}`) })), get: (r) => refundOf(r)?.status ?? "none" },
+          { id: "refund", label: t("admin.fake.refundCol"), options: (["pending", "refunded", "rejected"] as const).map((s) => ({ value: s, label: t(`admin.fake.refundState.${s}`) })), get: (r) => refundOf(r)?.status ?? "pending" },
         ]}
       />
       {dialog}

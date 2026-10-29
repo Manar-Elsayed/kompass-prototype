@@ -382,7 +382,7 @@ export const admin: Built<typeof Def> = {
   },
   fake: {
     refundCol: "Rückerstattung",
-    refundState: { refunded: "Erstattet", pending: "Ausstehend", rejected: "Abgelehnt", none: "Noch kein Antrag" },
+    refundState: { pending: "Ausstehend", refunded: "Erstattet", rejected: "Abgelehnt" },
     report: "Meldung",
     searchPh: "Meldung, Anfrage, Kunde, Firma oder Grund suchen…",
     title: "Meldungen gefälschter Anfragen",

@@ -379,7 +379,7 @@ export const admin = {
   },
   fake: {
     refundCol: "Refund",
-    refundState: { refunded: "Refunded", pending: "Pending", rejected: "Declined", none: "No claim yet" },
+    refundState: { pending: "Pending", refunded: "Refunded", rejected: "Rejected" },
     report: "Report",
     searchPh: "Search report, offer, customer, company or reason…",
     title: "Fake-offer reports",

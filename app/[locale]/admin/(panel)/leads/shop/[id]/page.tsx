@@ -22,7 +22,7 @@ import { DL, Mono, PageHeader } from "@/components/admin/ui";
 import { Timeline } from "@/components/admin/timeline";
 import { FakeStatusSelect, useFakeReportStatus } from "@/components/admin/fake-report-status";
 
-const REFUND_TONE: Record<RefundStatus | "none", "success" | "warning" | "danger" | "neutral"> = { refunded: "success", pending: "warning", rejected: "danger", none: "neutral" };
+const REFUND_TONE: Record<RefundStatus, "success" | "warning" | "danger"> = { refunded: "success", pending: "warning", rejected: "danger" };
 
 /**
  * One purchase: what the company paid and how, the offer and customer it bought, what happened after
@@ -60,7 +60,7 @@ export default function OrderDetail() {
   const partner = partnerMap[order.partnerId];
   const svc = offer && serviceMap[offer.serviceId];
   const refund = refunds.find((x) => x.orderId === order.id && x.status === "refunded") ?? refunds.find((x) => x.orderId === order.id);
-  const refundState = refund?.status ?? "none";
+  const refundState = refund?.status ?? "pending";
   const outcome = order.outcome && t(`portal.leads.outcome.${order.outcome}`);
 
   const timeline = [

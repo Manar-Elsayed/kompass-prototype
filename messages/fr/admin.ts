@@ -382,7 +382,7 @@ export const admin: Built<typeof Def> = {
   },
   fake: {
     refundCol: "Remboursement",
-    refundState: { refunded: "Remboursé", pending: "En attente", rejected: "Refusé", none: "Pas encore de demande" },
+    refundState: { pending: "En attente", refunded: "Remboursé", rejected: "Refusé" },
     report: "Signalement",
     searchPh: "Rechercher un signalement, une demande, un client, une entreprise ou un motif…",
     title: "Signalements de fausses demandes",
