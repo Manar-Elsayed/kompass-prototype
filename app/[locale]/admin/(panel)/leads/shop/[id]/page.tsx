@@ -19,6 +19,7 @@ import { MoneyDocDialog } from "@/components/shared/money-doc";
 import { receiptParty } from "@/components/shared/receipts";
 import { JobPlaces } from "@/components/shared/job-details";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
+import { Timeline } from "@/components/admin/timeline";
 import { FakeStatusSelect, useFakeReportStatus } from "@/components/admin/fake-report-status";
 
 const REFUND_TONE: Record<RefundStatus | "none", "success" | "warning" | "danger" | "neutral"> = { refunded: "success", pending: "warning", rejected: "danger", none: "neutral" };
@@ -219,17 +220,7 @@ export default function OrderDetail() {
           <Card>
             <CardHeader title={t("admin.leads.detail.timeline")} />
             <CardBody>
-              <ol className="space-y-4">
-                {timeline.map((e, i) => (
-                  <li key={i} className="flex gap-3">
-                    <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">{e.icon}</span>
-                    <div>
-                      <p className="text-sm font-semibold text-ink">{e.text}</p>
-                      <p className="text-xs text-muted-foreground">{formatDateTime(e.at, lang)}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              <Timeline events={timeline} />
             </CardBody>
           </Card>
         </div>
