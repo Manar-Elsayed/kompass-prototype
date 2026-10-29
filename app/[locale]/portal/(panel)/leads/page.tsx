@@ -284,7 +284,7 @@ function MyLeads() {
  */
 function OutcomeBanner({ order }: { order: Order }) {
   const t = useTranslations("portal.leads");
-  const tst = useTranslations("common.status");
+  const tst = useTranslations("common.fakeStatus");
   const lang = useLang();
   const offers = useStore((s) => s.offers);
   const fakeReports = useStore((s) => s.fakeReports);
