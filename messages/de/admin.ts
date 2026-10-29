@@ -966,7 +966,6 @@ export const admin: Built<typeof Def> = {
     reviewShown: "Die Bewertung ist wieder auf der Website",
     reviewHidden: "Die Bewertung ist auf der Website ausgeblendet",
     unpublishedNote: "Auf der Website ausgeblendet. Schalten Sie sie ein, um sie wieder zu zeigen.",
-    openBooking: "Buchung öffnen",
     booking: "Buchung",
     noBooking: "Keine Buchung verknüpft",
     publishedPartner: "Wird im öffentlichen Profil der Firma angezeigt.",

@@ -963,7 +963,6 @@ export const admin = {
     reviewShown: "The review is on the website again",
     reviewHidden: "The review is hidden from the website",
     unpublishedNote: "Hidden from the website. Switch it on to show it again.",
-    openBooking: "Open booking",
     booking: "Booking",
     noBooking: "No booking linked",
     publishedPartner: "Shown on the company’s public profile.",

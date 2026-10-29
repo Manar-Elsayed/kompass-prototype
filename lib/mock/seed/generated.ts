@@ -578,7 +578,12 @@ export const reviews: Review[] = [
   const used = new Set<string>();
   for (const r of reviews) {
     if (r.target === "kompass") continue;
-    const o = offers.find((x) => x.status === "completed" && x.chosenPartnerId === r.target && !used.has(x.id));
+    // the offer whose customer chose this company; otherwise one the company bought
+    const bought = (x: Offer) => orders.some((o) => o.offerId === x.id && o.partnerId === r.target);
+    const o =
+      offers.find((x) => x.status === "completed" && x.chosenPartnerId === r.target && !used.has(x.id)) ??
+      offers.find((x) => x.status !== "cancelled" && bought(x) && !used.has(x.id)) ??
+      offers.find((x) => bought(x));
     if (o) {
       used.add(o.id);
       r.offerId = o.id;
@@ -611,7 +616,9 @@ export const removals: RemovalRequest[] = lowReviews.slice(0, 4).map((r, i) => (
   ];
   demo.forEach(([name, stars, comment, status, age, reason], i) => {
     const id = `RV-D${i + 1}`;
-    reviews.push({ id, target: pid, name, email: `demo${i + 1}@mail.ch`, stars, comment, status: "approved", hidden: status === "approved" || undefined, createdAt: daysAgo(age) });
+    // like every company review, it came from an offer the company bought
+    const offerId = offers.find((x) => orders.some((o) => o.offerId === x.id && o.partnerId === pid) && !reviews.some((r) => r.offerId === x.id))?.id;
+    reviews.push({ id, target: pid, name, email: `demo${i + 1}@mail.ch`, stars, comment, status: "approved", hidden: status === "approved" || undefined, createdAt: daysAgo(age), offerId });
     removals.push({ id: `RR-${removals.length + 1}`, reviewId: id, partnerId: pid, reason, status, createdAt: daysAgo(age - 3) });
   });
 }
