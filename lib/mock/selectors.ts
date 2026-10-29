@@ -597,3 +597,30 @@ export function dashboardStats(db: StatsDB, p: Period, visitorsOnDay: (day: stri
 export type ApplicationStage = "pending" | "contract_sent" | "in_review" | "rejected" | "approved";
 export const applicationStage = (p: Pick<Partner, "status" | "contractSignedAt">): ApplicationStage =>
   p.status === "contract_sent" && p.contractSignedAt ? "in_review" : p.status;
+
+/** When the company last paid in: a wallet top-up (not credit) or a bank payment Kompass approved. */
+export function lastPaymentAt(db: Pick<DB, "topups" | "dues">, partnerId: string): string | undefined {
+  const dates = [
+    ...db.topups.filter((x) => x.partnerId === partnerId && x.method !== "credit").map((x) => x.createdAt),
+    ...db.dues.filter((d) => d.partnerId === partnerId && d.status === "confirmed").map((d) => d.decidedAt ?? d.createdAt),
+  ];
+  return dates.sort().at(-1);
+}
+
+export type ActivityStatus = "active" | "slowing" | "dormant" | "inactive";
+/**
+ * How engaged a partner is, first rule that matches:
+ * Inactive: banned, or no offer, payment or login in 30 days.
+ * Active: bought an offer in 30 days, logged in within 14 and paid within 15.
+ * Slowing down: still around, last payment within 45 days.
+ * Dormant: last payment more than 45 days ago, or never.
+ */
+export function activityStatus(p: Pick<Partner, "banned" | "lastSeen">, offers30: number, lastPayment: string | undefined): ActivityStatus {
+  const ago = (iso?: string) => (iso ? (refNow() - Date.parse(iso)) / DAY : Infinity);
+  const seen = ago(p.lastSeen);
+  const paid = ago(lastPayment);
+  if (p.banned || (offers30 === 0 && paid > 30 && seen > 30)) return "inactive";
+  if (offers30 > 0 && seen <= 14 && paid <= 15) return "active";
+  if (paid <= 45) return "slowing";
+  return "dormant";
+}
