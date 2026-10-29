@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ExternalLink, FileText, ImageIcon, Lock, Trash2, Upload } from "lucide-react";
+import { FileText, ImageIcon, Lock, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { DOC_KEYS, type CompanyFile, type FileCategory } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioCards } from "@/components/ui/controls";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, useConfirm } from "@/components/shared/bits";
+import { FileButtons, readFile, useFileActions } from "@/components/shared/file-card";
 
 const CATEGORIES: FileCategory[] = ["logo", "photo", "document", "other"];
 const MAX_BYTES = 1_500_000;
@@ -39,6 +40,7 @@ export function FileManager({ partnerId }: { partnerId?: string }) {
   const remove = useStore((s) => s.remove);
   const partnerMap = usePartnerMap();
   const { confirm, dialog } = useConfirm();
+  const fileActions = useFileActions();
   const [company, setCompany] = useState("all");
   const [category, setCategory] = useState<"all" | FileCategory | "required">("all");
   const [uploading, setUploading] = useState(false);
@@ -110,12 +112,8 @@ export function FileManager({ partnerId }: { partnerId?: string }) {
                   {e.size > 0 && fmtSize(e.size)} · {formatDate(e.uploadedAt, lang)} · {t(`by.${e.uploadedBy}`)}
                 </p>
               </div>
-              <div className="flex flex-col gap-1">
-                {e.url !== "#" && (
-                  <Button asChild size="icon-sm" variant="ghost" aria-label={t("open")}>
-                    <a href={e.url} target="_blank" rel="noreferrer"><ExternalLink /></a>
-                  </Button>
-                )}
+              <div className="flex items-start gap-0.5">
+                <FileButtons file={{ name: e.name, url: e.url, size: e.size }} actions={fileActions} />
                 {e.required ? (
                   <span className="flex size-8 items-center justify-center text-muted-foreground" title={t("requiredHint")}><Lock className="size-4" /></span>
                 ) : (
@@ -130,6 +128,7 @@ export function FileManager({ partnerId }: { partnerId?: string }) {
       )}
       {uploading && <UploadFileDialog partnerId={partnerId ?? (company !== "all" ? company : undefined)} fixed={!!partnerId} onClose={() => setUploading(false)} />}
       {dialog}
+      {fileActions.dialog}
     </div>
   );
 }
@@ -145,13 +144,11 @@ function UploadFileDialog({ partnerId, fixed, onClose }: { partnerId?: string; f
   const [category, setCategory] = useState<FileCategory>("photo");
   const [file, setFile] = useState<{ name: string; url: string; size: number } | null>(null);
 
-  const pick = (f: File) => {
+  const pick = async (f: File) => {
     if (f.size > MAX_BYTES) return toast.error(t("tooBig"));
-    // images are kept as data URLs so they show in the prototype; other files keep their name only
-    if (!f.type.startsWith("image/")) return setFile({ name: f.name, url: "#", size: f.size });
-    const r = new FileReader();
-    r.onload = () => setFile({ name: f.name, url: String(r.result), size: f.size });
-    r.readAsDataURL(f);
+    // images and PDFs are kept as data URLs so they can be viewed and downloaded; other files keep their name only
+    const read = await readFile(f);
+    if (read) setFile({ name: read.name, url: read.url ?? "#", size: read.size ?? f.size });
   };
 
   const save = () => {

@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge } from "@/components/shared/bits";
 import { Icon } from "@/components/shared/icon";
+import { FileButtons, useFileActions } from "@/components/shared/file-card";
 import { DL, ProfileHeader } from "@/components/admin/ui";
 import { ExpiryDialog } from "@/components/admin/expiry-dialog";
 
@@ -37,6 +38,7 @@ export default function ApplicationDetail() {
   const serviceMap = useServiceMap();
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const files = useFileActions();
 
   if (!p) {
     if (!hydrated) return <Skeleton className="h-64" />;
@@ -61,10 +63,11 @@ export default function ApplicationDetail() {
 
   const open = p.status !== "rejected";
   // what the checklist shows; approving with gaps is allowed (e.g. paper contract) but flagged
-  const checks: { label: string; ok: boolean; detail: string }[] = [
+  const checks: { label: string; ok: boolean; detail: string; file?: string }[] = [
     {
       label: t("admin.partners.contract"),
       ok: !!p.contractSignedAt,
+      file: p.documents.contract?.file ?? (p.contractSignedAt ? p.contractVersion : undefined),
       detail: p.contractSignedAt
         ? `${ta("signedBy", { name: p.contractSignedBy ?? p.ownerName, date: formatDate(p.contractSignedAt, lang) })}${p.contractVersion ? ` · ${p.contractVersion}` : ""}`
         : p.status === "contract_sent"
@@ -76,6 +79,7 @@ export default function ApplicationDetail() {
       return {
         label: t(`admin.partners.${k}`),
         ok: !!d && d.status !== "rejected",
+        file: d?.file,
         detail: d ? `${d.file} · ${t(`admin.partners.docs.status.${d.status}`)}` : t("admin.partners.notUploaded"),
       };
     }),
@@ -180,10 +184,11 @@ export default function ApplicationDetail() {
                 {checks.map((c) => (
                   <li key={c.label} className="flex items-start gap-3">
                     {c.ok ? <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" /> : <Circle className="mt-0.5 size-5 shrink-0 text-muted-foreground" />}
-                    <span className="min-w-0">
+                    <span className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold text-ink">{c.label}</span>
                       <span className="block text-xs text-muted-foreground">{c.detail}</span>
                     </span>
+                    {c.file && <span className="-my-1 flex shrink-0"><FileButtons file={{ name: c.file }} actions={files} /></span>}
                   </li>
                 ))}
               </ul>
@@ -246,6 +251,7 @@ export default function ApplicationDetail() {
           }}
         />
       )}
+      {files.dialog}
     </>
   );
 }

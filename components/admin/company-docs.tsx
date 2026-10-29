@@ -16,6 +16,7 @@ import { Field } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioCards } from "@/components/ui/controls";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FileButtons, useFileActions } from "@/components/shared/file-card";
 
 const toInput = (iso?: string) => (iso ? iso.slice(0, 10) : "");
 const fromInput = (v: string) => (v ? new Date(`${v}T12:00:00`).toISOString() : undefined);
@@ -37,6 +38,7 @@ export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: {
   const review = useStore((s) => s.reviewDocument);
   const setExpiry = useStore((s) => s.setDocumentExpiry);
   const [uploading, setUploading] = useState<DocKey | null>(null);
+  const files = useFileActions();
   const state = documentState(partner);
 
   return (
@@ -61,6 +63,7 @@ export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: {
                   </p>
                 </div>
                 {d && <Badge tone={d.status === "valid" ? "success" : d.status === "rejected" ? "danger" : "info"}>{td(`status.${d.status}`)}</Badge>}
+                {d && <FileButtons file={{ name: d.file }} actions={files} />}
                 {as === "company" && key === "contract" ? (
                   <Button size="sm" variant="outline" disabled={!!d} onClick={() => setUploading(key)}>
                     <Upload /> {td("upload")}
@@ -108,6 +111,7 @@ export function CompanyDocuments({ partner, as, keys = DOC_KEYS, onboarding }: {
         })}
       </ul>
       {uploading && <UploadDocDialog partner={partner} docKey={uploading} as={as} onClose={() => setUploading(null)} />}
+      {files.dialog}
     </div>
   );
 }
