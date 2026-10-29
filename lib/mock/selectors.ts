@@ -236,7 +236,8 @@ export function pctDelta(cur: number, prev: number) {
 /** Days before a document's expiry when admin and the company are warned. */
 export const DOC_WARN_DAYS = 30;
 
-export type DocState = "ok" | "expiring" | "review" | "expired" | "missing";
+/** Missing also covers a document still waiting for Kompass to check it: it isn't approved yet. */
+export type DocState = "ok" | "expiring" | "expired" | "missing";
 
 /**
  * Where a company's required documents stand. `ok` means every document is uploaded, checked by
@@ -264,7 +265,7 @@ export function documentState(p: Pick<Partner, "documents">) {
     }
   }
   const ok = !missing.length && !expired.length && !review.length;
-  const state: DocState = missing.length ? "missing" : expired.length ? "expired" : review.length ? "review" : expiring.length ? "expiring" : "ok";
+  const state: DocState = missing.length || review.length ? "missing" : expired.length ? "expired" : expiring.length ? "expiring" : "ok";
   return { ok, state, missing, expired, expiring, review, next };
 }
 
