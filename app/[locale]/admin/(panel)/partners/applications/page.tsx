@@ -1,11 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Clock, FileSignature, Send, XCircle } from "lucide-react";
+import { Clock, FileCheck2, FileSignature, Send, XCircle } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import type { Partner } from "@/lib/types";
 import { formatDate, timeAgo } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
+import { applicationStage } from "@/lib/mock/selectors";
 import { useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/controls";
@@ -14,7 +15,7 @@ import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { KpiCard, PageHeader } from "@/components/admin/ui";
 
-const STATUSES = ["pending", "contract_sent", "rejected"] as const;
+const STATUSES = ["pending", "contract_sent", "in_review", "rejected"] as const;
 
 /** Companies that applied on the website. Decisions are made on each application's own page. */
 export default function ApplicationsPage() {
@@ -28,7 +29,7 @@ export default function ApplicationsPage() {
   const serviceMap = useServiceMap();
 
   const apps = partners.filter((p) => p.status !== "approved");
-  const count = (s: (typeof STATUSES)[number]) => apps.filter((p) => p.status === s).length;
+  const count = (s: (typeof STATUSES)[number]) => apps.filter((p) => applicationStage(p) === s).length;
   const docsCount = (p: Partner) => Object.values(p.documents).filter(Boolean).length;
   const href = (p: Partner) => `/admin/partners/applications/${p.id}`;
 
@@ -85,16 +86,17 @@ export default function ApplicationsPage() {
         </div>
       ),
     },
-    { id: "status", header: t("common.fields.status"), accessorFn: (p) => p.status, cell: (c) => <StatusBadge status={c.getValue() as string} /> },
+    { id: "status", header: t("common.fields.status"), accessorFn: (p) => applicationStage(p), cell: (c) => <StatusBadge status={c.getValue() as string} /> },
     actionsColumn<Partner>((p) => <RowActions viewHref={href(p)} viewLabel={ta("view")} />),
   ];
 
   return (
     <>
       <PageHeader title={ta("title")} subtitle={ta("subtitle")} />
-      <div className="mb-4 grid gap-4 sm:grid-cols-3">
+      <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label={t("common.status.pending")} value={count("pending")} icon={<Clock />} tone="warning" footer={ta("pendingHint")} />
-        <KpiCard label={t("common.status.contract_sent")} value={count("contract_sent")} icon={<Send />} tone="info" footer={ta("contractSentHint")} />
+        <KpiCard label={t("common.status.contract_sent")} value={count("contract_sent")} icon={<Send />} tone="accent" footer={ta("contractSentHint")} />
+        <KpiCard label={t("common.status.in_review")} value={count("in_review")} icon={<FileCheck2 />} tone="info" footer={ta("inReviewHint")} />
         <KpiCard label={t("common.status.rejected")} value={count("rejected")} icon={<XCircle />} footer={ta("rejectedHint")} />
       </div>
       <DataTable
@@ -105,7 +107,7 @@ export default function ApplicationsPage() {
         search={(p) => `${p.name} ${p.ownerName} ${p.city} ${p.canton} ${p.email} ${p.regNumber}`}
         searchPlaceholder={ta("searchPh")}
         filters={[
-          { id: "status", label: t("common.fields.status"), options: STATUSES.map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (p) => p.status },
+          { id: "status", label: t("common.fields.status"), options: STATUSES.map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (p) => applicationStage(p) },
           {
             id: "service",
             label: t("common.fields.service"),

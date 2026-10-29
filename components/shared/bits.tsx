@@ -98,6 +98,7 @@ const STATUS_TONE: Record<string, "neutral" | "primary" | "accent" | "success" |
   open: "info",
   testing: "primary",
   contract_sent: "accent",
+  in_review: "info",
   active: "success",
   inactive: "neutral",
   banned: "danger",

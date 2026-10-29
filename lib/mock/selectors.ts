@@ -583,3 +583,11 @@ export function dashboardStats(db: StatsDB, p: Period, visitorsOnDay: (day: stri
     },
   };
 }
+
+/**
+ * Where an application stands for the admin. Once the company has signed the contract it is no
+ * longer waiting for the signature but for Kompass's final check: In review.
+ */
+export type ApplicationStage = "pending" | "contract_sent" | "in_review" | "rejected" | "approved";
+export const applicationStage = (p: Pick<Partner, "status" | "contractSignedAt">): ApplicationStage =>
+  p.status === "contract_sent" && p.contractSignedAt ? "in_review" : p.status;
