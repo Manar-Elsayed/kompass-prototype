@@ -114,7 +114,7 @@ export function KpiCard({
   icon?: React.ReactNode;
   delta?: number;
   deltaLabel?: React.ReactNode;
-  tone?: "primary" | "accent" | "success" | "warning" | "info";
+  tone?: "primary" | "accent" | "success" | "warning" | "info" | "danger";
   href?: string;
   footer?: React.ReactNode;
 }) {
@@ -124,6 +124,7 @@ export function KpiCard({
     success: "bg-success-soft text-success",
     warning: "bg-warning-soft text-warning",
     info: "bg-info-soft text-info",
+    danger: "bg-danger-soft text-danger",
   }[tone];
   const body = (
     <Card className={cn("h-full p-5 transition", href && "hover:border-primary/30 hover:shadow-pop")}>

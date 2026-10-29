@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Building2, Check, CheckCircle2, Clock, Landmark, X } from "lucide-react";
+import { Building2, Check, CheckCircle2, Clock, X, XCircle } from "lucide-react";
 import type { Payout } from "@/lib/types";
 import { formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
@@ -40,6 +40,7 @@ export default function PayoutsPage() {
 
   const requested = payouts.filter((p) => p.status === "requested");
   const paid30 = payouts.filter((p) => p.status === "paid" && inLastDays(p.decidedAt ?? p.createdAt, 30));
+  const rejected = payouts.filter((p) => p.status === "rejected");
 
   const columns: ColumnDef<Payout, unknown>[] = [
     { id: "id", header: tp("payout"), accessorFn: (p) => p.id, cell: (c) => <Mono>{c.getValue() as string}</Mono> },
@@ -77,7 +78,7 @@ export default function PayoutsPage() {
       <div className="mb-4 grid gap-4 sm:grid-cols-3">
         <KpiCard label={tp("requestedTotal")} value={formatCHF(requested.reduce((a, p) => a + p.amount, 0), lang)} icon={<Clock />} tone="warning" footer={tp("count", { count: requested.length })} />
         <KpiCard label={tp("paid30")} value={formatCHF(paid30.reduce((a, p) => a + p.amount, 0), lang)} icon={<CheckCircle2 />} tone="success" footer={tp("count", { count: paid30.length })} />
-        <KpiCard label={t("common.table.all")} value={payouts.length} icon={<Landmark />} />
+        <KpiCard label={t("common.status.rejected")} value={formatCHF(rejected.reduce((a, p) => a + p.amount, 0), lang)} icon={<XCircle />} tone="danger" footer={tp("count", { count: rejected.length })} />
       </div>
       <DataTable
         data={payouts}
