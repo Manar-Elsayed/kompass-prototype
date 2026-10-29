@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Building2, Check, CheckCircle2, Clock, Receipt, X } from "lucide-react";
+import { Building2, CheckCircle2, Clock, Receipt } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import type { PartnerDue } from "@/lib/types";
 import { formatCHF, formatDate } from "@/lib/utils";
@@ -14,7 +14,6 @@ import { DueStatusBadge } from "@/components/shared/due-status";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
-import { useDueDecision } from "@/components/admin/due-actions";
 
 export default function PartnerDuesPage() {
   const t = useTranslations();
@@ -23,7 +22,6 @@ export default function PartnerDuesPage() {
   const dues = useStore((s) => s.dues);
   const partnerMap = usePartnerMap();
   const router = useRouter();
-  const { approve, reject, dialog } = useDueDecision();
   const href = (d: PartnerDue) => `/admin/finance/partner-dues/${d.id}`;
 
   const pending = dues.filter((d) => d.status === "pending");
@@ -66,11 +64,8 @@ export default function PartnerDuesPage() {
     actionsColumn<PartnerDue>((d) => (
       <RowActions
         viewHref={href(d)}
-        actions={[
-          { label: t("common.actions.approve"), icon: <Check />, onSelect: () => approve(d), hidden: d.status !== "pending" },
-          { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => reject(d), hidden: d.status !== "pending" },
-          { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${d.partnerId}`, separated: d.status === "pending" },
-        ]}
+        // approve / reject only on the payment page, next to the proof the decision depends on
+        actions={[{ label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${d.partnerId}`, separated: true }]}
       />
     )),
   ];
@@ -93,7 +88,6 @@ export default function PartnerDuesPage() {
         rowClassName={(d) => (d.status === "pending" ? "bg-warning-soft/25" : undefined)}
       />
 
-      {dialog}
     </>
   );
 }
