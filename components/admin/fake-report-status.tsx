@@ -65,11 +65,11 @@ export function useFakeReportStatus() {
   return { setStatus, dialog };
 }
 
-/** The coloured status picker; Canceled and Rejected are final. */
+/** The coloured status picker; Confirmed fake and Not fake are final. */
 export function FakeStatusSelect({ report, onChange, className }: { report: FakeReport; onChange: (s: FakeReportStatus) => void; className?: string }) {
-  const t = useTranslations("common.status");
+  const t = useTranslations("common.fakeStatus");
   return (
-    <div className={cn("w-36 rounded-lg", TONE[report.status], className)} onClick={(e) => e.stopPropagation()}>
+    <div className={cn("w-40 rounded-lg", TONE[report.status], className)} onClick={(e) => e.stopPropagation()}>
       <Select
         size="sm"
         className="border-transparent bg-transparent font-semibold text-inherit shadow-none"

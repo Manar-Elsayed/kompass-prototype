@@ -132,7 +132,7 @@ export default function FakeReportsPage() {
         }}
         searchPlaceholder={t("admin.fake.searchPh")}
         filters={[
-          { id: "status", label: t("common.fields.status"), options: FAKE_FLOW.map((s) => ({ value: s, label: t(`common.status.${s}`) })), get: (r) => r.status },
+          { id: "status", label: t("common.fields.status"), options: FAKE_FLOW.map((s) => ({ value: s, label: t(`common.fakeStatus.${s}`) })), get: (r) => r.status },
           { id: "refund", label: t("admin.fake.refundCol"), options: (["refunded", "pending", "rejected", "none"] as const).map((s) => ({ value: s, label: t(`admin.fake.refundState.${s}`) })), get: (r) => refundOf(r)?.status ?? "none" },
         ]}
       />

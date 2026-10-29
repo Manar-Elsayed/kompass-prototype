@@ -191,6 +191,12 @@ export const common = {
     cash: "Need the money for the business",
     other: "Other reason",
   },
+  fakeStatus: {
+    new: "New",
+    testing: "Testing",
+    canceled: "Confirmed fake",
+    rejected: "Not fake",
+  },
   dueStatus: {
     pending: "Waiting for check",
     confirmed: "Approved",

@@ -194,6 +194,12 @@ export const common: Built<typeof Def> = {
     cash: "Geld fürs Geschäft benötigt",
     other: "Anderer Grund",
   },
+  fakeStatus: {
+    new: "Neu",
+    testing: "In Prüfung",
+    canceled: "Fake bestätigt",
+    rejected: "Kein Fake",
+  },
   dueStatus: {
     pending: "Wartet auf Prüfung",
     confirmed: "Freigegeben",
