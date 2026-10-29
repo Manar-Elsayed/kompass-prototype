@@ -22,7 +22,6 @@ import { RadioCards } from "@/components/ui/controls";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge } from "@/components/shared/bits";
-import { DueStatusBadge } from "@/components/shared/due-status";
 import { ProofCard } from "@/components/shared/payment-proof";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 import { DetailSheet, SheetSection } from "@/components/admin/row-actions";
@@ -91,10 +90,7 @@ function Payments() {
   const myDues = dues.filter((d) => d.partnerId === partner.id);
   const myInvoices = invoices.filter((i) => i.partnerId === partner.id).sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
   const myPayouts = payouts.filter((p) => p.partnerId === partner.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const pending = myDues.filter((d) => d.status === "pending").reduce((a, d) => a + d.amount, 0);
   const openInvoices = myInvoices.filter((i) => i.status === "due");
-  // a transfer receipt for this invoice is waiting for Kompass
-  const checking = (i: Invoice) => i.status === "due" && dues.some((d) => d.invoiceId === i.id && d.status === "pending");
   const invStatus = (i: Invoice) => (i.status === "paid" ? "paid" : isOverdue(i) ? "overdue" : "due");
   const receipts = useReceipts();
   const openDoc = (i: Invoice) => setDoc({ kind: "invoice", id: i.id, date: i.issuedAt, partner, line: ti("creditLine"), amount: i.amount, status: invStatus(i), dueAt: i.dueAt, paidAt: i.paidAt });
@@ -131,10 +127,9 @@ function Payments() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <KpiCard label={t("balance")} value={formatCHF(partner.wallet, lang)} icon={<Wallet />} />
             <KpiCard label={t("withdrawable")} value={formatCHF(money.available, lang)} icon={<Landmark />} tone="success" footer={<button className="font-semibold text-primary hover:underline" onClick={() => setPayout(true)}>{t("requestPayout")}</button>} />
-            <KpiCard label={t("pending")} value={formatCHF(pending, lang)} icon={<Clock />} tone="warning" />
             <KpiCard label={t("creditDue")} value={formatCHF(money.creditDue, lang)} icon={<HandCoins />} tone="info" footer={openInvoices.length ? <button className="font-semibold text-primary hover:underline" onClick={() => setTab("invoices")}>{t("openInvoices", { count: openInvoices.length })}</button> : t("noOpenInvoices")} />
           </div>
           <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
@@ -147,7 +142,6 @@ function Payments() {
                       <Mono>{d.reference}</Mono>
                       <span className="flex-1 text-muted-foreground">{td(d.method)}</span>
                       <span className="font-bold">{formatCHF(d.amount, lang)}</span>
-                      <DueStatusBadge status={d.status} />
                       <span className="w-24 text-end text-xs text-muted-foreground">{formatDate(d.createdAt, lang)}</span>
                     </button>
                   ))
@@ -176,10 +170,10 @@ function Payments() {
                       <span className="block text-xs">{i.status === "paid" && i.paidAt ? t("paidOn", { date: formatDate(i.paidAt, lang) }) : t("dueOn", { date: formatDate(i.dueAt, lang) })}</span>
                     </span>
                     <span className="font-bold">{formatCHF(i.amount, lang)}</span>
-                    {checking(i) ? <Badge tone="info" dot>{t("receiptChecking")}</Badge> : <StatusBadge status={invStatus(i)} />}
+                    <StatusBadge status={invStatus(i)} />
                     <span className="flex gap-1.5">
                       <Button variant="ghost" size="icon-sm" onClick={() => openDoc(i)} aria-label={t("downloadPdf")}><Download /></Button>
-                      {i.status === "due" && !checking(i) && <Button size="sm" variant={isOverdue(i) ? "accent" : "outline"} onClick={() => setPaying(i)}>{t("pay")}</Button>}
+                      {i.status === "due" && <Button size="sm" variant={isOverdue(i) ? "accent" : "outline"} onClick={() => setPaying(i)}>{t("pay")}</Button>}
                     </span>
                   </div>
                 ))
@@ -251,7 +245,6 @@ function Payments() {
         open={!!due}
         onOpenChange={(v) => !v && setDueId(null)}
         title={<Mono className="text-lg">{due?.reference}</Mono>}
-        badge={due && <DueStatusBadge status={due.status} />}
         subtitle={due && formatDate(due.createdAt, lang)}
       >
         {due && (
@@ -265,7 +258,7 @@ function Payments() {
                 ]}
               />
             </SheetSection>
-            <p className="text-sm text-muted-foreground">{t(`dueHint.${due.status}`)}</p>
+            <p className="text-sm text-muted-foreground">{due.invoiceId ? t("duePaidInvoice", { id: due.invoiceId, date: formatDate(due.createdAt, lang) }) : t("dueCredited", { date: formatDate(due.createdAt, lang) })}</p>
           </>
         )}
       </DetailSheet>

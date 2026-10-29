@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Building2, Check, CheckCircle2, Clock, X } from "lucide-react";
+import { Building2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { formatCHF, formatDate } from "@/lib/utils";
@@ -12,10 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/bits";
-import { DueStatusBadge } from "@/components/shared/due-status";
 import { ProofCard } from "@/components/shared/payment-proof";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
-import { useDueDecision } from "@/components/admin/due-actions";
 
 /** One payment a company reported: its proof, what it pays, and the wallet it changes. */
 export default function PaymentDetail() {
@@ -27,7 +25,6 @@ export default function PaymentDetail() {
   const due = useStore((s) => s.dues.find((d) => d.id === id));
   const patch = useStore((s) => s.patch);
   const partner = useStore((s) => s.partners.find((p) => p.id === due?.partnerId));
-  const { approve, reject, dialog } = useDueDecision();
 
   if (!due) {
     if (!hydrated) return <Skeleton className="h-64" />;
@@ -37,17 +34,13 @@ export default function PaymentDetail() {
       </Card>
     );
   }
-  const pending = due.status === "pending";
 
   return (
     <>
       <PageHeader
         crumbs={[{ label: td("title"), href: "/admin/finance/partner-dues" }, { label: due.id }]}
         title={
-          <span className="flex flex-wrap items-center gap-3">
-            <Mono className="text-2xl">{due.id}</Mono>
-            <DueStatusBadge status={due.status} />
-          </span>
+<Mono className="text-2xl">{due.id}</Mono>
         }
         subtitle={`${partner?.name ?? "–"} · ${td("uploaded")} ${formatDate(due.createdAt, lang)}`}
         actions={
@@ -57,28 +50,16 @@ export default function PaymentDetail() {
                 <Link href={`/admin/partners/${partner.id}`}><Building2 /> {t("admin.rows.openCompany")}</Link>
               </Button>
             )}
-            {pending && (
-              <>
-                <Button variant="danger-soft" onClick={() => reject(due)}><X /> {t("common.actions.reject")}</Button>
-                <Button variant="success" onClick={() => approve(due)}><Check /> {t("common.actions.approve")}</Button>
-              </>
-            )}
           </>
         }
       />
 
       <div className="space-y-4">
-        {/* where the check stands, across the full width so it's read first */}
-        {pending ? (
-          <p className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning-soft/50 p-4 text-sm text-ink">
-            <Clock className="mt-0.5 size-4 shrink-0 text-warning" /> {td("noteWaiting")}
-          </p>
-        ) : (
-          <p className={due.status === "confirmed" ? "flex items-center gap-2 rounded-xl border border-success/30 bg-success-soft/40 p-4 text-sm font-semibold text-success" : "flex items-center gap-2 rounded-xl border border-danger/30 bg-danger-soft/40 p-4 text-sm font-semibold text-danger"}>
-            {due.status === "confirmed" ? <CheckCircle2 className="size-4" /> : <X className="size-4" />}
-            {td(due.status === "confirmed" ? "noteApproved" : "noteRejected", { date: formatDate(due.decidedAt ?? due.createdAt, lang) })}
-          </p>
-        )}
+        {/* what the payment did, across the full width so it's read first */}
+        <p className="flex items-center gap-2 rounded-xl border border-success/30 bg-success-soft/40 p-4 text-sm font-semibold text-success">
+          <CheckCircle2 className="size-4" />
+          {due.invoiceId ? td("invoicePaidOn", { id: due.invoiceId, date: formatDate(due.createdAt, lang) }) : td("creditedOn", { date: formatDate(due.createdAt, lang) })}
+        </p>
 
         {/* the payment and the wallet it changes, side by side */}
         <div className="grid gap-4 md:grid-cols-2">
@@ -105,18 +86,6 @@ export default function PaymentDetail() {
                   items={[
                     { label: t("common.fields.company"), value: <Link href={`/admin/partners/${partner.id}`} className="font-semibold text-primary hover:underline">{partner.name}</Link> },
                     { label: t("admin.rows.walletNow"), value: formatCHF(partner.wallet, lang) },
-                    ...(pending
-                      ? [
-                          {
-                            label: t("admin.rows.walletAfter"),
-                            value: due.invoiceId ? (
-                              <span className="text-muted-foreground">{formatCHF(partner.wallet, lang)} · {td("walletUnchanged")}</span>
-                            ) : (
-                              <span className="font-bold text-success">{formatCHF(partner.wallet + due.amount, lang)}</span>
-                            ),
-                          },
-                        ]
-                      : []),
                   ]}
                 />
               </CardBody>
@@ -140,7 +109,6 @@ export default function PaymentDetail() {
           </CardBody>
         </Card>
       </div>
-      {dialog}
     </>
   );
 }

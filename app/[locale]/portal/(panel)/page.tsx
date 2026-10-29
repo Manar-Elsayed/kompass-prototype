@@ -40,7 +40,6 @@ export default function PortalDashboard() {
   const available = availableLeads({ offers, orders }, partner).sort((a, b) => b.offer.createdAt.localeCompare(a.offer.createdAt));
   const mine = orders.filter((o) => o.partnerId === partner.id);
   const last30 = mine.filter((o) => inLastDays(o.createdAt, 30));
-  const pending = dues.filter((d) => d.partnerId === partner.id && d.status === "pending");
   const rating = ratings[partner.id];
   const fakeReports = useStore((s) => s.fakeReports);
   const refunds = useStore((s) => s.refunds);
@@ -61,7 +60,7 @@ export default function PortalDashboard() {
           value={formatCHF(partner.wallet, lang)}
           icon={<Wallet />}
           href="/portal/payments"
-          footer={pending.length ? <span className="flex items-center gap-1 text-warning"><Clock className="size-3.5" />{t("pending", { count: pending.length })}</span> : <span className="font-semibold text-primary">{t("topUp")} →</span>}
+          footer={<span className="font-semibold text-primary">{t("topUp")} →</span>}
         />
         <KpiCard label={t("available")} value={available.length} icon={<ShoppingBag />} tone="accent" href="/portal/shop" />
         <KpiCard label={t("bought30")} value={last30.length} icon={<ClipboardCheck />} tone="info" href="/portal/leads" footer={t("spent30", { amount: formatCHF(last30.reduce((a, o) => a + o.price, 0), lang) })} />
