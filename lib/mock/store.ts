@@ -383,7 +383,7 @@ export const useStore = create<Store>()(
           notifications: notify(s, {
             kind: "payout",
             title: { en: `Payout request CHF ${amount} from ${partner.name}`, de: `Auszahlungsantrag CHF ${amount} von ${partner.name}`, fr: `Demande de versement CHF ${amount} de ${partner.name}`, it: `Richiesta di pagamento CHF ${amount} da ${partner.name}` },
-            href: "/admin/finance/payouts",
+            href: "/admin/finance/refunds?tab=payouts",
           }),
         });
         return { ok: true, payout };
