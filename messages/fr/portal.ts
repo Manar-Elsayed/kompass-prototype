@@ -102,6 +102,7 @@ export const portal: Built<typeof Def> = {
     discountHint: "Kompass a baissé le prix de cette demande : {old} → {price}.",
     slots: "{left} place(s) sur {total} restante(s)",
     lastSlot: "Dernière place",
+    slotsCol: "Places restantes",
     closingSoon: "Expire bientôt",
     buy: "Acheter la demande",
     buyFor: "Acheter pour {price}",

@@ -99,6 +99,7 @@ export const portal = {
     discountHint: "Kompass lowered the price of this offer: {old} → {price}.",
     slots: "{left} of {total} slots left",
     lastSlot: "Last slot",
+    slotsCol: "Slots left",
     closingSoon: "Expires soon",
     buy: "Buy offer",
     buyFor: "Buy for {price}",
