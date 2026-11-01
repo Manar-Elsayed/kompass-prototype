@@ -32,7 +32,9 @@ export function TabsContent({ className, ...props }: React.ComponentProps<typeof
 
 /* Underline variant for page-level tabs */
 export function UnderlineTabsList({ className, ...props }: React.ComponentProps<typeof TP.List>) {
-  return <TP.List className={cn("flex gap-6 overflow-x-auto border-b border-border", className)} {...props} />;
+  // the active underline overlaps the border by 1 px (-mb-px); pb-px keeps it inside, so the
+  // horizontally scrollable list never shows a vertical scrollbar
+  return <TP.List className={cn("flex gap-6 overflow-x-auto overflow-y-hidden border-b border-border pb-px", className)} {...props} />;
 }
 export function UnderlineTabsTrigger({ className, ...props }: React.ComponentProps<typeof TP.Trigger>) {
   return (

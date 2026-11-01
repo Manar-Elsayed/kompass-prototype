@@ -383,6 +383,7 @@ export const admin: Built<typeof Def> = {
     subtitle: "Richieste acquistate dai partner, tramite lo shop o la distribuzione dinamica.",
     order: "Ordine",
     channel: "Canale",
+    result: "Esito",
     shop: "Shop",
     dynamic: "Dinamico",
     manual: "Manuale",

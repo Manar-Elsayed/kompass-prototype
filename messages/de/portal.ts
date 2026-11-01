@@ -251,6 +251,7 @@ export const portal: Built<typeof Def> = {
     recentMoves: "Letzte Bewegungen",
     fullStatement: "Ganzer Kontoauszug",
     invoicesHint: "Rechnungen für Kredit, den Kompass Ihnen gewährt hat. Bezahlen Sie sie online oder per Banküberweisung.",
+    invoicesSearchPh: "Rechnungsnummer oder Referenz suchen…",
     noInvoicesBody: "Wenn Kompass Ihnen Kredit gewährt (später bezahlen), erscheint die Rechnung hier.",
     paidOn: "Bezahlt am {date}",
     downloadPdf: "Rechnung öffnen, um sie zu drucken oder als PDF zu speichern",

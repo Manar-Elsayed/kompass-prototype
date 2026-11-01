@@ -10,7 +10,8 @@ import { isLiveReview, type Order, type Payout, type Review } from "@/lib/types"
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, usePartnerRatings } from "@/lib/mock/hooks";
-import { isOverdue, walletLedger, winRate, lowBalance } from "@/lib/mock/selectors";
+import { isOverdue, leadOutcome, walletLedger, winRate, lowBalance, type LeadGroup } from "@/lib/mock/selectors";
+import { LeadStatus } from "@/components/portal/lead-outcome";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -18,7 +19,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { Avatar, Switch } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
 import { EmptyState, Stars, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
 import { receiptParty, useReceipts } from "@/components/shared/receipts";
@@ -213,15 +214,10 @@ function PartnerDetail() {
     { id: "date", header: t("common.fields.date"), accessorFn: (o) => o.createdAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
     {
       id: "status",
-      header: t("common.fields.status"),
-      accessorFn: (o) => offerMap[o.offerId]?.status ?? "",
-      // the offer's status, and underneath what the company reported about the deal
-      cell: ({ row: { original: o } }) => (
-        <span className="flex flex-col items-start gap-0.5">
-          {offerMap[o.offerId]?.status ? <StatusBadge status={offerMap[o.offerId].status} /> : "–"}
-          {o.outcome && !o.executed && <span className="text-xs text-muted-foreground">{tb("companySays", { outcome: t(`portal.leads.outcome.${o.outcome}`) })}</span>}
-        </span>
-      ),
+      header: t("admin.shop.result"),
+      accessorFn: (o) => resultOf(o),
+      // the same result the company sees in My offers (won, lost, executed…, confirmed by the customer)
+      cell: ({ row: { original: o } }) => <LeadStatus order={o} />,
     },
     ...(fake
       ? [
@@ -253,9 +249,10 @@ function PartnerDetail() {
       />
     )),
   ];
-  // filter options only list what this company's bookings actually have
+  const resultOf = (o: Order): LeadGroup => leadOutcome(db, o).group;
+  // filter options only list the results this company's bookings actually have
   const statusOptions = (rows: Order[]) =>
-    [...new Set(rows.map((o) => offerMap[o.offerId]?.status).filter(Boolean) as string[])].map((x) => ({ value: x, label: t(`common.status.${x}`) }));
+    (["open", "won", "lost", "executed", "reported", "cancelled"] as const).filter((g) => rows.some((o) => resultOf(o) === g)).map((g) => ({ value: g, label: t(`portal.leads.groups.${g}`) }));
   const channelFilter = {
     id: "channel",
     label: t("admin.shop.channel"),
@@ -414,12 +411,12 @@ function PartnerDetail() {
         <TabsContent value="bookings">
           {/* one table at a time: the company's normal bookings, or the ones reported or confirmed as fake */}
           <Tabs defaultValue="offers">
-            <TabsList className="mb-3">
-              <TabsTrigger value="offers">{tb("title")} <span className="ms-1.5 rounded-full bg-surface-2 px-1.5 text-xs">{bookings.length}</span></TabsTrigger>
-              <TabsTrigger value="fake">
+            <UnderlineTabsList className="mb-3">
+              <UnderlineTabsTrigger value="offers">{tb("title")} <span className="ms-1.5 rounded-full bg-surface-2 px-1.5 text-xs">{bookings.length}</span></UnderlineTabsTrigger>
+              <UnderlineTabsTrigger value="fake">
                 <AlertTriangle className="size-3.5 text-danger" /> {tb("fakeTitle")} <span className="ms-1.5 rounded-full bg-surface-2 px-1.5 text-xs">{fakeBookings.length}</span>
-              </TabsTrigger>
-            </TabsList>
+              </UnderlineTabsTrigger>
+            </UnderlineTabsList>
             <TabsContent value="offers">
               <DataTable
                 data={bookings}
@@ -428,7 +425,7 @@ function PartnerDetail() {
                 searchPlaceholder={tb("searchPh")}
                 initialSort={[{ id: "date", desc: true }]}
                 onRowClick={(o) => router.push(`/admin/leads/${o.offerId}`)}
-                filters={[channelFilter, { id: "status", label: t("common.fields.status"), options: statusOptions(bookings), get: (o) => offerMap[o.offerId]?.status ?? "" }]}
+                filters={[channelFilter, { id: "status", label: t("admin.shop.result"), options: statusOptions(bookings), get: resultOf }]}
               />
             </TabsContent>
             <TabsContent value="fake">

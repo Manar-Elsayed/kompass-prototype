@@ -248,6 +248,7 @@ export const portal = {
     recentMoves: "Latest movements",
     fullStatement: "Full statement",
     invoicesHint: "Invoices for credit Kompass gave you. Pay them online or by bank transfer.",
+    invoicesSearchPh: "Search invoice number or reference…",
     noInvoicesBody: "When Kompass gives you credit (pay later), the invoice appears here.",
     paidOn: "Paid {date}",
     downloadPdf: "Open the invoice to print or save it as PDF",

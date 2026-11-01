@@ -251,6 +251,7 @@ export const portal: Built<typeof Def> = {
     recentMoves: "Derniers mouvements",
     fullStatement: "Relevé complet",
     invoicesHint: "Les factures du crédit que Kompass vous a accordé. Payez-les en ligne ou par virement.",
+    invoicesSearchPh: "Rechercher un n° de facture ou une référence…",
     noInvoicesBody: "Lorsque Kompass vous accorde un crédit (payer plus tard), la facture apparaît ici.",
     paidOn: "Payée le {date}",
     downloadPdf: "Ouvrir la facture pour l’imprimer ou l’enregistrer en PDF",

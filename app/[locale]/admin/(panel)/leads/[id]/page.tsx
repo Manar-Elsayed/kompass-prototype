@@ -42,6 +42,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { Icon } from "@/components/shared/icon";
+import { LeadStatus } from "@/components/portal/lead-outcome";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
 import { Timeline } from "@/components/admin/timeline";
 import { canSendSurvey, useSendSurvey } from "@/components/admin/survey-send";
@@ -328,13 +329,8 @@ export default function LeadDetail() {
                           </p>
                           {o.note && <p className="mt-0.5 text-xs text-ink">{o.note}</p>}
                         </div>
-                        {o.partnerId === offer.chosenPartnerId && <Badge tone="primary"><Hand /> {tl("chosen")}</Badge>}
-                        {o.outcome && !o.executed && (
-                          <Badge tone={o.outcome === "won" ? "success" : o.outcome === "unreachable" ? "warning" : "neutral"} title={tl("companyReported")}>
-                            {t(`portal.leads.outcome.${o.outcome}`)}
-                          </Badge>
-                        )}
-                        {o.executed && <Badge tone="success">{t("admin.shop.executed")}</Badge>}
+                        {/* the same result the company sees in My offers; "confirmed by customer" when the survey decided it */}
+                        <LeadStatus order={o} />
                         <span className="font-semibold">{formatCHF(o.price, lang)}</span>
                       </li>
                     );

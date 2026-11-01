@@ -16,7 +16,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { Avatar } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/bits";
 import { PageHeader } from "@/components/admin/ui";
@@ -98,10 +98,10 @@ export default function InboxPage() {
     <>
       <PageHeader title={ti("title")} subtitle={ti("subtitle")}>
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="mt-5">
-          <TabsList>
-            <TabsTrigger value="messages">{ti("messages")} <Badge tone={overdue.length ? "danger" : "accent"}>{overdue.length || contacts.filter((c) => !c.read).length}</Badge></TabsTrigger>
-            <TabsTrigger value="questions">{ti("questions")} <Badge tone={qOverdue.length ? "danger" : "accent"}>{qOverdue.length || questions.filter((q) => !q.answered).length}</Badge></TabsTrigger>
-          </TabsList>
+          <UnderlineTabsList>
+            <UnderlineTabsTrigger value="messages">{ti("messages")} <Badge tone={overdue.length ? "danger" : "accent"}>{overdue.length || contacts.filter((c) => !c.read).length}</Badge></UnderlineTabsTrigger>
+            <UnderlineTabsTrigger value="questions">{ti("questions")} <Badge tone={qOverdue.length ? "danger" : "accent"}>{qOverdue.length || questions.filter((q) => !q.answered).length}</Badge></UnderlineTabsTrigger>
+          </UnderlineTabsList>
         </Tabs>
       </PageHeader>
 

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { Avatar, RadioCards } from "@/components/ui/controls";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/shared/bits";
 import { MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
@@ -106,10 +106,10 @@ export default function InvoicesPage() {
         <KpiCard label={ti("paid30")} value={formatCHF(sum(paid30), lang)} icon={<CheckCircle2 />} tone="success" />
       </div>
       <Tabs defaultValue="credit">
-        <TabsList className="mb-3">
-          <TabsTrigger value="credit">{ti("creditTab")}</TabsTrigger>
-          <TabsTrigger value="receipts">{ti("receiptsTab")}</TabsTrigger>
-        </TabsList>
+        <UnderlineTabsList className="mb-3">
+          <UnderlineTabsTrigger value="credit">{ti("creditTab")}</UnderlineTabsTrigger>
+          <UnderlineTabsTrigger value="receipts">{ti("receiptsTab")}</UnderlineTabsTrigger>
+        </UnderlineTabsList>
         <TabsContent value="credit">
           <DataTable
             data={invoices}
