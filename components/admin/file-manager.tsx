@@ -31,7 +31,7 @@ const isImage = (e: Entry) => e.category === "logo" || e.category === "photo";
  * One company's folder: logos, photos and other documents, plus its required documents (managed on
  * its Documents tab), with a search, a category filter and Upload.
  */
-export function FileManager({ partnerId }: { partnerId: string }) {
+export function FileManager({ partnerId, uploading: uploadingProp, onUploadingChange }: { partnerId: string; uploading?: boolean; onUploadingChange?: (v: boolean) => void }) {
   const t = useTranslations("admin.files");
   const tp = useTranslations("admin.partners");
   const lang = useLang();
@@ -42,7 +42,10 @@ export function FileManager({ partnerId }: { partnerId: string }) {
   const fileActions = useFileActions();
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<"all" | FileCategory | "required">("all");
-  const [uploading, setUploading] = useState(false);
+  const [uploadingOwn, setUploadingOwn] = useState(false);
+  // controlled by the page when its header has the Upload button (the folder page); otherwise the toolbar has it
+  const uploading = uploadingProp ?? uploadingOwn;
+  const setUploading = onUploadingChange ?? setUploadingOwn;
 
   const entries: Entry[] = useMemo(() => {
     const scope = partners.filter((p) => p.id === partnerId);
@@ -89,9 +92,11 @@ export function FileManager({ partnerId }: { partnerId: string }) {
             options={[{ value: "all", label: t("allCategories") }, ...CATEGORIES.map((c) => ({ value: c, label: t(`categories.${c}`) })), { value: "required", label: t("categories.required") }]}
           />
         </div>
-        <Button onClick={() => setUploading(true)}>
-          <Upload /> {t("upload")}
-        </Button>
+        {!onUploadingChange && (
+          <Button onClick={() => setUploading(true)}>
+            <Upload /> {t("upload")}
+          </Button>
+        )}
       </div>
 
       {shown.length ? (
