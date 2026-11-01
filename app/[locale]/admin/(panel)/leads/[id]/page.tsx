@@ -41,12 +41,12 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge, useConfirm } from "@/components/shared/bits";
 import { Icon } from "@/components/shared/icon";
+import { LeadStatus } from "@/components/portal/lead-outcome";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
 import { Timeline } from "@/components/admin/timeline";
 import { canSendSurvey, useSendSurvey } from "@/components/admin/survey-send";
 import { FakeStatusSelect, isFinalReport, useFakeReportStatus } from "@/components/admin/fake-report-status";
 import { SurveyEmail } from "@/components/site/request-bits";
-import { LeadStatus } from "@/components/portal/lead-outcome";
 import { JobFacts, JobPlaces } from "@/components/shared/job-details";
 
 const cantonOf = (city: string) => CITIES.find((c) => c.city === city)?.canton;
