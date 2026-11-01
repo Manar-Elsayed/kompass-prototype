@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { BellRing, CheckCircle2, Flag, Headset, Mail, Phone, PhoneMissed, ShoppingBag, Trophy, UserCheck, UserX } from "lucide-react";
+import { BellRing, CheckCircle2, Flag, Headset, PhoneMissed, ShoppingBag, Trophy, UserCheck, UserX } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { ORDER_OUTCOMES, type OrderOutcome } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
@@ -15,6 +15,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/bits";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
 import { JobFacts, JobPlaces } from "@/components/shared/job-details";
+import { ContactMenu } from "@/components/shared/contact-menu";
 import { LeadStatus, OutcomeBanner, ReportDialog, leadAbilities, useLeadActions } from "@/components/portal/lead-outcome";
 
 /**
@@ -144,10 +145,7 @@ export default function MyOfferPage() {
                   <span dir="ltr">{lead.requester.phone}</span>
                 </p>
               )}
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Button asChild className="w-full"><a href={`tel:${lead.phone}`}><Phone /> {t("call")}</a></Button>
-                <Button asChild className="w-full" variant="outline"><a href={`mailto:${lead.email}`}><Mail /> {t("email")}</a></Button>
-              </div>
+              <ContactMenu phone={lead.phone} email={lead.email} label={t("contactCustomer")} variant="default" className="mt-3 w-full" />
               <p className="mt-3 break-all text-sm" dir="ltr">{lead.phone} · {lead.email}</p>
               {lead.buyersNotifiedAt && (
                 <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><BellRing className="size-3.5 shrink-0" /> {t("customerNotified", { date: formatDate(lead.buyersNotifiedAt, lang) })}</p>
