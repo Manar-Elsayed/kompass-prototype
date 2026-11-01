@@ -6,7 +6,7 @@ import { Eye, MoreHorizontal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogDescription, DialogTitle, SheetContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, SheetContent } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { ColumnDef } from "./data-table";
 
@@ -107,6 +107,7 @@ export function DetailSheet({
   footer,
   children,
   wide,
+  centered,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -116,10 +117,13 @@ export function DetailSheet({
   footer?: React.ReactNode;
   children: React.ReactNode;
   wide?: boolean;
+  /** A centered popup instead of the side panel, for short records decided right there (e.g. a payout). */
+  centered?: boolean;
 }) {
+  const Content = centered ? DialogContent : SheetContent;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <SheetContent className={cn("overflow-y-auto", wide ? "max-w-xl" : "max-w-md")}>
+      <Content className={cn("overflow-y-auto", centered && "block gap-0 p-0", wide ? "max-w-xl" : centered ? "max-w-lg" : "max-w-md")}>
         <div className="flex min-h-full flex-col">
           <div className="space-y-5 p-6">
             <div className="pe-8">
@@ -133,7 +137,7 @@ export function DetailSheet({
           </div>
           {footer && <div className="sticky bottom-0 mt-auto flex flex-wrap gap-2 border-t bg-surface p-4">{footer}</div>}
         </div>
-      </SheetContent>
+      </Content>
     </Dialog>
   );
 }

@@ -745,7 +745,7 @@ export const admin: Built<typeof Def> = {
     title: "Remboursements & versements",
     subtitle: "L’argent qui retourne aux entreprises : remboursements sur leur portefeuille quand une demande est confirmée fausse (ou à titre d’exception motivée), et versement sur leur compte bancaire du solde non utilisé.",
     tabWallet: "Remboursements sur le portefeuille",
-    tabPayouts: "Versements à la banque",
+    tabPayouts: "Versements",
     waitingTotal: "En attente de décision",
     waitingSplit: "{refunds, plural, one {# remboursement} other {# remboursements}} · {payouts, plural, one {# versement} other {# versements}}",
     refundedWallets: "Remboursé sur les portefeuilles (30 jours)",

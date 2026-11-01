@@ -59,11 +59,8 @@ export function PayoutsPanel() {
     actionsColumn<Payout>((p) => (
       <RowActions
         onView={() => setOpenId(p.id)}
-        actions={[
-          { label: tp("pay"), icon: <Check />, onSelect: () => decide(p, "paid"), hidden: p.status !== "requested" },
-          { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => decide(p, "rejected"), hidden: p.status !== "requested" },
-          { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${p.partnerId}?tab=wallet`, separated: p.status === "requested" },
-        ]}
+        // pay and reject are decided in the popup, where the reason and the bank account are
+        actions={[{ label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${p.partnerId}?tab=wallet` }]}
       />
     )),
   ];
@@ -81,6 +78,7 @@ export function PayoutsPanel() {
         rowClassName={(p) => (p.status === "requested" ? "bg-warning-soft/25" : undefined)}
       />
       <DetailSheet
+        centered
         open={!!open}
         onOpenChange={(v) => !v && setOpenId(null)}
         title={<Mono className="text-lg">{open?.id}</Mono>}
