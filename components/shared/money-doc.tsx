@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CheckCircle2, Download, Printer } from "lucide-react";
 import { toast } from "sonner";
@@ -39,7 +39,8 @@ export interface MoneyDoc {
  * A credit invoice or a receipt in a dialog. Download PDF saves the document as an A4 file named
  * after its number; Print prints only the document.
  */
-export function MoneyDocDialog({ doc, onClose }: { doc: MoneyDoc; onClose: () => void }) {
+/** The document in a dialog with Download PDF and Print. With `autoDownload`, it saves the PDF right away and closes. */
+export function MoneyDocDialog({ doc, onClose, autoDownload }: { doc: MoneyDoc; onClose: () => void; autoDownload?: boolean }) {
   const t = useTranslations("admin.invoices");
   const ref = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
@@ -70,6 +71,15 @@ export function MoneyDocDialog({ doc, onClose }: { doc: MoneyDoc; onClose: () =>
       setBusy(false);
     }
   };
+
+  // the document has to be on screen to be drawn into the PDF, so it opens briefly, saves, then closes
+  useEffect(() => {
+    if (!autoDownload) return;
+    const id = window.setTimeout(() => void downloadPdf().then(onClose), 300);
+    return () => window.clearTimeout(id);
+    // run once for this document
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>

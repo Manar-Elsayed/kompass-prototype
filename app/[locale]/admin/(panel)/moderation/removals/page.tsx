@@ -89,10 +89,11 @@ export default function RemovalsPage() {
       <RowActions
         onView={() => setOpenId(rr.id)}
         actions={[
-          { label: t("admin.del.removal.button"), icon: <Trash2 />, tone: "danger", onSelect: () => removeReview(rr), hidden: rr.status !== "pending" },
           { label: tr("keepReview"), icon: <ShieldCheck />, onSelect: () => keepReview(rr), hidden: rr.status !== "pending" },
           { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${rr.partnerId}?tab=reviews`, separated: rr.status === "pending" },
           { label: t("admin.rows.openLead"), icon: <ClipboardList />, href: reviewMap[rr.reviewId]?.offerId ? `/admin/leads/${reviewMap[rr.reviewId]!.offerId}` : undefined, hidden: !reviewMap[rr.reviewId]?.offerId },
+          // the destructive action closes the menu
+          { label: t("admin.del.removal.button"), icon: <Trash2 />, tone: "danger", onSelect: () => removeReview(rr), hidden: rr.status !== "pending", separated: true },
         ]}
       />
     )),

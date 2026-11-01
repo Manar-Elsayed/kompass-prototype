@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BellRing, CheckCircle2, Flag, Headset, Mail, Phone, PhoneMissed, ShoppingBag, Trophy, UserCheck, UserX } from "lucide-react";
-import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { ORDER_OUTCOMES, type OrderOutcome } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
@@ -13,10 +12,10 @@ import { useCurrentPartner, useHydrated, useL, useLang, useServiceMap } from "@/
 import { leadOutcome } from "@/lib/mock/selectors";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { EmptyState, useConfirm } from "@/components/shared/bits";
+import { EmptyState } from "@/components/shared/bits";
 import { DL, Mono, PageHeader } from "@/components/admin/ui";
 import { JobFacts, JobPlaces } from "@/components/shared/job-details";
-import { LeadStatus, OutcomeBanner, ReportDialog } from "@/components/portal/lead-outcome";
+import { LeadStatus, OutcomeBanner, ReportDialog, leadAbilities, useLeadActions } from "@/components/portal/lead-outcome";
 
 /**
  * One bought offer on its own page: what happened to it, how the call went, the customer to call
@@ -37,9 +36,8 @@ export default function MyOfferPage() {
   const offers = useStore((s) => s.offers);
   const fakeReports = useStore((s) => s.fakeReports);
   const refunds = useStore((s) => s.refunds);
-  const patch = useStore((s) => s.patch);
   const serviceMap = useServiceMap();
-  const { confirm, dialog } = useConfirm();
+  const actions = useLeadActions();
   const [reporting, setReporting] = useState(false);
 
   // the saved purchases load after the first render; only then is a missing offer really missing
@@ -56,27 +54,9 @@ export default function MyOfferPage() {
   }
 
   const out = leadOutcome({ offers, fakeReports, refunds }, order);
-  // after the call: how it went (click the same answer again to clear it)
-  const setOutcome = (outcome: OrderOutcome) => {
-    const clear = order.outcome === outcome;
-    patch("orders", order.id, clear ? { outcome: undefined, outcomeAt: undefined } : { outcome, outcomeAt: new Date().toISOString() });
-    toast.success(clear ? t("outcomeCleared") : t("outcomeSaved", { status: t(`outcome.${outcome}`) }));
-  };
-  const markExecuted = () =>
-    confirm({
-      title: t("markDoneTitle", { id: order.offerId }),
-      body: t("markDoneBody"),
-      tone: "success",
-      confirmLabel: t("markDone"),
-      onConfirm: () => {
-        patch("orders", order.id, { executed: true });
-        toast.success(t("executed"));
-      },
-    });
-  const canReport = !out.report && out.group === "open";
-  const canExecute = out.group === "open" || out.group === "won";
-  // the company says how it went until the customer's answer settles it
-  const canSetOutcome = ["open", "won", "lost"].includes(out.group) && !out.report && !out.byCustomer;
+  const { canReport, canExecute, canSetOutcome } = leadAbilities(out);
+  const setOutcome = (outcome: OrderOutcome) => actions.setOutcome(order, outcome);
+  const markExecuted = () => actions.markExecuted(order);
 
   return (
     <>
@@ -192,7 +172,7 @@ export default function MyOfferPage() {
       </div>
 
       {reporting && <ReportDialog order={order} onClose={() => setReporting(false)} />}
-      {dialog}
+      {actions.dialog}
     </>
   );
 }

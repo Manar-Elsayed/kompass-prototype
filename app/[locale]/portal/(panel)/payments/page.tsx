@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowDownToLine, Check, Clock, Copy, CreditCard, Download, FileText, HandCoins, ImageUp, Landmark, Upload, Wallet, Search } from "lucide-react";
+import { ArrowDownToLine, Check, Clock, Copy, CreditCard, Download, Eye, FileText, HandCoins, ImageUp, Landmark, Upload, Wallet, Search } from "lucide-react";
 import { toast } from "sonner";
 import { PAYOUT_REASONS, type Invoice, type PartnerDue, type PayoutReason } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
@@ -51,6 +51,7 @@ function Payments() {
   const td = useTranslations("admin.dues");
   const ti = useTranslations("admin.invoices");
   const tReason = useTranslations("common.payoutReasons");
+  const tc = useTranslations("common.actions");
   const lang = useLang();
   const params = useSearchParams();
   const partner = useCurrentPartner()!;
@@ -69,6 +70,8 @@ function Payments() {
   // the receipt upload can be opened for a specific invoice (after "I've made the transfer")
   const [uploadInvoice, setUploadInvoice] = useState<string | undefined>(undefined);
   const [doc, setDoc] = useState<MoneyDoc | null>(null);
+  // Download saves the PDF straight away; View (or the invoice number) opens the invoice
+  const [docDownload, setDocDownload] = useState(false);
   const [dueId, setDueId] = useState<string | null>(null);
   const due = dues.find((d) => d.id === dueId);
 
@@ -114,7 +117,11 @@ function Payments() {
   const openInvoices = myInvoices.filter((i) => i.status === "due");
   const invStatus = (i: Invoice) => (i.status === "paid" ? "paid" : isOverdue(i) ? "overdue" : "due");
   const receipts = useReceipts();
-  const openDoc = (i: Invoice) => setDoc({ kind: "invoice", id: i.id, date: i.issuedAt, partner, line: ti("creditLine"), amount: i.amount, status: invStatus(i), dueAt: i.dueAt, paidAt: i.paidAt });
+  const openDoc = (i: Invoice, download = false) => {
+    setDocDownload(download);
+    setDoc(invoiceDoc(i));
+  };
+  const invoiceDoc = (i: Invoice): MoneyDoc => ({ kind: "invoice", id: i.id, date: i.issuedAt, partner, line: ti("creditLine"), amount: i.amount, status: invStatus(i), dueAt: i.dueAt, paidAt: i.paidAt });
 
   return (
     <>
@@ -191,7 +198,8 @@ function Payments() {
                     <span className="font-bold">{formatCHF(i.amount, lang)}</span>
                     <StatusBadge status={invStatus(i)} />
                     <span className="flex gap-1.5">
-                      <Button variant="ghost" size="icon-sm" onClick={() => openDoc(i)} aria-label={t("downloadPdf")}><Download /></Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => openDoc(i)} aria-label={tc("view")} title={tc("view")}><Eye /></Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => openDoc(i, true)} aria-label={ti("downloadPdf")} title={ti("downloadPdf")}><Download /></Button>
                       {i.status === "due" && <Button size="sm" variant={isOverdue(i) ? "accent" : "outline"} onClick={() => setPaying(i)}>{t("pay")}</Button>}
                     </span>
                   </div>
@@ -259,7 +267,7 @@ function Payments() {
           }}
         />
       )}
-      {doc && <MoneyDocDialog doc={doc} onClose={() => setDoc(null)} />}
+      {doc && <MoneyDocDialog key={`${doc.id}-${docDownload}`} doc={doc} autoDownload={docDownload} onClose={() => setDoc(null)} />}
       <DetailSheet
         open={!!due}
         onOpenChange={(v) => !v && setDueId(null)}
