@@ -1315,7 +1315,6 @@ export const admin: Built<typeof Def> = {
     billing: "Fatturazione",
     defaultLeadPrice: "Prezzo predefinito della richiesta (CHF)",
     maxOffers: "Max. ditte per richiesta",
-    expiry: "Scadenza della richiesta (giorni)",
     autoDistribute: "Distribuisci richieste automaticamente",
     autoDistributeHint: "Vende le nuove richieste in modo dinamico ai partner idonei, oltre che nello shop.",
     vat: "Aliquota IVA (%)",

@@ -1315,7 +1315,6 @@ export const admin: Built<typeof Def> = {
     billing: "Abrechnung",
     defaultLeadPrice: "Standard-Anfragepreis (CHF)",
     maxOffers: "Max. Firmen pro Anfrage",
-    expiry: "Gültigkeit der Anfrage (Tage)",
     autoDistribute: "Anfragen automatisch verteilen",
     autoDistributeHint: "Neue Anfragen zusätzlich zum Shop dynamisch an passende Partner verkaufen.",
     vat: "MWST-Satz (%)",

@@ -575,7 +575,7 @@ export const portal = {
       },
       leads: {
         title: "Offers",
-        body: "Each request goes to at most as many companies as the customer asked for. The Partner buys offers in the partner portal. Contact details are shown only after the purchase and may be used only for this request. Offers on a request can be sent for up to {days} days.",
+        body: "Each request goes to at most as many companies as the customer asked for. The Partner buys offers in the partner portal. Contact details are shown only after the purchase and may be used only for this request. A request can be bought until 5 days before the customer’s service date.",
       },
       documents: {
         title: "Documents",

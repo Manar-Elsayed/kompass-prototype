@@ -195,7 +195,7 @@ function ContractSigner({ partner }: { partner: Partner }) {
   const [read, setRead] = useState(false);
   const [busy, setBusy] = useState(false);
   const box = useRef<HTMLDivElement>(null);
-  const values = { company: partner.name, owner: partner.ownerName, address: `${partner.address}, ${partner.zip} ${partner.city}`, reg: partner.regNumber, days: config.leadExpiryDays };
+  const values = { company: partner.name, owner: partner.ownerName, address: `${partner.address}, ${partner.zip} ${partner.city}`, reg: partner.regNumber };
   // policies and instructions only: no prices or billing, and no term or end date
   const sections = ["parties", "scope", "leads", "documents", "conduct", "privacy", "validity"] as const;
   const valid = read && agree && name.trim().length >= 3;

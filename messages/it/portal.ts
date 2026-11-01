@@ -578,7 +578,7 @@ export const portal: Built<typeof Def> = {
       },
       leads: {
         title: "Richieste",
-        body: "Ogni richiesta va al massimo a tante ditte quante ne ha chieste il cliente. Il Partner acquista le richieste nel portale partner. I dati di contatto sono visibili solo dopo l’acquisto e possono essere usati solo per questa richiesta. Le offerte per una richiesta possono essere inviate per un massimo di {days} giorni.",
+        body: "Ogni richiesta va al massimo a tante ditte quante ne ha chieste il cliente. Il Partner acquista le richieste nel portale partner. I dati di contatto sono visibili solo dopo l’acquisto e possono essere usati solo per questa richiesta. Una richiesta può essere acquistata fino a 5 giorni prima della data del servizio del cliente.",
       },
       documents: {
         title: "Documenti",

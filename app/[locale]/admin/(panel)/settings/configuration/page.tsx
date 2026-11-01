@@ -67,11 +67,10 @@ export default function ConfigurationPage() {
       <div className="grid gap-4">
         <Card>
           <CardHeader title={tc("leads")} />
-          <CardBody className="grid gap-4 sm:grid-cols-3">
+          <CardBody className="grid gap-4 sm:grid-cols-2">
             <Field label={tc("defaultLeadPrice")}><Input type="number" dir="ltr" value={draft.defaultLeadPrice} onChange={num("defaultLeadPrice")} /></Field>
             <Field label={tc("maxOffers")}><Input type="number" dir="ltr" min={1} max={10} value={draft.maxOffersPerLead} onChange={num("maxOffersPerLead")} /></Field>
-            <Field label={tc("expiry")}><Input type="number" dir="ltr" value={draft.leadExpiryDays} onChange={num("leadExpiryDays")} /></Field>
-            <div className="sm:col-span-3">{toggleRow("autoDistribute", tc("autoDistribute"), tc("autoDistributeHint"))}</div>
+            <div className="sm:col-span-2">{toggleRow("autoDistribute", tc("autoDistribute"), tc("autoDistributeHint"))}</div>
           </CardBody>
         </Card>
         <Card>
