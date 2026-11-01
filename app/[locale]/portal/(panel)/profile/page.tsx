@@ -218,7 +218,8 @@ function MediaTab() {
 
   return (
     <div className="grid gap-4 xl:grid-cols-[360px_1fr]">
-      <Card className="h-fit">
+      {/* both cards take the row height, so their edges line up */}
+      <Card>
         <CardHeader title={t("logo")} description={t("logoHint")} />
         <CardBody className="flex items-center gap-4">
           <Avatar name={partner.name} src={logo?.url} square className="size-24 text-2xl" />
