@@ -1,14 +1,14 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Ban, BadgePercent, Plus, Send, ShieldCheck, UserPlus } from "lucide-react";
+import { AlertTriangle, Ban, Plus, Send, ShieldCheck, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { Offer } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
-import { canDiscount, daysLeft, isExpiringSoon, surveySent } from "@/lib/mock/selectors";
+import { daysLeft, isExpiringSoon, surveySent } from "@/lib/mock/selectors";
 import { useStore } from "@/lib/mock/store";
 import { useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,6 @@ import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { Mono, PageHeader } from "@/components/admin/ui";
 import { canSendSurvey, useSendSurvey } from "@/components/admin/survey-send";
-import { DiscountDialog } from "@/components/admin/offer-discount";
 import { routeFull, routeText } from "@/lib/jobs";
 
 const STATUSES = ["new", "in_progress", "completed", "expired", "cancelled"] as const;
@@ -47,7 +46,6 @@ function Leads() {
   const serviceMap = useServiceMap();
   const { confirm, dialog } = useConfirm();
   const { ask: askSurvey, dialog: surveyDialog } = useSendSurvey();
-  const [discounting, setDiscounting] = useState<Offer | null>(null);
   const reviews = useStore((s) => s.reviews);
   const answeredIds = useMemo(() => new Set(reviews.map((r) => r.offerId)), [reviews]);
 
@@ -177,13 +175,6 @@ function Leads() {
                   },
                 }),
             },
-            // a discount comes late, to sell the last slots (expiring soon or one slot left), as on the offer page
-            {
-              label: t(o.discount ? "admin.leads.detail.editDiscount" : "admin.leads.detail.addDiscount"),
-              icon: <BadgePercent />,
-              hidden: o.status !== "in_progress" || full || !(o.discount || canDiscount(o, sold[o.id] ?? 0)),
-              onSelect: () => setDiscounting(o),
-            },
             { label: t("admin.rows.assignCompany"), icon: <UserPlus />, href: `/admin/leads/${o.id}#assign`, hidden: !open || full },
             { label: t(surveySent(o) ? "admin.leads.survey.resend" : "admin.leads.survey.send"), icon: <Send />, hidden: !canSendSurvey(o, sold[o.id] ?? 0, answeredIds.has(o.id)), onSelect: () => askSurvey(o) },
             { label: t("admin.leads.detail.cancel"), icon: <Ban />, tone: "danger", href: `/admin/leads/${o.id}#cancel`, hidden: o.status === "cancelled", separated: true },
@@ -230,7 +221,6 @@ function Leads() {
       />
       {dialog}
       {surveyDialog}
-      {discounting && <DiscountDialog offer={discounting} base={serviceMap[discounting.serviceId]?.leadPrice ?? 0} onClose={() => setDiscounting(null)} />}
     </>
   );
 }
