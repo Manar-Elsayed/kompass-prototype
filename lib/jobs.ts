@@ -16,8 +16,6 @@ export type DisposalItem = "furniture" | "household" | "electronics" | "garden" 
 
 /** The job-specific answers of a request (only the ones its service asks for are set). */
 export interface JobDetails {
-  /** The customer can move the date by a few days. */
-  flexibleDate?: boolean;
   /** Moving & Cleaning: the cleaning / handover day, on or after the moving day. */
   cleaningDate?: string;
   propertyType?: PropertyType;
@@ -39,7 +37,6 @@ export interface JobForm {
   rooms: boolean;
   /** The property to clean: type, rooms and living area. */
   property?: boolean;
-  flexible?: boolean;
   cleaningDate?: boolean;
   cleaningType?: boolean;
   instrument?: boolean;
@@ -49,8 +46,8 @@ export interface JobForm {
 }
 
 export const JOB_FORMS: Record<JobKind, JobForm> = {
-  move: { to: true, rooms: true, flexible: true },
-  moveClean: { to: true, rooms: true, flexible: true, cleaningDate: true },
+  move: { to: true, rooms: true },
+  moveClean: { to: true, rooms: true, cleaningDate: true },
   cleaning: { to: false, rooms: false, property: true, cleaningType: true },
   piano: { to: true, rooms: false, instrument: true },
   storage: { to: false, rooms: false, amounts: ["boxes", "oneRoom", "rooms", "home", "other"], duration: true },

@@ -27,7 +27,7 @@ import {
 
 /** Fresh deep copy of the demo database. */
 export function createSeed(): DB {
-  return withFreshActivity(structuredClone({
+  return withLateDiscounts(withFreshActivity(structuredClone({
     services,
     offers,
     orders,
@@ -56,7 +56,32 @@ export function createSeed(): DB {
     modelOffers,
     site,
     config,
-  }));
+  })));
+}
+
+/**
+ * Kompass lowers the price of an offer only late (expiring soon or one slot left). Which offers are
+ * late depends on today, so when the demo data loads, the two late offers on sale closest to their
+ * deadline get a discount (20 % and CHF 10): the shop's Discounts view always has examples.
+ */
+function withLateDiscounts(db: DB): DB {
+  const now = Math.max(NOW, Date.now());
+  const sold = (id: string) => db.orders.filter((o) => o.offerId === id).length;
+  const late = db.offers
+    .filter((o) => {
+      // the same rule as canDiscount in selectors (not imported: selectors already import the seed)
+      const left = o.offersWanted - sold(o.id);
+      const days = (Date.parse(o.deadline) - now) / DAY;
+      return o.status === "in_progress" && o.active && left > 0 && days >= 0 && (days <= 3 || left === 1 || !!o.repostedAt);
+    })
+    .sort((a, b) => a.deadline.localeCompare(b.deadline))
+    .slice(0, 2);
+  late.forEach((o, i) => {
+    o.discount = i === 0
+      ? { type: "percent", value: 20, at: new Date(now - DAY).toISOString(), byUserId: "u-1" }
+      : { type: "fixed", value: 10, at: new Date(now - DAY / 4).toISOString(), byUserId: "u-1" };
+  });
+  return db;
 }
 
 /**

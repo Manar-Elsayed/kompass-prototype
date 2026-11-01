@@ -47,7 +47,6 @@ const schema = z
     to: address,
     executionDate: z.string(),
     cleaningDate: z.string(),
-    flexibleDate: z.boolean(),
     propertyType: z.string(),
     areaM2: z.string(),
     cleaningType: z.string(),
@@ -178,7 +177,6 @@ export function OfferForm({
       to: emptyAddr,
       executionDate: "",
       cleaningDate: "",
-      flexibleDate: false,
       propertyType: "",
       areaM2: "",
       cleaningType: "",
@@ -250,7 +248,6 @@ export function OfferForm({
     const form = JOB_FORMS[(v.kind || "move") as JobKind];
     const toAddr = (a: FormValues["from"], rooms: boolean) => ({ ...a, rooms: rooms ? a.rooms : "", country: "CH" });
     const job: JobDetails = {
-      ...(form.flexible && v.flexibleDate ? { flexibleDate: true } : {}),
       ...(form.cleaningDate ? { cleaningDate: new Date(v.cleaningDate).toISOString() } : {}),
       ...(form.property ? { propertyType: v.propertyType as JobDetails["propertyType"], ...(Number(v.areaM2) > 0 ? { areaM2: Number(v.areaM2) } : {}) } : {}),
       ...(form.cleaningType ? { cleaningType: v.cleaningType as JobDetails["cleaningType"] } : {}),
@@ -687,19 +684,6 @@ export function OfferForm({
                 {jobForm.cleaningDate ? (
                   <Field label={jt("cleaningDateLabel")} hint={jt("cleaningDateHint")} error={err(errors.cleaningDate?.message)} required>
                     <Input type="date" min={values.executionDate || "2026-10-19"} {...register("cleaningDate")} aria-invalid={!!errors.cleaningDate} />
-                  </Field>
-                ) : jobForm.flexible ? (
-                  <Field label={jt("flexibleLabel")}>
-                    <Controller
-                      control={control}
-                      name="flexibleDate"
-                      render={({ field }) => (
-                        <label className="flex h-10 items-center gap-3 rounded-lg border border-input bg-surface px-3 text-sm">
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                          {jt("flexibleHint")}
-                        </label>
-                      )}
-                    />
                   </Field>
                 ) : null}
               </div>

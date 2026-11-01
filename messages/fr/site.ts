@@ -300,7 +300,7 @@ export const site: Built<typeof Def> = {
     pickService: "Choisissez un service pour voir ses questions.",
     askTitle: "Demandez au client :",
     ask: {
-      move: "les pièces, l’étage et l’ascenseur aux deux adresses ; la date et si elle est flexible ; l’emballage, le montage des meubles et le stationnement.",
+      move: "les pièces, l’étage et l’ascenseur aux deux adresses ; la date ; l’emballage, le montage des meubles et le stationnement.",
       moveClean: "les détails du déménagement aux deux adresses, le jour du nettoyage ou de l’état des lieux, et s’il souhaite une garantie de restitution.",
       cleaning: "le type de nettoyage, la taille du bien et la date de l’état des lieux pour un nettoyage de fin de bail.",
       piano: "le type de piano, l’étage et l’ascenseur aux deux adresses, et les escaliers ou passages étroits.",
@@ -384,9 +384,6 @@ export const site: Built<typeof Def> = {
     },
     cleaningDateLabel: "Date du nettoyage / de l’état des lieux",
     cleaningDateHint: "En général le lendemain du déménagement.",
-    flexibleLabel: "Date flexible",
-    flexibleHint: "± quelques jours possibles",
-    flexibleYes: "± quelques jours",
     otherLabel: {
       storage: "Décrivez ce que vous voulez stocker",
       disposal: "Décrivez ce qu’il faut évacuer",

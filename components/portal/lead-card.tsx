@@ -8,7 +8,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import type { Offer } from "@/lib/types";
 import { cn, formatCHF, formatDate, timeAgo } from "@/lib/utils";
 import { quoteLead, useStore } from "@/lib/mock/store";
-import { isExpiringSoon } from "@/lib/mock/selectors";
+import { discountedPrice, isExpiringSoon } from "@/lib/mock/selectors";
 import { useCurrentPartner, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,8 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
   const [open, setOpen] = useState(false);
   const left = offer.offersWanted - sold;
   const closing = !!offer.repostedAt || isExpiringSoon(offer);
+  const listPrice = svc?.leadPrice ?? 0;
+  const price = discountedPrice(listPrice, offer.discount);
 
   return (
     <Card className="flex min-w-0 flex-col p-5 transition hover:border-primary/30 hover:shadow-pop">
@@ -48,8 +50,20 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
           </div>
         </div>
         <div className="text-end">
-          <p className="text-lg font-extrabold text-primary">{formatCHF(svc?.leadPrice ?? 0, lang)}</p>
+          {offer.discount ? (
+            <p className="flex items-baseline justify-end gap-1.5" title={t("discountHint", { old: formatCHF(listPrice, lang), price: formatCHF(price, lang) })}>
+              <span className="text-sm text-muted-foreground line-through">{formatCHF(listPrice, lang)}</span>
+              <span className="text-lg font-extrabold text-success">{formatCHF(price, lang)}</span>
+            </p>
+          ) : (
+            <p className="text-lg font-extrabold text-primary">{formatCHF(listPrice, lang)}</p>
+          )}
           <div className="mt-0.5 flex flex-wrap justify-end gap-1">
+            {offer.discount && (
+              <Badge tone="success">
+                <BadgePercent className="size-3" /> {offer.discount.type === "percent" ? `−${offer.discount.value}%` : `−${formatCHF(offer.discount.value, lang)}`}
+              </Badge>
+            )}
             {closing && <Badge tone="danger">{t("closingSoon")}</Badge>}
             <Badge tone={left === 1 ? "danger" : "warning"}>{left === 1 ? t("lastSlot") : t("slots", { left, total: offer.offersWanted })}</Badge>
           </div>

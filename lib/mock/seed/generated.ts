@@ -392,7 +392,8 @@ for (const o of offers) {
       o.from.rooms = "";
       if (o.to) o.to.rooms = "";
     }
-    if (form.flexible && jrng.chance(0.3)) job.flexibleDate = true;
+    // this draw once decided a "flexible date"; it stays so the rest of the job answers don't change
+    if (kind === "move" || kind === "moveClean") jrng.chance(0.3);
     if (form.cleaningDate) job.cleaningDate = new Date(Date.parse(o.executionDate) + jrng.int(0, 2) * DAY).toISOString();
     if (form.property) {
       job.propertyType = jrng.pick(["flat", "flat", "flat", "house", "office"] as const);
