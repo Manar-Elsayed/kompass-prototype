@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Flag, RotateCcw, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import type { FakeReportStatus, Order } from "@/lib/types";
+import type { FakeReportStatus, Order, OrderOutcome } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang } from "@/lib/mock/hooks";
@@ -17,8 +17,47 @@ import { Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { RadioCards } from "@/components/ui/controls";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useConfirm } from "@/components/shared/bits";
 
 const REASONS = ["phone", "never", "duplicate", "unreachable"] as const;
+
+/** What the company may still do with a bought offer, from its outcome. */
+export function leadAbilities(out: ReturnType<typeof leadOutcome>) {
+  return {
+    // a fake report only while the offer is open and not reported yet
+    canReport: !out.report && out.group === "open",
+    canExecute: out.group === "open" || out.group === "won",
+    // the company says how it went until the customer's answer settles it
+    canSetOutcome: ["open", "won", "lost"].includes(out.group) && !out.report && !out.byCustomer,
+  };
+}
+
+/**
+ * Setting how the call went (the same answer again clears it) and marking the job executed (after a
+ * confirmation). Shared by the offer page and the My offers row menu, so both behave the same.
+ */
+export function useLeadActions() {
+  const t = useTranslations("portal.leads");
+  const patch = useStore((s) => s.patch);
+  const { confirm, dialog } = useConfirm();
+  const setOutcome = (order: Order, outcome: OrderOutcome) => {
+    const clear = order.outcome === outcome;
+    patch("orders", order.id, clear ? { outcome: undefined, outcomeAt: undefined } : { outcome, outcomeAt: new Date().toISOString() });
+    toast.success(clear ? t("outcomeCleared") : t("outcomeSaved", { status: t(`outcome.${outcome}`) }));
+  };
+  const markExecuted = (order: Order) =>
+    confirm({
+      title: t("markDoneTitle", { id: order.offerId }),
+      body: t("markDoneBody"),
+      tone: "success",
+      confirmLabel: t("markDone"),
+      onConfirm: () => {
+        patch("orders", order.id, { executed: true });
+        toast.success(t("executed"));
+      },
+    });
+  return { setOutcome, markExecuted, dialog };
+}
 /** How a fake-lead report moves; the last step is confirmed (refunded) or rejected. */
 const REPORT_STEPS: FakeReportStatus[] = ["new", "testing"];
 

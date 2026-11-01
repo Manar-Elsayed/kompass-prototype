@@ -1,11 +1,11 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Headset, ShoppingBag } from "lucide-react";
+import { CheckCircle2, Flag, Headset, Mail, Phone, PhoneMissed, ShoppingBag, Trophy, UserX } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
-import type { Order } from "@/lib/types";
+import { ORDER_OUTCOMES, type Order, type OrderOutcome } from "@/lib/types";
 import { formatCHF, formatDate } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
@@ -15,7 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { Mono, PageHeader } from "@/components/admin/ui";
-import { LeadStatus } from "@/components/portal/lead-outcome";
+import { RowActions, actionsColumn } from "@/components/admin/row-actions";
+import { LeadStatus, ReportDialog, leadAbilities, useLeadActions } from "@/components/portal/lead-outcome";
 import { routeFull, routeText } from "@/lib/jobs";
 
 const GROUPS: LeadGroup[] = ["open", "won", "lost", "executed", "reported", "cancelled"];
@@ -46,6 +47,9 @@ function MyLeads() {
   const serviceMap = useServiceMap();
   const offerMap = Object.fromEntries(offers.map((o) => [o.id, o]));
   const outcomeOf = (o: Order) => leadOutcome({ offers, fakeReports: reports, refunds }, o);
+  const actions = useLeadActions();
+  const [reporting, setReporting] = useState<Order | null>(null);
+  const OUTCOME_ICON: Record<OrderOutcome, React.ReactNode> = { won: <Trophy />, lost: <UserX />, unreachable: <PhoneMissed /> };
 
   // older links (?open=<offerId>) still work: they go to the offer's own page
   const deepLink = params.get("open");
@@ -119,6 +123,32 @@ function MyLeads() {
       ),
     },
     { id: "status", header: tf("status"), accessorFn: (o) => outcomeOf(o).status, cell: ({ row: { original: o } }) => <LeadStatus order={o} /> },
+    // the same things the offer page offers, without opening it: reach the customer, say how it went, report
+    actionsColumn<Order>((o) => {
+      const x = offerMap[o.offerId];
+      const out = outcomeOf(o);
+      const { canReport, canExecute, canSetOutcome } = leadAbilities(out);
+      const reachable = !!x && out.group !== "cancelled";
+      return (
+        <RowActions
+          viewHref={`/portal/leads/${o.offerId}`}
+          viewLabel={tl("viewOffer")}
+          actions={[
+            { label: t("call"), icon: <Phone />, onSelect: () => { window.location.href = `tel:${x?.phone}`; }, hidden: !reachable },
+            { label: t("email"), icon: <Mail />, onSelect: () => { window.location.href = `mailto:${x?.email}`; }, hidden: !reachable },
+            ...(ORDER_OUTCOMES as readonly OrderOutcome[]).map((k, i) => ({
+              label: o.outcome === k ? `${t(`set.${k}`)} ✓` : t(`set.${k}`),
+              icon: OUTCOME_ICON[k],
+              onSelect: () => actions.setOutcome(o, k),
+              hidden: !canSetOutcome,
+              separated: i === 0,
+            })),
+            { label: t("markDone"), icon: <CheckCircle2 />, onSelect: () => actions.markExecuted(o), hidden: !canExecute, separated: !canSetOutcome },
+            { label: t("report"), icon: <Flag />, tone: "danger" as const, onSelect: () => setReporting(o), hidden: !canReport, separated: true },
+          ]}
+        />
+      );
+    }),
   ];
 
   return (
@@ -134,6 +164,8 @@ function MyLeads() {
         emptyState={<EmptyState icon={<ShoppingBag />} title={t("empty")} action={<Button asChild variant="accent"><Link href="/portal/shop">{tn("shop")}</Link></Button>} />}
         filters={[{ id: "st", label: tf("status"), options: GROUPS.map((g) => ({ value: g, label: t(`groups.${g}`) })), get: (o) => outcomeOf(o).group }]}
       />
+      {reporting && <ReportDialog order={reporting} onClose={() => setReporting(null)} />}
+      {actions.dialog}
     </>
   );
 }
