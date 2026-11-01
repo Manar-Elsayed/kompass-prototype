@@ -500,6 +500,18 @@ export const dues: PartnerDue[] = Array.from({ length: 22 }, (_, i) => {
   };
 }).map((d) => ({ ...d, decidedAt: d.createdAt }));
 
+// The demo company (Alpen Umzüge AG) paid in a few times before the history above, by each method,
+// so its payment history has more than one row. They replace most of its opening balance below.
+(
+  [
+    [60, "bank_transfer", "KMP-2026-0112", 290],
+    [55, "twint", "TW-48213977", 220],
+    [50, "card", "CARD-7741-0526", 160],
+  ] as const
+).forEach(([amount, method, reference, age], i) => {
+  dues.push({ id: `DUE-${pad(i + 301 + 22, 4)}`, partnerId: partners[0].id, amount, method, reference, receipt: "/images/complaint.png", status: "confirmed", createdAt: daysAgo(age), decidedAt: daysAgo(age) });
+});
+
 /* ---------- reviews ---------- */
 const KOMPASS_COMMENTS = [
   l(
