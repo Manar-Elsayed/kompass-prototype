@@ -81,7 +81,7 @@ function PartnerProfile() {
         </UnderlineTabsList>
         <TabsContent value="company"><CompanyTab onRequest={requestChange} /></TabsContent>
         <TabsContent value="documents">
-          <Card className="max-w-3xl">
+          <Card>
             <CardHeader title={ta("docs.title")} description={t("docsHint")} />
             <CardBody>
               <CompanyDocuments partner={partner} as="company" />
@@ -370,7 +370,7 @@ function NotificationsTab() {
     toast.success(t("saved"));
   };
   return (
-    <Card className="max-w-2xl">
+    <Card>
       <CardHeader title={t("title")} description={t("hint", { email: partner.email })} />
       <CardBody>
         <ul className="divide-y">
