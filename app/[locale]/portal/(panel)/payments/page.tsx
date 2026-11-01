@@ -19,7 +19,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { RadioCards } from "@/components/ui/controls";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState, StatusBadge } from "@/components/shared/bits";
 import { ProofCard } from "@/components/shared/payment-proof";
@@ -51,6 +51,7 @@ function Payments() {
   const td = useTranslations("admin.dues");
   const ti = useTranslations("admin.invoices");
   const tReason = useTranslations("common.payoutReasons");
+  const tst = useTranslations("common.status");
   const tc = useTranslations("common.actions");
   const lang = useLang();
   const params = useSearchParams();
@@ -95,6 +96,41 @@ function Payments() {
   // Kompass recorded (not the opening balance carried over, and not credit)
   const payments = ledger.entries.filter((e) => (e.kind === "receipt" || e.kind === "online" || e.kind === "admin") && e.reference !== "OPENING");
   const tf = useTranslations("common.fields");
+  // invoices for credit: number, what it is for, when it was issued and is due (or was paid), amount, status
+  const invoiceColumns: ColumnDef<Invoice, unknown>[] = [
+    {
+      id: "number",
+      header: ti("number"),
+      accessorFn: (i) => i.id,
+      cell: ({ row: { original: i } }) => <button onClick={() => openDoc(i)} className="whitespace-nowrap font-mono text-sm font-semibold text-primary hover:underline">{i.id}</button>,
+    },
+    { id: "line", header: tf("description"), enableSorting: false, accessorFn: () => ti("creditLine"), cell: (c) => <span className="text-muted-foreground">{c.getValue() as string}</span> },
+    { id: "issued", header: ti("issued"), accessorFn: (i) => i.issuedAt, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
+    {
+      id: "due",
+      header: ti("due"),
+      accessorFn: (i) => i.dueAt,
+      cell: ({ row: { original: i } }) => (
+        <span className={cn("whitespace-nowrap", invStatus(i) === "overdue" ? "font-semibold text-danger" : "text-muted-foreground")}>
+          {i.status === "paid" && i.paidAt ? t("paidOn", { date: formatDate(i.paidAt, lang) }) : formatDate(i.dueAt, lang)}
+        </span>
+      ),
+    },
+    { id: "amount", header: tf("amount"), accessorFn: (i) => i.amount, meta: { className: "text-end" }, cell: (c) => <span className="whitespace-nowrap font-bold tabular-nums">{formatCHF(c.getValue() as number, lang)}</span> },
+    { id: "status", header: tf("status"), accessorFn: (i) => invStatus(i), cell: ({ row: { original: i } }) => <StatusBadge status={invStatus(i)} /> },
+    {
+      id: "actions",
+      header: "",
+      enableSorting: false,
+      cell: ({ row: { original: i } }) => (
+        <span className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="icon-sm" onClick={() => openDoc(i)} aria-label={tc("view")} title={tc("view")}><Eye /></Button>
+          <Button variant="ghost" size="icon-sm" onClick={() => openDoc(i, true)} aria-label={ti("downloadPdf")} title={ti("downloadPdf")}><Download /></Button>
+          {i.status === "due" && <Button size="sm" variant={isOverdue(i) ? "accent" : "outline"} onClick={() => setPaying(i)}>{t("pay")}</Button>}
+        </span>
+      ),
+    },
+  ];
   const paymentColumns: ColumnDef<LedgerEntry, unknown>[] = [
     { id: "date", header: tf("date"), accessorFn: (e) => e.at, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
     { id: "reference", header: tf("reference"), accessorFn: (e) => e.reference, cell: (c) => <Mono className="whitespace-nowrap">{c.getValue() as string}</Mono> },
@@ -145,14 +181,14 @@ function Payments() {
       )}
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
-        <TabsList className="mb-4 h-auto max-w-full flex-wrap justify-start">
+        <UnderlineTabsList className="mb-4">
           {TABS.map((k) => (
-            <TabsTrigger key={k} value={k}>
+            <UnderlineTabsTrigger key={k} value={k}>
               {t(`tabs.${k}`)}
               {k === "invoices" && openInvoices.length > 0 && <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-white">{openInvoices.length}</span>}
-            </TabsTrigger>
+            </UnderlineTabsTrigger>
           ))}
-        </TabsList>
+        </UnderlineTabsList>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
@@ -184,31 +220,22 @@ function Payments() {
         </TabsContent>
 
         <TabsContent value="invoices">
-          <Card className="overflow-hidden">
-            <CardHeader title={t("invoices")} description={t("invoicesHint")} />
-            <div className="mt-4 divide-y border-t">
-              {myInvoices.length ? (
-                myInvoices.map((i) => (
-                  <div key={i.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 text-sm">
-                    <button onClick={() => openDoc(i)} className="font-mono text-sm font-semibold text-primary hover:underline">{i.id}</button>
-                    <span className="min-w-32 flex-1 text-muted-foreground">
-                      {ti("creditLine")}
-                      <span className="block text-xs">{i.status === "paid" && i.paidAt ? t("paidOn", { date: formatDate(i.paidAt, lang) }) : t("dueOn", { date: formatDate(i.dueAt, lang) })}</span>
-                    </span>
-                    <span className="font-bold">{formatCHF(i.amount, lang)}</span>
-                    <StatusBadge status={invStatus(i)} />
-                    <span className="flex gap-1.5">
-                      <Button variant="ghost" size="icon-sm" onClick={() => openDoc(i)} aria-label={tc("view")} title={tc("view")}><Eye /></Button>
-                      <Button variant="ghost" size="icon-sm" onClick={() => openDoc(i, true)} aria-label={ti("downloadPdf")} title={ti("downloadPdf")}><Download /></Button>
-                      {i.status === "due" && <Button size="sm" variant={isOverdue(i) ? "accent" : "outline"} onClick={() => setPaying(i)}>{t("pay")}</Button>}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <EmptyState icon={<FileText />} title={t("noInvoices")} body={t("noInvoicesBody")} />
-              )}
-            </div>
-          </Card>
+          <DataTable
+            data={myInvoices}
+            columns={invoiceColumns}
+            heading={
+              <div>
+                <p className="font-bold text-ink">{t("invoices")}</p>
+                <p className="text-sm text-muted-foreground">{t("invoicesHint")}</p>
+              </div>
+            }
+            search={(i) => `${i.id} ${i.paidReference ?? ""}`}
+            searchPlaceholder={t("invoicesSearchPh")}
+            initialSort={[{ id: "issued", desc: true }]}
+            onRowClick={(i) => openDoc(i)}
+            filters={[{ id: "status", label: tf("status"), options: (["due", "overdue", "paid"] as const).map((s) => ({ value: s, label: tst(s) })), get: invStatus }]}
+            emptyState={<EmptyState icon={<FileText />} title={t("noInvoices")} body={t("noInvoicesBody")} />}
+          />
         </TabsContent>
 
         <TabsContent value="payouts" className="space-y-4">
