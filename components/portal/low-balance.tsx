@@ -6,7 +6,7 @@ import { formatCHF } from "@/lib/utils";
 import { Link } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useLang } from "@/lib/mock/hooks";
-import { lowBalance } from "@/lib/mock/selectors";
+import { autoTopUpOn, lowBalance } from "@/lib/mock/selectors";
 import { Button } from "@/components/ui/button";
 import { useCanBuy } from "@/components/portal/shell";
 
@@ -19,7 +19,8 @@ export function useLowBalance() {
   if (!partner) return { low: false, min: 0, balance: 0 };
   const { low, min } = lowBalance(partner, services, fallback);
   // a company that can't buy for other reasons (documents, ban) gets those messages instead
-  return { low: low && canBuy, min, balance: partner.wallet };
+  // with automatic top-up on, the next purchase tops the wallet up by itself
+  return { low: low && canBuy && !autoTopUpOn(partner), min, balance: partner.wallet };
 }
 
 /**

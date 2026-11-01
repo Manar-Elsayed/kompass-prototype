@@ -23,12 +23,14 @@ export function intlLocale(locale: string) {
 /** Swiss grouping (CHF 1’450) in every language: fr-CH/it-CH grouping differs between Node and browser ICU builds, which would break hydration. */
 /** Swiss francs, whole by default; documents such as invoices pass 2 decimals for the VAT. */
 export function formatCHF(value: number, _locale = "en", decimals = 0) {
-  return new Intl.NumberFormat("de-CH", {
+  const text = new Intl.NumberFormat("de-CH", {
     style: "currency",
     currency: "CHF",
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-  }).format(value);
+  }).format(Math.abs(value));
+  // de-CH would print "CHF-10"; a negative balance reads "−CHF 10"
+  return value < 0 ? `−${text}` : text;
 }
 
 export function formatNumber(value: number, locale = "en") {

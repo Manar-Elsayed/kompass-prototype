@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Check, CheckCircle2, ClipboardList, ExternalLink, HandCoins, Landmark, Lock, LockOpen, Mail, Phone, Plus, RotateCcw, ShoppingCart, Star, Store, Trash2, Wallet, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ClipboardList, ExternalLink, Landmark, Lock, LockOpen, Mail, Phone, Plus, RotateCcw, ShoppingCart, Star, Store, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import { isLiveReview, type Order, type Payout, type Review } from "@/lib/types";
@@ -27,7 +27,8 @@ import { MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
 import { RowActions, actionsColumn } from "@/components/admin/row-actions";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { DL, KpiCard, Mono, ProfileHeader } from "@/components/admin/ui";
-import { CreditDialog, TopUpDialog } from "@/components/admin/wallet-actions";
+import { TopUpDialog } from "@/components/admin/wallet-actions";
+import { CompanyPaymentsCard, CreditLimitDialog } from "@/components/admin/credit-limit";
 import { DocStateBadge } from "@/components/admin/doc-state";
 import { PartnerServices } from "@/components/shared/partner-services";
 import { CompanyDocuments } from "@/components/admin/company-docs";
@@ -454,7 +455,6 @@ function PartnerDetail() {
               description={`${t("admin.wallets.toppedUp")} ${formatCHF(ledger.toppedUp, lang)} · ${t("admin.wallets.credit")} ${formatCHF(ledger.credit, lang)} · ${t("admin.wallets.refunded")} ${formatCHF(ledger.refunded, lang)}`}
               action={
                 <div className="flex gap-1.5">
-                  <Button size="sm" variant="outline" onClick={() => setCredit(true)}><HandCoins /> {t("admin.wallets.addCredit")}</Button>
                   {/* rare: money that reached Kompass outside the partner dashboard (cash, a transfer without a receipt) */}
                   <Button size="sm" variant="ghost" onClick={() => setTopUp(true)}><Plus /> {t("admin.wallets.topUp")}</Button>
                 </div>
@@ -463,7 +463,9 @@ function PartnerDetail() {
             <WalletLedger entries={ledger.entries} className="mt-4 max-h-[520px] overflow-y-auto border-t" receiptOf={receipts.numberOf} onReceipt={(e) => receipts.open(e, receiptParty(p))} />
             {receipts.dialog}
           </Card>
-          <Card className="h-fit overflow-hidden">
+          {/* how the company pays: saved method, automatic top-up, credit limit (replaces one-off credit invoices) */}
+          <CompanyPaymentsCard partner={p} onEditLimit={() => setCredit(true)} />
+          <Card className="h-fit overflow-hidden xl:col-start-2">
             <CardHeader title={t("admin.invoices.creditTab")} />
             <div className="mt-4 divide-y border-t">
               {invoices.length ? (
@@ -548,7 +550,7 @@ function PartnerDetail() {
       </Tabs>
 
       {topUp && <TopUpDialog partner={p} onClose={() => setTopUp(false)} />}
-      {credit && <CreditDialog partner={p} onClose={() => setCredit(false)} />}
+      {credit && <CreditLimitDialog partner={p} onClose={() => setCredit(false)} />}
       {doc && <MoneyDocDialog doc={doc} onClose={() => setDoc(null)} />}
       {deciding && <PayoutDecisionDialog payout={deciding.payout} decision={deciding.decision} onClose={() => setDeciding(null)} />}
       {dialog}

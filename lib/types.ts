@@ -271,6 +271,18 @@ export type PayoutStatus = "requested" | "paid" | "rejected";
 /** Why the company withdraws: picked when it requests the payout. "other" comes with a note. */
 export const PAYOUT_REASONS = ["overpaid", "break", "closing", "cash", "other"] as const;
 export type PayoutReason = (typeof PAYOUT_REASONS)[number];
+export interface PaymentMethod {
+  type: "card" | "twint";
+  /** What the company sees, e.g. "Visa •••• 4242" or "TWINT · +41 79 ••• 12 34". */
+  label: string;
+  addedAt: string;
+}
+export interface AutoTopUp {
+  enabled: boolean;
+  below: number;
+  amount: number;
+}
+
 export interface Payout {
   id: ID; // PO-0001
   partnerId: ID;
@@ -284,6 +296,8 @@ export interface Payout {
   /** Bank reference when paid, or the reason when rejected. */
   reference?: string;
   byUserId?: ID; // admin who decided it
+  /** Paid without an admin step (within the automatic limit). */
+  auto?: boolean;
   createdAt: string;
   decidedAt?: string;
 }
@@ -332,6 +346,12 @@ export interface Partner {
   featured: boolean;
   wallet: number;
   bank: { name: string; owner: string; iban: string };
+  /** Card or TWINT the company saved: used for automatic top-ups and to settle a negative balance. */
+  paymentMethod?: PaymentMethod;
+  /** Top up from the saved method when the balance drops below `below`. */
+  autoTopUp?: AutoTopUp;
+  /** Set by Kompass: the balance may go down to minus this amount (needs a saved method). */
+  creditLimit?: number;
   documents: Partial<Record<DocKey, CompanyDoc>>;
   /** Partnership contract signed in the portal during onboarding. */
   contractSignedAt?: string;

@@ -29,7 +29,7 @@ import type { FakeReport, Offer, Order } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { CITIES } from "@/lib/mock/seed";
-import { canBuyLeads, canDiscount, companyScore, daysLeft, discountedPrice, isExpiringSoon, surveyDate, surveySent, takesOffersFor } from "@/lib/mock/selectors";
+import { canBuyLeads, canFund, canDiscount, companyScore, daysLeft, discountedPrice, isExpiringSoon, surveyDate, surveySent, takesOffersFor } from "@/lib/mock/selectors";
 import { useL, useLang, usePartnerMap, useServiceMap } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
@@ -511,11 +511,11 @@ function AssignPanel({ offer, orders }: { offer: Offer; orders: Order[] }) {
           <Textarea rows={2} value={note} placeholder={t("notePh")} onChange={(e) => setNote(e.target.value)} />
         </Field>
       </div>
-      {picked && picked.wallet < amount && (
+      {picked && !canFund(picked, amount) && (
         <p className="mt-2 text-xs text-danger">{t("errInsufficient", { name: picked.name, balance: picked.wallet })}</p>
       )}
       <div className="mt-3 flex justify-end">
-        <Button onClick={assign} disabled={!picked || amount <= 0 || (picked && picked.wallet < amount)} loading={busy}>
+        <Button onClick={assign} disabled={!picked || amount <= 0 || (picked && !canFund(picked, amount))} loading={busy}>
           <UserPlus /> {t("assign")} · {formatCHF(amount, lang)}
         </Button>
       </div>
