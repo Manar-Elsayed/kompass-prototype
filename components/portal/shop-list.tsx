@@ -55,7 +55,7 @@ export function ShopList({ items, canBuy }: { items: Item[]; canBuy: boolean }) 
               const left = offer.offersWanted - sold;
               const listPrice = svc?.leadPrice ?? 0;
               const price = discountedPrice(listPrice, offer.discount);
-              const closing = !!offer.repostedAt || isExpiringSoon(offer);
+              const closing = isExpiringSoon(offer);
               return (
                 <tr key={offer.id} onClick={() => setOpen(x)} className="cursor-pointer border-t transition-colors hover:bg-surface-2/70">
                   <td className={td}>
