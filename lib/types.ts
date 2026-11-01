@@ -109,6 +109,8 @@ export interface Offer {
   verifiedAt?: string;
   /** Pushed back to the top of the shop shortly before the deadline. */
   repostedAt?: string;
+  /** A lower price Kompass set late, so the last slots sell before the deadline. */
+  discount?: OfferDiscount;
   /** When the customer was emailed the names of the companies that bought the offer. */
   buyersNotifiedAt?: string;
   /** Admin sent the review survey by hand (otherwise it goes out the day after the move). */
@@ -117,6 +119,14 @@ export interface Offer {
   surveyComplaint?: string;
   source: "website" | "admin";
   createdAt: string;
+}
+
+/** Percent or CHF off the service's offer price, for one offer. */
+export interface OfferDiscount {
+  type: "percent" | "fixed";
+  value: number;
+  at: string;
+  byUserId?: ID;
 }
 
 export interface Order {

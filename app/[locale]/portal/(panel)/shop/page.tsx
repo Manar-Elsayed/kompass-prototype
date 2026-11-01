@@ -6,7 +6,8 @@ import { Link } from "@/i18n/navigation";
 import { Search, SearchX } from "lucide-react";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL } from "@/lib/mock/hooks";
-import { availableLeads, CANTONS, partnerCantons, takesOffersFor } from "@/lib/mock/selectors";
+import { availableLeads, CANTONS, isExpiringSoon, partnerCantons, refNow, takesOffersFor } from "@/lib/mock/selectors";
+import { DAY } from "@/lib/mock/seed";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
@@ -17,6 +18,15 @@ import { LeadCard } from "@/components/portal/lead-card";
 import { LowBalanceBanner } from "@/components/portal/low-balance";
 import { useCanBuy } from "@/components/portal/shell";
 import { CITIES } from "@/lib/mock/seed";
+
+/**
+ * Quick views over the shop. All: everything, newest first. Newest: posted in the last 7 days.
+ * Closing soon: 1–2 slots left. Expiring soon: the customer's deadline is close (the card's red badge).
+ * Discounts: Kompass lowered the price to sell the last slots (the card shows the old and new price).
+ */
+const VIEWS = ["all", "newest", "closing", "expiring", "discounts"] as const;
+type View = (typeof VIEWS)[number];
+const VIEW_LABEL: Record<View, string> = { all: "viewAll", newest: "viewNewest", closing: "viewClosing", expiring: "viewExpiring", discounts: "viewDiscounts" };
 
 export default function LeadShop() {
   const t = useTranslations("portal.shop");
@@ -29,7 +39,7 @@ export default function LeadShop() {
   const tsh = useTranslations("portal.shell");
   const [svc, setSvc] = useState("all");
   const [pickedCanton, setCanton] = useState<string | null>(null);
-  const [sort, setSort] = useState("newest");
+  const [view, setView] = useState<View>("all");
   const [q, setQ] = useState("");
 
   const all = useMemo(() => availableLeads({ offers, orders }, partner), [offers, orders, partner]);
@@ -41,14 +51,26 @@ export default function LeadShop() {
   // start on "my area" when it has leads, otherwise show everything rather than an empty shop
   const canton = pickedCanton ?? (all.some(inArea) ? "mine" : "all");
 
+  const now = refNow();
+  const left = (x: (typeof all)[number]) => x.offer.offersWanted - x.sold;
+  const inView = (x: (typeof all)[number]) => {
+    if (view === "newest") return now - Date.parse(x.offer.createdAt) <= 7 * DAY;
+    if (view === "closing") return left(x) <= 2;
+    if (view === "expiring") return !!x.offer.repostedAt || isExpiringSoon(x.offer);
+    if (view === "discounts") return !!x.offer.discount;
+    return true;
+  };
+
   const term = q.trim().toLowerCase();
   const list = all
     .filter((x) => !term || [x.offer.id, x.offer.from.city, x.offer.from.zip, x.offer.to?.city ?? "", x.offer.to?.zip ?? ""].some((v) => v.toLowerCase().includes(term)))
     .filter((x) => svc === "all" || x.offer.serviceId === svc)
     .filter((x) => canton === "all" || (canton === "mine" ? inArea(x) : cantonOf(x.offer.from.zip) === canton))
+    .filter(inView)
     .sort((a, b) => {
-      if (sort === "date") return a.offer.executionDate.localeCompare(b.offer.executionDate);
-      if (sort === "slots") return a.offer.offersWanted - a.sold - (b.offer.offersWanted - b.sold);
+      // the soonest to go first: fewest slots, or the nearest deadline; otherwise newest first
+      if (view === "closing") return left(a) - left(b) || b.offer.createdAt.localeCompare(a.offer.createdAt);
+      if (view === "expiring") return a.offer.deadline.localeCompare(b.offer.deadline);
       return b.offer.createdAt.localeCompare(a.offer.createdAt);
     });
 
@@ -68,7 +90,7 @@ export default function LeadShop() {
           <Select value={canton} onValueChange={setCanton} options={[{ value: "mine", label: t("myArea", { cantons: area.join(", ") }) }, { value: "all", label: t("allCantons") }, ...cantons.map((c) => ({ value: c, label: `${c} · ${CANTONS[c] ?? c}` }))]} />
         </div>
         <div className="w-full sm:w-auto sm:min-w-40">
-          <Select value={sort} onValueChange={setSort} options={[{ value: "newest", label: t("sortNewest") }, { value: "date", label: t("sortDate") }, { value: "slots", label: t("sortSlots") }]} />
+          <Select value={view} onValueChange={(v) => setView(v as View)} options={VIEWS.map((v) => ({ value: v, label: t(VIEW_LABEL[v]) }))} />
         </div>
       </Card>
       <p className="mb-4 px-1 text-sm text-muted-foreground">{t("count", { count: list.length })}</p>

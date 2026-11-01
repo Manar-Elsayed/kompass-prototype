@@ -26,7 +26,7 @@ import type {
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { createSeed } from "./seed";
-import { documentState, isPurchasable, MIN_PAYOUT, verificationFlags, withdrawable } from "./selectors";
+import { discountedPrice, documentState, isPurchasable, MIN_PAYOUT, verificationFlags, withdrawable } from "./selectors";
 
 type Collections = {
   [K in keyof DB as DB[K] extends { id: string }[] ? K : never]: DB[K];
@@ -145,7 +145,8 @@ export function quoteLead(
   couponCode?: string,
 ): { base: number; discount: number; price: number; couponValid: boolean | null } {
   const offer = db.offers.find((o) => o.id === offerId);
-  const base = db.services.find((s) => s.id === offer?.serviceId)?.leadPrice ?? 0;
+  // an offer Kompass discounted sells at the lower price; a coupon then applies on top
+  const base = discountedPrice(db.services.find((s) => s.id === offer?.serviceId)?.leadPrice ?? 0, offer?.discount);
   const code = couponCode?.trim().toUpperCase();
   if (!code) return { base, discount: 0, price: base, couponValid: null };
   const c = db.coupons.find((x) => x.code === code);
@@ -757,9 +758,9 @@ export const useStore = create<Store>()(
       // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address; v14 fake-offer reports whose
       // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout; v17 team invitations (an invited member who hasn't signed in yet); v18 invoice numbers from the prefix and the contract version each company signed; v19 what companies report about their offers (won / lost / couldn't reach); v22 every company review linked to its offer; v23 partners' last seen relative to when the demo loads; v24 a fourth document (insurance), only the contract blocks buying; v25 the contract is a policies agreement with no end date; v26 recent top-ups for the activity statuses; v27 payments count at once (no approval). Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 29,
+      version: 31,
       migrate: (persisted, version) => {
-        if (version >= 29) return persisted as Store;
+        if (version >= 31) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

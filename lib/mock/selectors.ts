@@ -172,11 +172,22 @@ export const surveySent = (o: Pick<Offer, "executionDate" | "status" | "surveySe
   o.status !== "cancelled" && (!!o.surveySentAt || Date.parse(surveyDate(o)) <= refNow());
 
 /** On sale, inside the deadline window where admin should repost it (2-3 days, per the brief). */
+/** The price after an offer's discount (whole francs, never below 0). */
+export const discountedPrice = (base: number, d?: { type: "percent" | "fixed"; value: number }) =>
+  !d ? base : Math.max(0, Math.round(d.type === "percent" ? base * (1 - d.value / 100) : base - d.value));
+
 export const EXPIRING_DAYS = 3;
 export const isExpiringSoon = (o: Pick<Offer, "status" | "deadline">) => {
   const d = daysLeft(o.deadline);
   return o.status === "in_progress" && d >= 0 && d <= EXPIRING_DAYS;
 };
+
+/**
+ * Kompass may lower the price only late in an offer's life: on sale with slots left, and either
+ * expiring soon, reposted, or down to its last slot.
+ */
+export const canDiscount = (o: Offer, sold: number) =>
+  o.status === "in_progress" && sold < o.offersWanted && (isExpiringSoon(o) || !!o.repostedAt || o.offersWanted - sold === 1);
 
 /** An offer can be bought while it is on sale, visible, inside its deadline and has slots left. */
 export const isPurchasable = (o: Offer, sold: number) =>
