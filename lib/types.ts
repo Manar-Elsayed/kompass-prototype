@@ -653,7 +653,6 @@ export interface Config {
   defaultLeadPrice: number;
   maxOffersPerLead: number;
   vatRate: number;
-  leadExpiryDays: number;
   autoDistribute: boolean;
   comingSoonMode: boolean;
   supportEmail: string;

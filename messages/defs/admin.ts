@@ -1328,7 +1328,6 @@ export const admin = {
     billing: "Billing",
     defaultLeadPrice: "Default offer price (CHF)",
     maxOffers: "Max. companies per offer",
-    expiry: "Offer expiry (days)",
     autoDistribute: "Distribute offers automatically",
     autoDistributeHint: "Sell new offers dynamically to matching partners in addition to the shop.",
     vat: "VAT rate (%)",

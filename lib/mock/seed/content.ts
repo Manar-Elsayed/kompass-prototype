@@ -672,7 +672,6 @@ export const config: Config = {
   defaultLeadPrice: 35,
   maxOffersPerLead: 5,
   vatRate: 8.1,
-  leadExpiryDays: 14,
   autoDistribute: true,
   comingSoonMode: false,
   supportEmail: "partners@kompassumzug.ch",

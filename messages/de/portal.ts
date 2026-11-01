@@ -613,7 +613,7 @@ export const portal: Built<typeof Def> = {
       },
       leads: {
         title: "Anfragen",
-        body: "Jede Anfrage geht an höchstens so viele Firmen, wie die Kundin oder der Kunde gewünscht hat. Der Partner kauft Anfragen im Partnerportal. Kontaktdaten werden erst nach dem Kauf angezeigt und dürfen nur für diese Anfrage verwendet werden. Offerten zu einer Anfrage können bis zu {days} Tage lang gesendet werden.",
+        body: "Jede Anfrage geht an höchstens so viele Firmen, wie die Kundin oder der Kunde gewünscht hat. Der Partner kauft Anfragen im Partnerportal. Kontaktdaten werden erst nach dem Kauf angezeigt und dürfen nur für diese Anfrage verwendet werden. Eine Anfrage kann bis 5 Tage vor dem Ausführungsdatum der Kundschaft gekauft werden.",
       },
       documents: {
         title: "Dokumente",
