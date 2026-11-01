@@ -1,14 +1,14 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Monitor, MousePointerClick, Smartphone, Tablet, Users } from "lucide-react";
+import { Monitor, Smartphone, Tablet } from "lucide-react";
 import { LANGS, type Visitor } from "@/lib/types";
 import { timeAgo } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useLang } from "@/lib/mock/hooks";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
-import { KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { Mono, PageHeader } from "@/components/admin/ui";
 
 const DEVICE_ICON = { desktop: Monitor, mobile: Smartphone, tablet: Tablet };
 
@@ -17,8 +17,6 @@ export default function VisitorsPage() {
   const tv = useTranslations("admin.visitors");
   const lang = useLang();
   const visitors = useStore((s) => s.visitors);
-  const conv = visitors.length ? Math.round((visitors.filter((v) => v.converted).length / visitors.length) * 100) : 0;
-  const mobile = visitors.length ? Math.round((visitors.filter((v) => v.device !== "desktop").length / visitors.length) * 100) : 0;
 
   const columns: ColumnDef<Visitor, unknown>[] = [
     { id: "ip", header: t("common.fields.ip"), accessorFn: (v) => v.ip, cell: (c) => <Mono>{c.getValue() as string}</Mono> },
@@ -42,11 +40,6 @@ export default function VisitorsPage() {
   return (
     <>
       <PageHeader title={tv("title")} subtitle={tv("subtitle")} />
-      <div className="mb-4 grid gap-4 sm:grid-cols-3">
-        <KpiCard label={tv("total")} value={visitors.length} icon={<Users />} />
-        <KpiCard label={tv("conversion")} value={`${conv}%`} icon={<MousePointerClick />} tone="success" />
-        <KpiCard label={tv("mobileShare")} value={`${mobile}%`} icon={<Smartphone />} tone="info" />
-      </div>
       <DataTable
         data={visitors}
         columns={columns}
