@@ -297,7 +297,7 @@ export const site = {
     pickService: "Choose a service to see its questions.",
     askTitle: "Ask the customer:",
     ask: {
-      move: "rooms, floor and lift at both addresses; the date and whether it can move; packing, furniture assembly and parking.",
+      move: "rooms, floor and lift at both addresses; the date; packing, furniture assembly and parking.",
       moveClean: "the move details at both addresses, the cleaning or handover day with the landlord, and whether they want a handover guarantee.",
       cleaning: "the type of cleaning, the size of the property, and the handover date if it is an end-of-tenancy cleaning.",
       piano: "the type of piano, the floor and lift at both addresses, and any stairs or narrow passages.",
@@ -381,9 +381,6 @@ export const site = {
     },
     cleaningDateLabel: "Cleaning / handover date",
     cleaningDateHint: "Usually the day after the move.",
-    flexibleLabel: "Flexible date",
-    flexibleHint: "± a few days is fine",
-    flexibleYes: "± a few days",
     otherLabel: {
       storage: "Describe what you need to store",
       disposal: "Describe what needs to go",

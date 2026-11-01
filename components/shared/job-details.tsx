@@ -69,7 +69,6 @@ export function JobFacts({ offer, cols = 2 }: { offer: Offer; cols?: 1 | 2 | 3 }
   if (j.amount) items.push({ label: t(`amountLabel.${kind}`), value: t(`amount.${j.amount}`) });
   if (j.duration) items.push({ label: t("durationLabel"), value: t(`duration.${j.duration}`) });
   if (JOB_FORMS[kind].cleaningDate && j.cleaningDate) items.push({ label: t("cleaningDateLabel"), value: formatDate(j.cleaningDate, lang) });
-  if (j.flexibleDate) items.push({ label: t("flexibleLabel"), value: t("flexibleYes") });
   if (j.otherNote) items.push({ label: t(`otherLabel.${kind}`), value: j.otherNote });
   if (!items.length) return null;
   return <DL items={items} cols={cols} />;
