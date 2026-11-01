@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, ArrowRight, Building2, ClipboardList, Clock, HandHeart, Plus, RotateCcw, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, Building2, ClipboardList, Clock, Landmark, Plus, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import type { Refund, RefundReason } from "@/lib/types";
@@ -20,16 +21,30 @@ import { StatusBadge, useConfirm } from "@/components/shared/bits";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
+import { Tabs, TabsContent, UnderlineTabsList, UnderlineTabsTrigger } from "@/components/ui/tabs";
+import { PayoutsPanel } from "@/components/admin/payouts-panel";
 
 const REASONS: RefundReason[] = ["fake_lead", "manual"];
 const NO_LEAD = "none";
 
+const TABS = ["wallet", "payouts"] as const;
+type Tab = (typeof TABS)[number];
+
+export default function RefundsAndPayoutsPage() {
+  return (
+    <Suspense>
+      <RefundsAndPayouts />
+    </Suspense>
+  );
+}
+
 /**
- * Refund policy: a purchase is refunded only when its offer is confirmed fake (cancelling the offer
- * as fake pays every claim automatically). A customer cancelling a real request is never refunded.
- * Admin can still add a manual refund to any company as a documented exception.
+ * Money going back to companies, in one place. Refunds to the wallet: a purchase is refunded only
+ * when its offer is confirmed fake (cancelling the offer as fake pays every claim automatically), or
+ * as a documented manual exception. Payouts to the bank: a company takes unused wallet money back.
+ * ?tab=payouts opens the second tab (notifications and the old Payouts address link there).
  */
-export default function CompanyRefundsPage() {
+function RefundsAndPayouts() {
   const t = useTranslations();
   const tr = useTranslations("admin.refunds");
   const lang = useLang();
@@ -41,13 +56,21 @@ export default function CompanyRefundsPage() {
   const { confirm, dialog } = useConfirm();
   const [issuing, setIssuing] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const payouts = useStore((s) => s.payouts);
+  const params = useSearchParams();
+  const [tab, setTab] = useState<Tab>("wallet");
+  const wanted = params.get("tab");
+  useEffect(() => {
+    if (wanted && (TABS as readonly string[]).includes(wanted)) setTab(wanted as Tab);
+  }, [wanted]);
 
   const orderMap = Object.fromEntries(orders.map((o) => [o.id, o]));
   const offerMap = Object.fromEntries(offers.map((o) => [o.id, o]));
   const sum = (rs: Refund[]) => rs.reduce((a, r) => a + r.amount, 0);
   const pending = refunds.filter((r) => r.status === "pending");
   const refunded30 = refunds.filter((r) => r.status === "refunded" && inLastDays(r.decidedAt ?? r.createdAt, 30));
-  const manual30 = refunded30.filter((r) => r.reason === "manual");
+  const requestedPayouts = payouts.filter((p) => p.status === "requested");
+  const paidOut30 = payouts.filter((p) => p.status === "paid" && inLastDays(p.decidedAt ?? p.createdAt, 30));
   const offerOf = (r: Refund) => (r.orderId ? orderMap[r.orderId]?.offerId : undefined);
 
   const reject = (r: Refund) =>
@@ -92,7 +115,7 @@ export default function CompanyRefundsPage() {
       accessorFn: (r) => offerOf(r) ?? "",
       cell: (c) =>
         c.getValue() ? (
-          <Link href={`/admin/leads/${c.getValue() as string}`} className="font-mono text-[13px] font-semibold text-primary hover:underline">{c.getValue() as string}</Link>
+          <Link href={`/admin/leads/${c.getValue() as string}`} className="whitespace-nowrap font-mono text-[13px] font-semibold text-primary hover:underline">{c.getValue() as string}</Link>
         ) : (
           <span className="text-muted-foreground">–</span>
         ),
@@ -142,11 +165,33 @@ export default function CompanyRefundsPage() {
   return (
     <>
       <PageHeader title={tr("title")} subtitle={tr("subtitle")} actions={<Button onClick={() => setIssuing(true)}><Plus /> {tr("issue")}</Button>} />
+      {/* what waits on admin across both, then what went back to wallets and to banks this month */}
       <div className="mb-4 grid gap-4 sm:grid-cols-3">
-        <KpiCard label={tr("pendingTotal")} value={formatCHF(sum(pending), lang)} icon={<Clock />} tone="warning" footer={tr("requests", { count: pending.length })} />
-        <KpiCard label={tr("refunded30")} value={formatCHF(sum(refunded30), lang)} icon={<RotateCcw />} tone="success" footer={tr("requests", { count: refunded30.length })} />
-        <KpiCard label={tr("manual30")} value={formatCHF(sum(manual30), lang)} icon={<HandHeart />} footer={tr("requests", { count: manual30.length })} />
+        <KpiCard
+          label={tr("waitingTotal")}
+          value={formatCHF(sum(pending) + requestedPayouts.reduce((a, p) => a + p.amount, 0), lang)}
+          icon={<Clock />}
+          tone="warning"
+          footer={tr("waitingSplit", { refunds: pending.length, payouts: requestedPayouts.length })}
+        />
+        <KpiCard label={tr("refundedWallets")} value={formatCHF(sum(refunded30), lang)} icon={<RotateCcw />} tone="success" footer={tr("requests", { count: refunded30.length })} />
+        <KpiCard label={tr("paidOut")} value={formatCHF(paidOut30.reduce((a, p) => a + p.amount, 0), lang)} icon={<Landmark />} tone="info" footer={tr("requests", { count: paidOut30.length })} />
       </div>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+        <UnderlineTabsList className="mb-4">
+          <UnderlineTabsTrigger value="wallet">
+            {tr("tabWallet")}
+            {pending.length > 0 && <span className="rounded-full bg-warning-soft px-1.5 text-xs font-bold text-warning">{pending.length}</span>}
+          </UnderlineTabsTrigger>
+          <UnderlineTabsTrigger value="payouts">
+            {tr("tabPayouts")}
+            {requestedPayouts.length > 0 && <span className="rounded-full bg-warning-soft px-1.5 text-xs font-bold text-warning">{requestedPayouts.length}</span>}
+          </UnderlineTabsTrigger>
+        </UnderlineTabsList>
+        <TabsContent value="payouts">
+          <PayoutsPanel />
+        </TabsContent>
+        <TabsContent value="wallet">
       <DataTable
         data={refunds}
         columns={columns}
@@ -160,6 +205,8 @@ export default function CompanyRefundsPage() {
         ]}
         rowClassName={(r) => (r.status === "pending" ? "bg-warning-soft/25" : undefined)}
       />
+        </TabsContent>
+      </Tabs>
       <DetailSheet
         open={!!open}
         onOpenChange={(v) => !v && setOpenId(null)}
