@@ -193,7 +193,7 @@ export const portal: Built<typeof Def> = {
       open: "Ouverts",
       executed: "Exécutés",
       reported: "Signalés",
-      cancelled: "Annulés",
+      cancelled: "Faux · remboursé",
     },
     assigned: "Attribué par Kompass",
     assignedTitle: "Attribué par Kompass au prix de {price}",
