@@ -126,10 +126,11 @@ export function ReviewsModeration({ scope }: { scope: "kompass" | "partner" }) {
         onView={() => setOpenId(r.id)}
         actions={[
           { label: t("common.actions.approve"), icon: <Check />, onSelect: () => decide(r, "approved"), hidden: r.status === "approved" },
-          { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => decide(r, "rejected"), hidden: r.status === "rejected" },
           { label: t("admin.rows.openCompany"), icon: <Building2 />, href: `/admin/partners/${r.target}`, hidden: scope !== "partner", separated: true },
           { label: t("admin.rows.openLead"), icon: <ClipboardList />, href: r.offerId ? `/admin/leads/${r.offerId}` : undefined, hidden: !r.offerId },
-          { label: t("common.actions.delete"), icon: <Trash2 />, tone: "danger", onSelect: () => del(r), separated: true },
+          // the destructive actions close the menu: Reject, then Delete
+          { label: t("common.actions.reject"), icon: <X />, tone: "danger", onSelect: () => decide(r, "rejected"), hidden: r.status === "rejected", separated: true },
+          { label: t("common.actions.delete"), icon: <Trash2 />, tone: "danger", onSelect: () => del(r), separated: r.status === "rejected" },
         ]}
       />
     )),
