@@ -6,6 +6,8 @@ import { Link, useRouter } from "@/i18n/navigation";
 import type { Order } from "@/lib/types";
 import { formatCHF, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
+import { leadOutcome, type LeadGroup } from "@/lib/mock/selectors";
+import { LeadStatus } from "@/components/portal/lead-outcome";
 import { useL, useLang, usePartnerMap, useServiceMap } from "@/lib/mock/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/controls";
@@ -19,11 +21,16 @@ export default function ShopPage() {
   const lang = useLang();
   const orders = useStore((s) => s.orders);
   const offers = useStore((s) => s.offers);
+  const fakeReports = useStore((s) => s.fakeReports);
+  const refunds = useStore((s) => s.refunds);
+  // the result each company sees in its portal (My offers): open, won, lost, executed, reported, fake · refunded
+  const groupOf = (o: Order) => leadOutcome({ offers, fakeReports, refunds }, o).group;
   const partnerMap = usePartnerMap();
   const serviceMap = useServiceMap();
   const offerMap = Object.fromEntries(offers.map((o) => [o.id, o]));
   const services = useStore((s) => s.services);
   const router = useRouter();
+  const RESULT_GROUPS: LeadGroup[] = ["open", "won", "lost", "executed", "reported", "cancelled"];
   // an order has its own page, like an offer
   const orderHref = (x: Order) => `/admin/leads/shop/${x.id}`;
   // filter choices: only services and companies that have orders
@@ -101,6 +108,7 @@ export default function ShopPage() {
         </div>
       ),
     },
+    { id: "result", header: t("admin.shop.result"), accessorFn: (o) => groupOf(o), cell: ({ row: { original: o } }) => <LeadStatus order={o} /> },
     actionsColumn<Order>((x) => (
       <RowActions
         viewHref={orderHref(x)}
@@ -134,6 +142,7 @@ export default function ShopPage() {
           { id: "channel", label: t("admin.shop.channel"), options: (["shop", "dynamic", "manual"] as const).map((c) => ({ value: c, label: t(`admin.shop.${c}`) })), get: (x) => x.channel },
           { id: "service", label: t("common.fields.service"), options: serviceOptions, get: serviceOf },
           { id: "company", label: t("admin.shop.company"), options: companyOptions, get: (x) => x.partnerId },
+          { id: "result", label: t("admin.shop.result"), options: RESULT_GROUPS.map((g) => ({ value: g, label: t(`portal.leads.groups.${g}`) })), get: groupOf },
         ]}
       />
     </>

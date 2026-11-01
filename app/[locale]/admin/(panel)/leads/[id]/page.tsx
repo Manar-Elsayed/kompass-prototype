@@ -46,6 +46,7 @@ import { Timeline } from "@/components/admin/timeline";
 import { canSendSurvey, useSendSurvey } from "@/components/admin/survey-send";
 import { FakeStatusSelect, isFinalReport, useFakeReportStatus } from "@/components/admin/fake-report-status";
 import { SurveyEmail } from "@/components/site/request-bits";
+import { LeadStatus } from "@/components/portal/lead-outcome";
 import { JobFacts, JobPlaces } from "@/components/shared/job-details";
 
 const cantonOf = (city: string) => CITIES.find((c) => c.city === city)?.canton;
@@ -307,13 +308,8 @@ export default function LeadDetail() {
                           </p>
                           {o.note && <p className="mt-0.5 text-xs text-ink">{o.note}</p>}
                         </div>
-                        {o.partnerId === offer.chosenPartnerId && <Badge tone="primary"><Hand /> {tl("chosen")}</Badge>}
-                        {o.outcome && !o.executed && (
-                          <Badge tone={o.outcome === "won" ? "success" : o.outcome === "unreachable" ? "warning" : "neutral"} title={tl("companyReported")}>
-                            {t(`portal.leads.outcome.${o.outcome}`)}
-                          </Badge>
-                        )}
-                        {o.executed && <Badge tone="success">{t("admin.shop.executed")}</Badge>}
+                        {/* the same result the company sees in My offers; "confirmed by customer" when the survey decided it */}
+                        <LeadStatus order={o} />
                         <span className="font-semibold">{formatCHF(o.price, lang)}</span>
                       </li>
                     );

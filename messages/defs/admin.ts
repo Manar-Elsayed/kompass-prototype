@@ -365,6 +365,7 @@ export const admin = {
     subtitle: "Offers purchased by partners — via the shop or dynamic distribution.",
     order: "Order",
     channel: "Channel",
+    result: "Result",
     shop: "Shop",
     dynamic: "Dynamic",
     manual: "Manual",
