@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Search, SearchX } from "lucide-react";
+import { LayoutGrid, List, Search, SearchX } from "lucide-react";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useL } from "@/lib/mock/hooks";
 import { availableLeads, CANTONS, isExpiringSoon, partnerCantons, refNow, takesOffersFor } from "@/lib/mock/selectors";
@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/shared/bits";
 import { PageHeader } from "@/components/admin/ui";
 import { LeadCard } from "@/components/portal/lead-card";
+import { ShopList } from "@/components/portal/shop-list";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LowBalanceBanner } from "@/components/portal/low-balance";
 import { useCanBuy } from "@/components/portal/shell";
 import { CITIES } from "@/lib/mock/seed";
@@ -27,6 +29,9 @@ import { CITIES } from "@/lib/mock/seed";
 const VIEWS = ["all", "newest", "closing", "expiring", "discounts"] as const;
 type View = (typeof VIEWS)[number];
 const VIEW_LABEL: Record<View, string> = { all: "viewAll", newest: "viewNewest", closing: "viewClosing", expiring: "viewExpiring", discounts: "viewDiscounts" };
+/** List (a table) or Board (the cards), remembered per browser like the Files page. */
+const LAYOUT_KEY = "kompass-shop-layout";
+type Layout = "list" | "board";
 
 export default function LeadShop() {
   const t = useTranslations("portal.shop");
@@ -41,6 +46,20 @@ export default function LeadShop() {
   const [pickedCanton, setCanton] = useState<string | null>(null);
   const [view, setView] = useState<View>("all");
   const [q, setQ] = useState("");
+  const tfiles = useTranslations("admin.files");
+  const [layout, setLayout] = useState<Layout>("board");
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(LAYOUT_KEY);
+      if (v === "list" || v === "board") setLayout(v);
+    } catch {}
+  }, []);
+  const pickLayout = (v: Layout) => {
+    setLayout(v);
+    try {
+      localStorage.setItem(LAYOUT_KEY, v);
+    } catch {}
+  };
 
   const all = useMemo(() => availableLeads({ offers, orders }, partner), [offers, orders, partner]);
   const cantonOf = (zip: string) => CITIES.find((c) => c.zip === zip)?.canton ?? "";
@@ -92,6 +111,12 @@ export default function LeadShop() {
         <div className="w-full sm:w-auto sm:min-w-40">
           <Select value={view} onValueChange={(v) => setView(v as View)} options={VIEWS.map((v) => ({ value: v, label: t(VIEW_LABEL[v]) }))} />
         </div>
+        <Tabs value={layout} onValueChange={(v) => pickLayout(v as Layout)}>
+          <TabsList>
+            <TabsTrigger value="list"><List /> {tfiles("viewList")}</TabsTrigger>
+            <TabsTrigger value="board"><LayoutGrid /> {tfiles("viewBoard")}</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </Card>
       <p className="mb-4 px-1 text-sm text-muted-foreground">{t("count", { count: list.length })}</p>
       {!canBuy && !partner.banned && (
@@ -99,7 +124,9 @@ export default function LeadShop() {
           {t("documents")} <Link href="/portal/profile?tab=documents" className="underline underline-offset-2">{tsh("updateDocs")}</Link>
         </p>
       )}
-      {list.length ? (
+      {list.length && layout === "list" ? (
+        <ShopList items={list} canBuy={canBuy} />
+      ) : list.length ? (
         <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
           {list.map((x) => (
             <LeadCard key={x.offer.id} offer={x.offer} sold={x.sold} canBuy={canBuy} />

@@ -92,7 +92,7 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
   );
 }
 
-function CheckoutDialog({ offer, onClose }: { offer: Offer; onClose: () => void }) {
+export function CheckoutDialog({ offer, onClose }: { offer: Offer; onClose: () => void }) {
   const t = useTranslations("portal.shop");
   const tc = useTranslations("common");
   const td = useTranslations("portal.dashboard");
