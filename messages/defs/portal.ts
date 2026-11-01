@@ -190,7 +190,7 @@ export const portal = {
       open: "Open",
       executed: "Executed",
       reported: "Reported",
-      cancelled: "Cancelled",
+      cancelled: "Fake · refunded",
     },
     assigned: "Assigned by Kompass",
     assignedTitle: "Assigned to you by Kompass at {price}",

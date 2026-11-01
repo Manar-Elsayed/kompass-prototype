@@ -193,7 +193,7 @@ export const portal: Built<typeof Def> = {
       open: "Offen",
       executed: "Ausgeführt",
       reported: "Gemeldet",
-      cancelled: "Storniert",
+      cancelled: "Fake · erstattet",
     },
     assigned: "Von Kompass zugewiesen",
     assignedTitle: "Von Kompass für {price} zugewiesen",
