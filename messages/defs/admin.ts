@@ -552,6 +552,8 @@ export const admin = {
     received: "Received",
     sendContract: "Send contract",
     contractSent: "Contract sent to {name}",
+    sendContractTitle: "Send the contract to {name}?",
+    sendContractBody: "{email} gets an email with a link to read and sign the contract in the partner portal. Once it is signed, you can approve the application.",
     approveTitle: "Approve {name}",
     approveBody: "The partner can start buying offers immediately. Documents that are still missing can follow; the company is reminded.",
     approved: "{name} is now an active partner",

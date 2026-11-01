@@ -555,6 +555,8 @@ export const admin: Built<typeof Def> = {
     received: "Ricevuta",
     sendContract: "Invia contratto",
     contractSent: "Contratto inviato a {name}",
+    sendContractTitle: "Inviare il contratto a {name}?",
+    sendContractBody: "{email} riceve un’e-mail con un link per leggere e firmare il contratto nel portale partner. Una volta firmato, può approvare la candidatura.",
     approveTitle: "Approva {name}",
     approveBody: "Il partner può acquistare richieste da subito. I documenti mancanti possono seguire; la ditta riceve un promemoria.",
     approved: "{name} è ora un partner attivo",

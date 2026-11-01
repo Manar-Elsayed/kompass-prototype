@@ -40,6 +40,7 @@ export default function ApplicationDetail() {
   const serviceMap = useServiceMap();
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const [sendingContract, setSendingContract] = useState(false);
   const files = useFileActions();
 
   if (!p) {
@@ -90,10 +91,8 @@ export default function ApplicationDetail() {
   // only the contract is needed to approve; the other documents can follow
   const missing = checks.filter((c) => !c.ok && !c.later).map((c) => c.label);
 
-  const sendContract = () => {
-    decide(p.id, "contract_sent");
-    toast.success(ta("contractSent", { name: p.name }));
-  };
+  // sending the contract emails the applicant, so it is confirmed first
+  const sendContract = () => setSendingContract(true);
 
   return (
     <>
@@ -250,6 +249,20 @@ export default function ApplicationDetail() {
             decide(p.id, "rejected", reason);
             toast.success(ta("declined", { name: p.name }));
             setRejecting(false);
+          }}
+        />
+      )}
+      {sendingContract && (
+        <ConfirmDialog
+          open
+          onOpenChange={(v) => !v && setSendingContract(false)}
+          title={ta("sendContractTitle", { name: p.name })}
+          body={ta("sendContractBody", { email: p.email })}
+          confirmLabel={<><Send /> {ta("sendContract")}</>}
+          onConfirm={() => {
+            decide(p.id, "contract_sent");
+            toast.success(ta("contractSent", { name: p.name }));
+            setSendingContract(false);
           }}
         />
       )}
