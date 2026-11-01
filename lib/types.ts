@@ -187,6 +187,14 @@ export interface CompanyFile {
  */
 export type MessageTopic = "general" | "billing" | "leads" | "documents" | "profile";
 export const MESSAGE_TOPICS: readonly MessageTopic[] = ["general", "billing", "leads", "documents", "profile"];
+/** A file sent with a message (kept as a data URL in the prototype). */
+export interface MessageAttachment {
+  name: string;
+  url: string;
+  type: "image" | "file";
+  size: number;
+}
+
 export interface CompanyMessage {
   id: ID;
   partnerId: ID;
@@ -196,6 +204,7 @@ export interface CompanyMessage {
   subject: string;
   body: string;
   channel: "email" | "portal";
+  attachments?: MessageAttachment[];
   byUserId?: ID;
   createdAt: string;
   /** Read by the other side: the company for Kompass messages, Kompass for company messages. */

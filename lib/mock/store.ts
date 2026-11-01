@@ -80,7 +80,7 @@ interface Actions {
    * A message in a thread, or a new thread when `threadId` is missing. Company messages notify
    * admin; that is also how a company asks to change details it can't edit itself (topic "profile").
    */
-  sendMessage: (input: { partnerId: string; from: CompanyMessage["from"]; body: string; threadId?: string; subject?: string; topic?: MessageTopic; byUserId?: string }) => CompanyMessage;
+  sendMessage: (input: { partnerId: string; from: CompanyMessage["from"]; body: string; threadId?: string; subject?: string; topic?: MessageTopic; byUserId?: string; attachments?: CompanyMessage["attachments"] }) => CompanyMessage;
   /** The reader has seen every message the other side wrote in this thread. */
   markThreadRead: (threadId: string, reader: CompanyMessage["from"]) => void;
   setNominations: (canton: string, partnerIds: string[]) => void;
@@ -442,7 +442,7 @@ export const useStore = create<Store>()(
         set((s) => ({ messages: [{ ...input, id, threadId: id, from: "kompass", topic: topic ?? "general", createdAt: nowIso() }, ...s.messages] }));
       },
 
-      sendMessage: ({ partnerId, from, body, threadId, subject, topic, byUserId }) => {
+      sendMessage: ({ partnerId, from, body, threadId, subject, topic, byUserId, attachments }) => {
         const s = get();
         const root = threadId ? s.messages.find((m) => m.id === threadId) : undefined;
         const id = uid("MSG");
@@ -455,6 +455,7 @@ export const useStore = create<Store>()(
           subject: root?.subject ?? subject?.trim() ?? "",
           body: body.trim(),
           channel: "portal",
+          ...(attachments?.length ? { attachments } : {}),
           byUserId,
           createdAt: nowIso(),
         };
