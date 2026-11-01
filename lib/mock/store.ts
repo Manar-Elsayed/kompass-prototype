@@ -756,9 +756,9 @@ export const useStore = create<Store>()(
       // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address; v14 fake-offer reports whose
       // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout; v17 team invitations (an invited member who hasn't signed in yet); v18 invoice numbers from the prefix and the contract version each company signed; v19 what companies report about their offers (won / lost / couldn't reach); v22 every company review linked to its offer; v23 partners' last seen relative to when the demo loads; v24 a fourth document (insurance), only the contract blocks buying; v25 the contract is a policies agreement with no end date; v26 recent top-ups for the activity statuses; v27 payments count at once (no approval). Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 28,
+      version: 29,
       migrate: (persisted, version) => {
-        if (version >= 28) return persisted as Store;
+        if (version >= 29) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },
