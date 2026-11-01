@@ -11,6 +11,7 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/controls";
 import { StatusBadge } from "@/components/shared/bits";
+import { Badge } from "@/components/ui/badge";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { DetailSheet, RowActions, SheetSection, actionsColumn } from "@/components/admin/row-actions";
 import { DL, Mono } from "@/components/admin/ui";
@@ -54,7 +55,12 @@ export function PayoutsPanel() {
       header: t("common.fields.status"),
       accessorFn: (p) => p.status,
       // the bank reference or the reason for rejecting is in the View popup
-      cell: (c) => <StatusBadge status={c.getValue() as string} />,
+      cell: ({ row: { original: p } }) => (
+        <span className="flex flex-wrap items-center gap-1.5">
+          <StatusBadge status={p.status} />
+          {p.auto && <Badge tone="info">{tp("auto")}</Badge>}
+        </span>
+      ),
     },
     actionsColumn<Payout>((p) => (
       <RowActions
@@ -124,7 +130,7 @@ export function PayoutsPanel() {
                 <DL
                   items={[
                     { label: t("admin.rows.decidedOn"), value: open.decidedAt ? formatDateTime(open.decidedAt, lang) : "–" },
-                    { label: tp("decidedBy"), value: decidedBy ?? "–" },
+                    { label: tp("decidedBy"), value: open.auto ? tp("auto") : decidedBy ?? "–" },
                   ]}
                 />
                 {open.reference && (

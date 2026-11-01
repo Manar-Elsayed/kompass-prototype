@@ -17,6 +17,8 @@ import type {
   Partner,
   PartnerDue,
   Payout,
+  PaymentMethod,
+  AutoTopUp,
   PayoutReason,
   Invoice,
   PayMethod,
@@ -26,7 +28,7 @@ import type {
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 import { createSeed } from "./seed";
-import { discountedPrice, documentState, isPurchasable, MIN_PAYOUT, verificationFlags, withdrawable } from "./selectors";
+import { AUTO_PAYOUT_LIMIT, autoTopUpOn, discountedPrice, documentState, isPurchasable, MIN_PAYOUT, payoutArrives, spendingFloor, verificationFlags, withdrawable } from "./selectors";
 
 type Collections = {
   [K in keyof DB as DB[K] extends { id: string }[] ? K : never]: DB[K];
@@ -66,6 +68,13 @@ interface Actions {
   payInvoiceOnline: (id: string, payMethod: "card" | "twint") => void;
   /** Company asks for unused wallet money to be paid to its bank account (Kompass approves). */
   requestPayout: (partnerId: string, amount: number, reason: PayoutReason, reasonNote?: string) => { ok: true; payout: Payout } | { ok: false; error: "minimum" | "available" };
+  /** Company saves or removes its card / TWINT. Removing is refused while the balance is negative. */
+  savePaymentMethod: (partnerId: string, method: Omit<PaymentMethod, "addedAt"> | null) => { ok: true } | { ok: false; error: "negative" };
+  setAutoTopUp: (partnerId: string, autoTopUp: AutoTopUp) => void;
+  /** Kompass sets (or removes, with 0) how far below zero the company may buy. */
+  setCreditLimit: (partnerId: string, limit: number) => void;
+  /** Charge a negative balance to the saved method now instead of on the 1st. */
+  settleBalance: (partnerId: string) => number;
   /** Paid takes the amount out of the wallet; rejected leaves the wallet as it was. */
   decidePayout: (id: string, status: "paid" | "rejected", reference: string, byUserId?: string) => void;
 
@@ -128,7 +137,7 @@ interface Actions {
 }
 
 export type BuyResult =
-  | { ok: true; order: Order; price: number; discount: number }
+  | { ok: true; order: Order; price: number; discount: number; toppedUp?: number }
   | { ok: false; error: "unavailable" | "insufficient" | "coupon" | "blocked" | "owned" | "documents" };
 
 export type Store = DB & { session: Session | null; partnerSession: PartnerSession | null } & Actions;
@@ -185,6 +194,45 @@ function recordPurchase(s: DB, order: Order, offer: Offer, soldBefore: number): 
       o.id === offer.id ? { ...o, status: full ? "completed" : "in_progress", verifiedAt: o.verifiedAt ?? (o.status === "new" ? nowIso() : undefined) } : o,
     ),
   };
+}
+
+/** A charge to the saved card / TWINT, booked as an online top-up. */
+function chargeSaved(s: Pick<DB, "partners" | "topups">, partnerId: string, amount: number, kind: "AUTO" | "SETTLE") {
+  const p = s.partners.find((x) => x.id === partnerId);
+  if (!p?.paymentMethod || amount <= 0) return s;
+  const topup: WalletTopup = {
+    id: `TU-${String(s.topups.length + 1).padStart(4, "0")}`,
+    partnerId,
+    amount,
+    method: "online",
+    payMethod: p.paymentMethod.type,
+    reference: `${kind}-${Date.now().toString(36).toUpperCase()}`,
+    note: kind === "AUTO" ? "Automatic top-up" : "Negative balance settled",
+    createdAt: nowIso(),
+  };
+  return { topups: [topup, ...s.topups], partners: s.partners.map((x) => (x.id === partnerId ? { ...x, wallet: x.wallet + amount } : x)) };
+}
+
+/**
+ * Make room for a purchase: when the price would take the balance below the company's floor (0, or
+ * minus its credit limit) and automatic top-up is on, charge the saved method first - at least the
+ * chosen top-up amount, more if the offer costs more. Returns null when the money still isn't there.
+ */
+function fundPurchase(s: Pick<DB, "partners" | "topups">, partnerId: string, price: number) {
+  const p = s.partners.find((x) => x.id === partnerId)!;
+  const floor = spendingFloor(p);
+  if (p.wallet - price >= floor) return { ...s, toppedUp: 0 };
+  if (!autoTopUpOn(p)) return null;
+  const need = price - (p.wallet - floor);
+  const amount = Math.max(p.autoTopUp!.amount, Math.ceil(need / 10) * 10);
+  return { ...chargeSaved(s, partnerId, amount, "AUTO"), toppedUp: amount };
+}
+
+/** After buying: top up again once the balance has dropped below the company's threshold. */
+function topUpAfter(s: Pick<DB, "partners" | "topups">, partnerId: string) {
+  const p = s.partners.find((x) => x.id === partnerId)!;
+  if (!autoTopUpOn(p) || p.wallet >= p.autoTopUp!.below) return { ...s, toppedUp: 0 };
+  return { ...chargeSaved(s, partnerId, p.autoTopUp!.amount, "AUTO"), toppedUp: p.autoTopUp!.amount };
 }
 
 function notify(state: Store, n: Omit<Notification, "id" | "read" | "createdAt">): Notification[] {
@@ -377,7 +425,16 @@ export const useStore = create<Store>()(
         if (amount < MIN_PAYOUT) return { ok: false, error: "minimum" };
         if (!partner || amount > withdrawable(s, partnerId).available) return { ok: false, error: "available" };
         const next = Math.max(0, ...s.payouts.map((x) => Number(x.id.slice(3)) || 0)) + 1;
-        const payout: Payout = { id: `PO-${String(next).padStart(4, "0")}`, partnerId, amount, iban: partner.bank.iban, status: "requested", reason, reasonNote: reasonNote?.trim() || undefined, createdAt: nowIso() };
+        const id = `PO-${String(next).padStart(4, "0")}`;
+        const firstPayout = !s.payouts.some((x) => x.partnerId === partnerId && x.status === "paid");
+        // up to the limit and not the first payout: paid at once, no admin step; the rest waits for Kompass
+        if (amount <= AUTO_PAYOUT_LIMIT && !firstPayout) {
+          const at = nowIso();
+          const payout: Payout = { id, partnerId, amount, iban: partner.bank.iban, status: "paid", auto: true, reference: `AUTO-${id}`, reason, reasonNote: reasonNote?.trim() || undefined, createdAt: at, decidedAt: at };
+          set({ payouts: [payout, ...s.payouts], partners: credit(s.partners, partnerId, -amount) });
+          return { ok: true, payout };
+        }
+        const payout: Payout = { id, partnerId, amount, iban: partner.bank.iban, status: "requested", reason, reasonNote: reasonNote?.trim() || undefined, createdAt: nowIso() };
         set({
           payouts: [payout, ...s.payouts],
           notifications: notify(s, {
@@ -387,6 +444,35 @@ export const useStore = create<Store>()(
           }),
         });
         return { ok: true, payout };
+      },
+
+      savePaymentMethod: (partnerId, method) => {
+        const p = get().partners.find((x) => x.id === partnerId);
+        if (!method && (p?.wallet ?? 0) < 0) return { ok: false, error: "negative" };
+        set((s) => ({
+          partners: s.partners.map((x) =>
+            x.id === partnerId
+              ? method
+                ? { ...x, paymentMethod: { ...method, addedAt: nowIso() } }
+                : { ...x, paymentMethod: undefined, autoTopUp: x.autoTopUp ? { ...x.autoTopUp, enabled: false } : undefined }
+              : x,
+          ),
+        }));
+        return { ok: true };
+      },
+
+      setAutoTopUp: (partnerId, autoTopUp) => set((s) => ({ partners: s.partners.map((x) => (x.id === partnerId ? { ...x, autoTopUp } : x)) })),
+
+      setCreditLimit: (partnerId, limit) =>
+        set((s) => ({ partners: s.partners.map((x) => (x.id === partnerId ? { ...x, creditLimit: limit > 0 ? limit : undefined } : x)) })),
+
+      settleBalance: (partnerId) => {
+        const s = get();
+        const p = s.partners.find((x) => x.id === partnerId);
+        if (!p?.paymentMethod || p.wallet >= 0) return 0;
+        const amount = -p.wallet;
+        set(chargeSaved(s, partnerId, amount, "SETTLE"));
+        return amount;
       },
 
       decidePayout: (id, status, reference, byUserId) =>
@@ -577,7 +663,8 @@ export const useStore = create<Store>()(
             result = { ok: false, error: "coupon" };
             return {};
           }
-          if (partner.wallet < q.price) {
+          const funded = fundPurchase(s, partnerId, q.price);
+          if (!funded) {
             result = { ok: false, error: "insufficient" };
             return {};
           }
@@ -592,9 +679,13 @@ export const useStore = create<Store>()(
             executed: false,
             createdAt: nowIso(),
           };
-          result = { ok: true, order, price: q.price, discount: q.discount };
+          const booked = recordPurchase({ ...s, partners: funded.partners }, order, offer, sold.length);
+          const after = topUpAfter({ partners: booked.partners!, topups: funded.topups }, partnerId);
+          result = { ok: true, order, price: q.price, discount: q.discount, toppedUp: funded.toppedUp + after.toppedUp || undefined };
           return {
-            ...recordPurchase(s, order, offer, sold.length),
+            ...booked,
+            partners: after.partners,
+            topups: after.topups,
             coupons: code ? s.coupons.map((c) => (c.code === code ? { ...c, used: c.used + 1 } : c)) : s.coupons,
           };
         });
@@ -622,7 +713,9 @@ export const useStore = create<Store>()(
           }
           // admin may assign a New offer it has just checked by phone, but never past the quota
           if (!["new", "in_progress"].includes(offer.status) || sold.length >= offer.offersWanted) return {};
-          if (partner.wallet < price) {
+          // the same money rules as the shop: credit limit and automatic top-up apply
+          const funded = fundPurchase(s, partnerId, price);
+          if (!funded) {
             result = { ok: false, error: "insufficient" };
             return {};
           }
@@ -636,8 +729,10 @@ export const useStore = create<Store>()(
             executed: false,
             createdAt: nowIso(),
           };
-          result = { ok: true, order, price, discount: 0 };
-          return recordPurchase(s, order, offer, sold.length);
+          const booked = recordPurchase({ ...s, partners: funded.partners }, order, offer, sold.length);
+          const after = topUpAfter({ partners: booked.partners!, topups: funded.topups }, partnerId);
+          result = { ok: true, order, price, discount: 0, toppedUp: funded.toppedUp + after.toppedUp || undefined };
+          return { ...booked, partners: after.partners, topups: after.topups };
         });
         return result;
       },
@@ -758,9 +853,9 @@ export const useStore = create<Store>()(
       // (customers only answer a review survey); v12 service-specific request details; v13 organizations and the customer's address; v14 fake-offer reports whose
       // status matches the refunds; v15 paused company services; v16 the reason a company gives for a payout; v17 team invitations (an invited member who hasn't signed in yet); v18 invoice numbers from the prefix and the contract version each company signed; v19 what companies report about their offers (won / lost / couldn't reach); v22 every company review linked to its offer; v23 partners' last seen relative to when the demo loads; v24 a fourth document (insurance), only the contract blocks buying; v25 the contract is a policies agreement with no end date; v26 recent top-ups for the activity statuses; v27 payments count at once (no approval). Older saves start again from the current seed,
       // keeping the signed-in sessions.
-      version: 31,
+      version: 32,
       migrate: (persisted, version) => {
-        if (version >= 31) return persisted as Store;
+        if (version >= 32) return persisted as Store;
         const { session, partnerSession } = (persisted ?? {}) as Partial<Store>;
         return { ...createSeed(), session: session ?? null, partnerSession: partnerSession ?? null } as Store;
       },

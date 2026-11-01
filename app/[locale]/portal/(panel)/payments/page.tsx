@@ -8,7 +8,8 @@ import { ArrowDownToLine, Check, Clock, Copy, CreditCard, Download, Eye, FileTex
 import { toast } from "sonner";
 import { PAYOUT_REASONS, type Invoice, type PartnerDue, type PayoutReason } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
-import { isOverdue, LEDGER_KINDS, MIN_PAYOUT, walletLedger, withdrawable, type LedgerEntry, type LedgerKind } from "@/lib/mock/selectors";
+import { activeCreditLimit, AUTO_PAYOUT_LIMIT, isOverdue, LEDGER_KINDS, MIN_PAYOUT, payoutArrives, walletLedger, withdrawable, type LedgerEntry, type LedgerKind } from "@/lib/mock/selectors";
+import { PaymentSettingsCard } from "@/components/portal/payment-settings";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useLang } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
@@ -192,10 +193,11 @@ function Payments() {
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
-            <KpiCard label={t("balance")} value={formatCHF(partner.wallet, lang)} icon={<Wallet />} />
+            <KpiCard label={t("balance")} value={formatCHF(partner.wallet, lang)} icon={<Wallet />} footer={activeCreditLimit(partner) ? t("creditLimitShort", { limit: formatCHF(activeCreditLimit(partner), lang) }) : undefined} />
             <KpiCard label={t("withdrawable")} value={formatCHF(money.available, lang)} icon={<Landmark />} tone="success" footer={<button className="font-semibold text-primary hover:underline" onClick={() => setPayout(true)}>{t("requestPayout")}</button>} />
             <KpiCard label={t("creditDue")} value={formatCHF(money.creditDue, lang)} icon={<HandCoins />} tone="info" footer={openInvoices.length ? <button className="font-semibold text-primary hover:underline" onClick={() => setTab("invoices")}>{t("openInvoices", { count: openInvoices.length })}</button> : t("noOpenInvoices")} />
           </div>
+          <PaymentSettingsCard />
           <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
             <DataTable
               data={payments}
@@ -249,7 +251,7 @@ function Payments() {
               </div>
               <Button onClick={() => setPayout(true)} disabled={money.available < MIN_PAYOUT}><ArrowDownToLine /> {t("requestPayout")}</Button>
             </CardBody>
-            {money.available < MIN_PAYOUT && <p className="border-t px-5 py-3 text-xs text-muted-foreground">{t("payoutMinimum", { amount: formatCHF(MIN_PAYOUT, lang) })}</p>}
+            {money.available < MIN_PAYOUT && <p className="border-t px-5 py-3 text-xs text-muted-foreground">{partner.wallet < 0 ? t("payoutNegative") : t("payoutMinimum", { amount: formatCHF(MIN_PAYOUT, lang) })}</p>}
           </Card>
           <Card className="overflow-hidden">
             <CardHeader title={t("payouts")} description={t("payoutsHint")} />
@@ -261,7 +263,11 @@ function Payments() {
                     <span className="min-w-32 flex-1 text-muted-foreground">
                       {t("requestedOn", { date: formatDate(p.createdAt, lang) })}
                       {p.reason && <span className="block text-xs">{tReason(p.reason)}</span>}
-                      {p.reference && <span className="block text-xs">{p.status === "rejected" ? `“${p.reference}”` : <span className="font-mono" dir="ltr">{p.reference}</span>}</span>}
+                      {p.auto ? (
+                        <span className="block text-xs text-success">{t("paidAuto")}</span>
+                      ) : (
+                        p.reference && <span className="block text-xs">{p.status === "rejected" ? `“${p.reference}”` : <span className="font-mono" dir="ltr">{p.reference}</span>}</span>
+                      )}
                     </span>
                     <span className="font-bold">{formatCHF(p.amount, lang)}</span>
                     <StatusBadge status={p.status} />
@@ -399,7 +405,8 @@ function PayoutDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
     const res = await mock(() => request(partner.id, value, reason as PayoutReason, reason === "other" ? note : undefined), 700);
     setBusy(false);
     if (!res.ok) return toast.error(res.error === "minimum" ? t("payoutMinimum", { amount: formatCHF(MIN_PAYOUT, lang) }) : t("payoutTooHigh", { amount: formatCHF(money.available, lang) }));
-    toast.success(t("payoutRequested", { amount: formatCHF(value, lang) }));
+    if (res.payout.auto) toast.success(t("payoutAuto", { amount: formatCHF(value, lang), date: formatDate(payoutArrives(res.payout.createdAt), lang) }));
+    else toast.success(t("payoutReview", { limit: formatCHF(AUTO_PAYOUT_LIMIT, lang) }));
     onDone();
     onClose();
   };
@@ -436,7 +443,7 @@ function PayoutDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
             {t("ibanWrong")}
           </button>
         </div>
-        <p className="text-xs text-muted-foreground">{t("payoutTiming")}</p>
+        <p className="text-xs text-muted-foreground">{t("payoutTiming", { limit: formatCHF(AUTO_PAYOUT_LIMIT, lang) })}</p>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{tc("cancel")}</Button>
           <Button onClick={submit} disabled={!value || !!error || !reasonReady} loading={busy}><ArrowDownToLine /> {t("requestPayout")}</Button>

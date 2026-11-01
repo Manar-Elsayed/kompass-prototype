@@ -8,7 +8,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import type { Offer } from "@/lib/types";
 import { cn, formatCHF, formatDate, timeAgo } from "@/lib/utils";
 import { quoteLead, useStore } from "@/lib/mock/store";
-import { discountedPrice, isExpiringSoon } from "@/lib/mock/selectors";
+import { autoTopUpOn, canFund, discountedPrice, isExpiringSoon, spendingFloor } from "@/lib/mock/selectors";
 import { useCurrentPartner, useL, useLang, useServiceMap } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
@@ -109,7 +109,11 @@ function CheckoutDialog({ offer, onClose }: { offer: Offer; onClose: () => void 
   const [done, setDone] = useState<string | null>(null);
 
   const q = quoteLead(db, partner.id, offer.id, applied);
-  const after = partner.wallet - q.price;
+  // the same rule as buying: within the floor (0 or minus the credit limit), or automatic top-up pays first
+  const fundable = canFund(partner, q.price);
+  const short = partner.wallet - q.price < spendingFloor(partner);
+  const topUp = short && autoTopUpOn(partner) ? Math.max(partner.autoTopUp!.amount, Math.ceil((q.price - (partner.wallet - spendingFloor(partner))) / 10) * 10) : 0;
+  const after = partner.wallet + topUp - q.price;
 
   const buy = async () => {
     setBusy(true);
@@ -118,6 +122,7 @@ function CheckoutDialog({ offer, onClose }: { offer: Offer; onClose: () => void 
     if (res.ok) {
       setDone(res.order.offerId);
       // the card leaves the shop list once bought, so the toast carries the next step
+      if (res.toppedUp) toast.info(t("autoToppedUp", { amount: formatCHF(res.toppedUp, lang) }));
       toast.success(t("bought", { id: res.order.offerId }), {
         action: { label: t("viewLead"), onClick: () => router.push(`/portal/leads/${res.order.offerId}`) },
       });
@@ -164,10 +169,11 @@ function CheckoutDialog({ offer, onClose }: { offer: Offer; onClose: () => void 
               <div className="flex justify-between"><dt className="text-muted-foreground">{t("price")}</dt><dd>{formatCHF(q.base, lang)}</dd></div>
               {q.discount > 0 && <div className="flex justify-between text-success"><dt>{t("discount")}</dt><dd>−{formatCHF(q.discount, lang)}</dd></div>}
               <div className="flex justify-between border-t pt-2 text-base font-bold text-ink"><dt>{t("total")}</dt><dd>{formatCHF(q.price, lang)}</dd></div>
-              <div className="flex justify-between text-xs"><dt className="text-muted-foreground">{t("walletAfter")}</dt><dd className={cn("font-semibold", after < 0 && "text-danger")}>{formatCHF(after, lang)}</dd></div>
+              {topUp > 0 && <div className="flex justify-between text-xs text-success"><dt>{t("autoTopUpLine", { method: partner.paymentMethod!.label })}</dt><dd>+{formatCHF(topUp, lang)}</dd></div>}
+              <div className="flex justify-between text-xs"><dt className="text-muted-foreground">{t("walletAfter")}</dt><dd className={cn("font-semibold", !fundable && "text-danger")}>{formatCHF(after, lang)}</dd></div>
             </dl>
 
-            {after < 0 && (
+            {!fundable && (
               <p className="rounded-lg bg-danger-soft p-3 text-sm font-medium text-danger">
                 {t("insufficient")}{" "}
                 <Link href="/portal/payments" className="underline" onClick={onClose}>{td("topUp")} →</Link>
@@ -177,7 +183,7 @@ function CheckoutDialog({ offer, onClose }: { offer: Offer; onClose: () => void 
 
             <DialogFooter>
               <Button variant="outline" onClick={onClose}>{tc("actions.cancel")}</Button>
-              <Button variant="accent" loading={busy} disabled={after < 0 || q.couponValid === false} onClick={buy}>
+              <Button variant="accent" loading={busy} disabled={!fundable || q.couponValid === false} onClick={buy}>
                 {t("buyFor", { price: formatCHF(q.price, lang) })}
               </Button>
             </DialogFooter>

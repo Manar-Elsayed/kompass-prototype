@@ -966,6 +966,13 @@ approved.slice(0, 14).forEach((p, i) => {
   p.wallet += amount;
 });
 
+// How the demo companies pay: Alpen saved a card with automatic top-up; Zürisee Transport saved
+// TWINT and has a CHF 300 credit limit from Kompass. Nobody else has saved a method yet.
+partners[0].paymentMethod = { type: "card", label: "Visa •••• 4242", addedAt: daysAgo(60) };
+partners[0].autoTopUp = { enabled: true, below: 50, amount: 200 };
+partners[1].paymentMethod = { type: "twint", label: "TWINT · +41 79 ••• 12 34", addedAt: daysAgo(40) };
+partners[1].creditLimit = 300;
+
 // Wallet balances must equal their ledger. Money in before the history above (first deposits)
 // becomes an opening balance recorded by admin, so every franc is accounted for.
 for (const p of partners) {

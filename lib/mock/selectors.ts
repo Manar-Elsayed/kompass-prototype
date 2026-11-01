@@ -76,10 +76,10 @@ export function receiptRows(db: Pick<DB, "dues" | "topups" | "orders">, prefix: 
  * The cheapest offer the company can buy. Below it the wallet can't pay for any offer, so the
  * company silently stops buying unless someone tells it.
  */
-export function lowBalance(partner: Pick<Partner, "wallet" | "serviceIds" | "pausedServiceIds">, services: Pick<Service, "id" | "leadPrice">[], fallback: number) {
+export function lowBalance(partner: Pick<Partner, "wallet" | "serviceIds" | "pausedServiceIds" | "creditLimit" | "paymentMethod">, services: Pick<Service, "id" | "leadPrice">[], fallback: number) {
   const prices = services.filter((s) => takesOffersFor(partner, s.id)).map((s) => s.leadPrice);
   const min = prices.length ? Math.min(...prices) : fallback;
-  return { low: partner.wallet < min, min };
+  return { low: partner.wallet - min < spendingFloor(partner), min };
 }
 
 type LedgerDB = Pick<DB, "orders" | "dues" | "topups" | "refunds" | "invoices" | "partners" | "payouts">;
@@ -132,6 +132,30 @@ export function walletLedger(db: LedgerDB, partnerId: string) {
 
 /** Smallest payout a company can request, so bank fees stay proportionate. */
 export const MIN_PAYOUT = 50;
+/** Payouts up to this amount are paid automatically (not a company's first payout). */
+export const AUTO_PAYOUT_LIMIT = 1000;
+export const TOP_UP_BELOW = [0, 20, 50, 100] as const;
+export const TOP_UP_AMOUNTS = [100, 200, 300, 500] as const;
+
+/** A credit limit only works with a saved card or TWINT to settle it. */
+export const activeCreditLimit = (p: Pick<Partner, "creditLimit" | "paymentMethod">) => (p.paymentMethod ? p.creditLimit ?? 0 : 0);
+/** How low the balance may go when buying: 0, or minus the active credit limit. */
+export const spendingFloor = (p: Pick<Partner, "creditLimit" | "paymentMethod">) => -activeCreditLimit(p);
+export const autoTopUpOn = (p: Pick<Partner, "autoTopUp" | "paymentMethod">) => !!p.paymentMethod && !!p.autoTopUp?.enabled;
+/** Whether the company can pay this price now: within its floor, or its automatic top-up covers it. */
+export const canFund = (p: Pick<Partner, "wallet" | "creditLimit" | "paymentMethod" | "autoTopUp">, price: number) => p.wallet - price >= spendingFloor(p) || autoTopUpOn(p);
+/** A negative balance is charged to the saved method on the 1st of the next month. */
+export const nextSettlement = () => {
+  const d = new Date(refNow());
+  return new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString();
+};
+/** When an automatic payout reaches the bank: the next business day. */
+export const payoutArrives = (from: string) => {
+  const d = new Date(from);
+  d.setDate(d.getDate() + 1);
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+  return d.toISOString();
+};
 
 /**
  * How much of a wallet a company can have paid out: the balance minus payouts already requested and
