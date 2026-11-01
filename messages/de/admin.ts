@@ -745,7 +745,7 @@ export const admin: Built<typeof Def> = {
     title: "Erstattungen & Auszahlungen",
     subtitle: "Geld, das an Firmen zurückgeht: Erstattungen auf das Wallet, wenn eine Anfrage als Fake bestätigt ist (oder als begründete Ausnahme), und Auszahlungen von unbenutztem Wallet-Guthaben auf das Bankkonto.",
     tabWallet: "Erstattungen aufs Wallet",
-    tabPayouts: "Auszahlungen auf die Bank",
+    tabPayouts: "Auszahlungen",
     waitingTotal: "Entscheid ausstehend",
     waitingSplit: "{refunds, plural, one {# Erstattung} other {# Erstattungen}} · {payouts, plural, one {# Auszahlung} other {# Auszahlungen}}",
     refundedWallets: "Aufs Wallet erstattet (30 Tage)",

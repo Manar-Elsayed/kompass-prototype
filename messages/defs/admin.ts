@@ -742,7 +742,7 @@ export const admin = {
     title: "Refunds & payouts",
     subtitle: "Money going back to companies: refunds into their wallet when an offer is confirmed fake (or as a documented exception), and unused wallet money paid out to their bank.",
     tabWallet: "Refunds to wallet",
-    tabPayouts: "Payouts to bank",
+    tabPayouts: "Payouts",
     waitingTotal: "Waiting for a decision",
     waitingSplit: "{refunds, plural, one {# refund} other {# refunds}} · {payouts, plural, one {# payout} other {# payouts}}",
     refundedWallets: "Refunded to wallets (30 days)",

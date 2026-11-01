@@ -745,7 +745,7 @@ export const admin: Built<typeof Def> = {
     title: "Rimborsi & versamenti",
     subtitle: "Il denaro che torna alle ditte: rimborsi sul portafoglio quando una richiesta è confermata falsa (o come eccezione motivata), e versamento sul conto bancario del saldo non utilizzato.",
     tabWallet: "Rimborsi sul portafoglio",
-    tabPayouts: "Versamenti in banca",
+    tabPayouts: "Versamenti",
     waitingTotal: "In attesa di decisione",
     waitingSplit: "{refunds, plural, one {# rimborso} other {# rimborsi}} · {payouts, plural, one {# versamento} other {# versamenti}}",
     refundedWallets: "Rimborsato sui portafogli (30 giorni)",
