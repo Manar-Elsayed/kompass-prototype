@@ -153,7 +153,7 @@ export default function MyOfferPage() {
         </div>
 
         <div className="space-y-4">
-          <Card className="bg-primary-soft/40 shadow-none">
+          <Card>
             <CardHeader title={t("customerTitle")} />
             <CardBody>
               <p className="text-lg font-bold text-ink">{lead.firstName} {lead.lastName}</p>
