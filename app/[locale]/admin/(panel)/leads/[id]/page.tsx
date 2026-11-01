@@ -47,7 +47,6 @@ import { Timeline } from "@/components/admin/timeline";
 import { canSendSurvey, useSendSurvey } from "@/components/admin/survey-send";
 import { FakeStatusSelect, isFinalReport, useFakeReportStatus } from "@/components/admin/fake-report-status";
 import { SurveyEmail } from "@/components/site/request-bits";
-import { DiscountDialog } from "@/components/admin/offer-discount";
 import { JobFacts, JobPlaces } from "@/components/shared/job-details";
 
 const cantonOf = (city: string) => CITIES.find((c) => c.city === city)?.canton;
@@ -66,7 +65,6 @@ export default function LeadDetail() {
   const partnerMap = usePartnerMap();
   const { confirm, dialog } = useConfirm();
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [discountOpen, setDiscountOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
   // row menus link here with #cancel (open the dialog), #assign (jump to the panel) or #fake-reports
   const hasOffer = !!offer;
@@ -241,8 +239,10 @@ export default function LeadDetail() {
                           : tl("discountWhen")}
                       </p>
                       {offer.status === "in_progress" && (
-                        <Button size="sm" variant="outline" onClick={() => setDiscountOpen(true)}>
-                          <BadgePercent /> {tl(offer.discount ? "editDiscount" : "addDiscount")}
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href={`/admin/leads/closing?select=${offer.id}`}>
+                            <BadgePercent /> {t("admin.leads.closing.open")}
+                          </Link>
                         </Button>
                       )}
                     </div>
@@ -416,7 +416,6 @@ export default function LeadDetail() {
       </div>
 
       {cancelOpen && <CancelDialog offer={offer} onClose={() => setCancelOpen(false)} />}
-      {discountOpen && <DiscountDialog offer={offer} base={listPrice} onClose={() => setDiscountOpen(false)} />}
       {notifyOpen && <NotifyDialog offer={offer} orders={orders} onClose={() => setNotifyOpen(false)} />}
       {dialog}
     </>

@@ -188,6 +188,16 @@ export const isExpiringSoon = (o: Pick<Offer, "status" | "deadline">) => {
 export const canDiscount = (o: Offer, sold: number) =>
   o.status === "in_progress" && sold < o.offersWanted && (isExpiringSoon(o) || o.offersWanted - sold === 1);
 
+/** The Closing soon queue: offers that may get a late discount (see canDiscount) plus the ones that have one, soonest deadline first. */
+export function closingSoon(db: Pick<DB, "offers" | "orders">) {
+  const sold: Record<string, number> = {};
+  for (const o of db.orders) sold[o.offerId] = (sold[o.offerId] ?? 0) + 1;
+  return db.offers
+    .map((o) => ({ offer: o, sold: sold[o.id] ?? 0 }))
+    .filter(({ offer: o, sold }) => o.status === "in_progress" && sold < o.offersWanted && (!!o.discount || canDiscount(o, sold)))
+    .sort((a, b) => a.offer.deadline.localeCompare(b.offer.deadline));
+}
+
 /** An offer can be bought while it is on sale, visible, inside its deadline and has slots left. */
 export const isPurchasable = (o: Offer, sold: number) =>
   o.active && o.status === "in_progress" && Date.parse(o.deadline) >= refNow() && sold < o.offersWanted;

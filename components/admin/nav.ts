@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import type { Permission } from "@/lib/types";
 import type { Store } from "@/lib/mock/store";
-import { documentState } from "@/lib/mock/selectors";
+import { closingSoon, documentState } from "@/lib/mock/selectors";
 
 export interface NavItem {
   key: string; // admin.nav.<key>
@@ -46,6 +46,7 @@ export const NAV: NavGroup[] = [
     perm: "leads",
     items: [
       { key: "offers", href: "/admin/leads", perm: "leads", badge: (s) => s.offers.filter((o) => o.status === "new").length },
+      { key: "closingSoon", href: "/admin/leads/closing", perm: "leads", badge: (s) => closingSoon(s).filter((x) => !x.offer.discount).length },
       { key: "shop", href: "/admin/leads/shop", perm: "leads" },
       { key: "fakeReports", href: "/admin/leads/fake-reports", perm: "leads", badge: (s) => s.fakeReports.filter((r) => r.status === "new").length },
       { key: "offerTypes", href: "/admin/leads/services", perm: "leads" },
