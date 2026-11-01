@@ -586,11 +586,10 @@ export const admin: Built<typeof Def> = {
     decline: "Ablehnen",
     declined: "Die Bewerbung von {name} wurde abgelehnt",
     declinedTitle: "Bewerbung abgelehnt",
-    emailApplicant: "E-Mail",
-    callApplicant: "Anrufen",
     readyTitle: "Bereit zur Freigabe?",
     readyMissing: "{count, plural, one {# Punkt fehlt noch} other {# Punkte fehlen noch}}",
     readyAll: "Alles ist da. Sie können freigeben.",
+    approveNeedsContract: "Freigabe erst nach unterschriebenem Vertrag. Versicherung und Handelsregisterauszug können nach der Freigabe folgen.",
     sendContractHint: "Senden Sie zuerst den Vertrag: Die Firma unterschreibt ihn im Partnerportal, danach erscheint er hier als unterschrieben.",
   },
   del: {

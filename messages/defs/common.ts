@@ -1,5 +1,11 @@
 export const common = {
   brand: "Kompass",
+  contactMenu: {
+    button: "Contact",
+    call: "Call",
+    email: "Send an email",
+    website: "Open website",
+  },
   actions: {
     save: "Save changes",
     saving: "Saving…",

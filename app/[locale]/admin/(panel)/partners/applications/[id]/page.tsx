@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Check, CheckCircle2, Circle, ExternalLink, FileSignature, Mail, Phone, Send, X, XCircle } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Circle, FileSignature, Send, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { Partner } from "@/lib/types";
@@ -24,6 +24,7 @@ import { ConfirmDialog, EmptyState, StatusBadge } from "@/components/shared/bits
 import { Icon } from "@/components/shared/icon";
 import { FileButtons, useFileActions } from "@/components/shared/file-card";
 import { DL, ProfileHeader } from "@/components/admin/ui";
+import { ContactMenu } from "@/components/shared/contact-menu";
 
 /** One application: everything the company submitted, what is still missing, and the decision. */
 export default function ApplicationDetail() {
@@ -63,7 +64,7 @@ export default function ApplicationDetail() {
   }
 
   const open = p.status !== "rejected";
-  // what the checklist shows; approving with gaps is allowed (e.g. paper contract) but flagged
+  // what the checklist shows: the signed contract is required to approve, the other documents can follow
   const checks: { label: string; ok: boolean; detail: string; file?: string; later?: boolean }[] = [
     {
       label: t("admin.partners.contract"),
@@ -103,22 +104,19 @@ export default function ApplicationDetail() {
         badges={<StatusBadge status={applicationStage(p)} />}
         subtitle={`${p.address}, ${p.zip} ${p.city} (${p.canton}) · ${ta("received")} ${formatDate(p.createdAt, lang)} (${timeAgo(p.createdAt, lang)})`}
         primary={
-          open ? (
-            <>
-              {p.status === "pending" && (
-                <Button variant="outline" onClick={sendContract}><Send /> {ta("sendContract")}</Button>
-              )}
-              <Button variant="danger-soft" onClick={() => setRejecting(true)}><X /> {ta("decline")}</Button>
-              <Button variant="success" onClick={() => setApproving(true)}><Check /> {t("common.actions.approve")}</Button>
-            </>
-          ) : undefined
-        }
-        secondary={
           <>
-            <Button asChild variant="outline"><a href={`mailto:${p.email}`}><Mail /> {ta("emailApplicant")}</a></Button>
-            <Button asChild variant="outline"><a href={`tel:${p.phone}`}><Phone /> {ta("callApplicant")}</a></Button>
-            {p.website && (
-              <Button asChild variant="outline"><a href={p.website} target="_blank" rel="noreferrer"><ExternalLink /> {t("common.fields.website")}</a></Button>
+            <ContactMenu phone={p.phone} email={p.email} website={p.website} />
+            {open && p.status === "pending" && (
+              <Button variant="outline" onClick={sendContract}><Send /> {ta("sendContract")}</Button>
+            )}
+            {open && (
+              <>
+                <Button variant="danger-soft" onClick={() => setRejecting(true)}><X /> {ta("decline")}</Button>
+                {/* a span carries the tooltip, since a disabled button doesn't show one */}
+                <span title={p.contractSignedAt ? undefined : ta("approveNeedsContract")}>
+                  <Button variant="success" disabled={!p.contractSignedAt} onClick={() => setApproving(true)}><Check /> {t("common.actions.approve")}</Button>
+                </span>
+              </>
             )}
           </>
         }

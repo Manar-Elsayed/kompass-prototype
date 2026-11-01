@@ -3,6 +3,12 @@ import type { common as Def } from "../defs/common";
 
 export const common: Built<typeof Def> = {
   brand: "Kompass",
+  contactMenu: {
+    button: "Contacter",
+    call: "Appeler",
+    email: "Envoyer un e-mail",
+    website: "Ouvrir le site web",
+  },
   actions: {
     save: "Enregistrer les modifications",
     saving: "Enregistrement…",

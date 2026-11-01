@@ -172,6 +172,7 @@ export const portal = {
     executed: "Executed",
     call: "Call",
     email: "Email",
+    contactCustomer: "Contact customer",
     empty: "No offers yet. Buy your first offer in the shop.",
     choiceHint: {
       you: "In the review survey after the move, the customer said you did the job.",

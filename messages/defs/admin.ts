@@ -583,11 +583,10 @@ export const admin = {
     decline: "Decline",
     declined: "{name}’s application was declined",
     declinedTitle: "Application declined",
-    emailApplicant: "Email",
-    callApplicant: "Call",
     readyTitle: "Ready to approve?",
     readyMissing: "{count, plural, one {# item still missing} other {# items still missing}}",
     readyAll: "Everything is in. You can approve.",
+    approveNeedsContract: "Approve once the contract is signed. Insurance and the commercial register extract can follow after approval.",
     sendContractHint: "Send the contract first: the applicant signs it in the partner portal, then it shows as signed here.",
   },
   del: {

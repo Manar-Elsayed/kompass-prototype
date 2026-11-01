@@ -586,11 +586,10 @@ export const admin: Built<typeof Def> = {
     decline: "Rifiuta",
     declined: "La candidatura di {name} è stata rifiutata",
     declinedTitle: "Candidatura rifiutata",
-    emailApplicant: "E-mail",
-    callApplicant: "Chiama",
     readyTitle: "Pronto per l’approvazione?",
     readyMissing: "{count, plural, one {Manca ancora # elemento} other {Mancano ancora # elementi}}",
     readyAll: "C’è tutto. Può approvare.",
+    approveNeedsContract: "Approvazione possibile solo con contratto firmato. Assicurazione ed estratto del registro di commercio possono seguire dopo l’approvazione.",
     sendContractHint: "Invii prima il contratto: l’azienda lo firma nel portale partner, poi qui risulta firmato.",
   },
   del: {

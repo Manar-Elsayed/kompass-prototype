@@ -175,6 +175,7 @@ export const portal: Built<typeof Def> = {
     executed: "Ausgeführt",
     call: "Anrufen",
     email: "E-Mail",
+    contactCustomer: "Kundschaft kontaktieren",
     empty: "Noch keine Anfragen. Kaufen Sie Ihre erste Anfrage im Shop.",
     choiceHint: {
       you: "In der Bewertungsumfrage nach dem Umzug hat der Kunde angegeben, dass Sie den Auftrag ausgeführt haben.",
