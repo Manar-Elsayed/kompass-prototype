@@ -29,7 +29,6 @@ import { useCompose } from "@/components/portal/compose";
 
 const TABS = ["company", "documents", "media", "area", "notifications"] as const;
 type Tab = (typeof TABS)[number];
-const MAX_PHOTOS = 8;
 const DEFAULT_PREFS: NotifyPrefs = { leads: true, digest: false, finance: true, messages: true };
 
 export default function PartnerProfilePage() {
@@ -82,7 +81,7 @@ function PartnerProfile() {
         </UnderlineTabsList>
         <TabsContent value="company"><CompanyTab onRequest={requestChange} /></TabsContent>
         <TabsContent value="documents">
-          <Card className="max-w-3xl">
+          <Card>
             <CardHeader title={ta("docs.title")} description={t("docsHint")} />
             <CardBody>
               <CompanyDocuments partner={partner} as="company" />
@@ -179,7 +178,6 @@ function CompanyTab({ onRequest }: { onRequest: () => void }) {
 function MediaTab() {
   const t = useTranslations("portal.profile.media");
   const partner = useCurrentPartner()!;
-  const files = useStore((s) => s.files);
   const add = useStore((s) => s.add);
   const remove = useStore((s) => s.remove);
   const { logo, photos } = useCompanyMedia(partner.id);
@@ -188,23 +186,30 @@ function MediaTab() {
   const photoInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<"logo" | "photo" | null>(null);
 
-  const nextId = () => `F-${String(Math.max(0, ...files.map((x) => Number(x.id.replace(/\D/g, "")) || 0)) + 1).padStart(4, "0")}`;
-  const upload = async (file: File, category: "logo" | "photo") => {
-    if (!file.type.startsWith("image/")) return toast.error(t("notImage"));
-    if (file.size > 8_000_000) return toast.error(t("tooBig"));
+  // read the files fresh for every image, so several photos uploaded at once get their own ids
+  const nextId = () => `F-${String(Math.max(0, ...useStore.getState().files.map((x) => Number(x.id.replace(/\D/g, "")) || 0)) + 1).padStart(4, "0")}`;
+  /** One logo, or any number of photos at once; files that aren't images or are too large are skipped. */
+  const upload = async (list: File[], category: "logo" | "photo") => {
     setBusy(category);
+    let added = 0;
     try {
-      const img = await downscaleImage(file, category === "logo" ? 400 : 1200);
-      // a new logo replaces the company's previous one; Kompass-added files stay
-      if (category === "logo") files.filter((f) => f.partnerId === partner.id && f.category === "logo" && f.uploadedBy === "company").forEach((f) => remove("files", f.id));
-      add("files", { id: nextId(), partnerId: partner.id, name: file.name, category, url: img.url, size: img.size, uploadedBy: "company", uploadedAt: new Date().toISOString() });
-      toast.success(t(category === "logo" ? "logoSaved" : "photoAdded"));
+      for (const file of list) {
+        if (!file.type.startsWith("image/")) { toast.error(t("notImage")); continue; }
+        if (file.size > 8_000_000) { toast.error(t("tooBig")); continue; }
+        const img = await downscaleImage(file, category === "logo" ? 400 : 1200);
+        // a new logo replaces the company's previous one; Kompass-added files stay
+        if (category === "logo") useStore.getState().files.filter((f) => f.partnerId === partner.id && f.category === "logo" && f.uploadedBy === "company").forEach((f) => remove("files", f.id));
+        add("files", { id: nextId(), partnerId: partner.id, name: file.name, category, url: img.url, size: img.size, uploadedBy: "company", uploadedAt: new Date().toISOString() });
+        added++;
+      }
+      if (added) toast.success(category === "logo" ? t("logoSaved") : t("photoAdded", { count: added }));
     } catch {
       toast.error(t("notImage"));
     } finally {
       setBusy(null);
     }
   };
+  const pickPhotos = () => photoInput.current?.click();
   const del = (f: CompanyFile) =>
     confirm({
       title: t("deleteTitle"),
@@ -218,7 +223,8 @@ function MediaTab() {
 
   return (
     <div className="grid gap-4 xl:grid-cols-[360px_1fr]">
-      <Card className="h-fit">
+      {/* both cards take the row height, so their edges line up */}
+      <Card>
         <CardHeader title={t("logo")} description={t("logoHint")} />
         <CardBody className="flex items-center gap-4">
           <Avatar name={partner.name} src={logo?.url} square className="size-24 text-2xl" />
@@ -229,21 +235,21 @@ function MediaTab() {
             {logo?.uploadedBy === "admin" && <p className="text-xs text-muted-foreground">{t("byKompass")}</p>}
             <p className="text-xs text-muted-foreground">{t("formats")}</p>
           </div>
-          <input ref={logoInput} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f, "logo"); }} />
+          <input ref={logoInput} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload([f], "logo"); }} />
         </CardBody>
       </Card>
       <Card>
         <CardHeader
-          title={t("photos", { count: photos.length, max: MAX_PHOTOS })}
+          title={t("photos")}
           description={t("photosHint")}
           action={
-            <Button size="sm" variant="outline" disabled={photos.length >= MAX_PHOTOS} loading={busy === "photo"} onClick={() => photoInput.current?.click()}>
-              <ImagePlus /> {t("addPhoto")}
+            <Button size="sm" variant="outline" loading={busy === "photo"} onClick={pickPhotos}>
+              <Upload /> {t("uploadPhotos")}
             </Button>
           }
         />
         <CardBody>
-          <input ref={photoInput} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void upload(f, "photo"); }} />
+          <input ref={photoInput} type="file" accept="image/*" multiple hidden onChange={(e) => { const list = Array.from(e.target.files ?? []); e.target.value = ""; if (list.length) void upload(list, "photo"); }} />
           {photos.length ? (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {photos.map((p) => (
@@ -259,9 +265,15 @@ function MediaTab() {
                   )}
                 </li>
               ))}
+              {/* the next upload sits in the grid, so a short gallery doesn't leave an empty card */}
+              <li>
+                <button onClick={pickPhotos} disabled={busy === "photo"} className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:bg-primary-soft/30 hover:text-primary disabled:opacity-50">
+                  <ImagePlus className="size-6" /> {t("uploadPhotos")}
+                </button>
+              </li>
             </ul>
           ) : (
-            <button onClick={() => photoInput.current?.click()} className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-12 text-sm text-muted-foreground transition hover:border-primary/40 hover:text-primary">
+            <button onClick={pickPhotos} className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-12 text-sm text-muted-foreground transition hover:border-primary/40 hover:text-primary">
               <ImagePlus className="size-6" /> {t("emptyPhotos")}
             </button>
           )}
@@ -358,7 +370,7 @@ function NotificationsTab() {
     toast.success(t("saved"));
   };
   return (
-    <Card className="max-w-2xl">
+    <Card>
       <CardHeader title={t("title")} description={t("hint", { email: partner.email })} />
       <CardBody>
         <ul className="divide-y">

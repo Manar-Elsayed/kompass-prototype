@@ -8,7 +8,7 @@ import { ArrowDownToLine, Check, Clock, Copy, CreditCard, Download, FileText, Ha
 import { toast } from "sonner";
 import { PAYOUT_REASONS, type Invoice, type PartnerDue, type PayoutReason } from "@/lib/types";
 import { cn, formatCHF, formatDate } from "@/lib/utils";
-import { isOverdue, LEDGER_KINDS, MIN_PAYOUT, walletLedger, withdrawable, type LedgerKind } from "@/lib/mock/selectors";
+import { isOverdue, LEDGER_KINDS, MIN_PAYOUT, walletLedger, withdrawable, type LedgerEntry, type LedgerKind } from "@/lib/mock/selectors";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner, useLang } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
@@ -25,6 +25,7 @@ import { EmptyState, StatusBadge } from "@/components/shared/bits";
 import { ProofCard } from "@/components/shared/payment-proof";
 import { DL, KpiCard, Mono, PageHeader } from "@/components/admin/ui";
 import { DetailSheet, SheetSection } from "@/components/admin/row-actions";
+import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { WalletLedger } from "@/components/shared/wallet-ledger";
 import { receiptParty, useReceipts } from "@/components/shared/receipts";
 import { KOMPASS_IBAN, MoneyDocDialog, type MoneyDoc } from "@/components/shared/money-doc";
@@ -87,7 +88,27 @@ function Payments() {
     [orders, dues, topups, refunds, invoices, partners, payouts, partner.id],
   );
   const money = withdrawable({ partners, payouts, invoices }, partner.id);
-  const myDues = dues.filter((d) => d.partnerId === partner.id);
+  // every payment the company sent: bank-transfer receipts, online TWINT / card top-ups and payments
+  // Kompass recorded (not the opening balance carried over, and not credit)
+  const payments = ledger.entries.filter((e) => (e.kind === "receipt" || e.kind === "online" || e.kind === "admin") && e.reference !== "OPENING");
+  const tf = useTranslations("common.fields");
+  const paymentColumns: ColumnDef<LedgerEntry, unknown>[] = [
+    { id: "date", header: tf("date"), accessorFn: (e) => e.at, cell: (c) => <span className="whitespace-nowrap text-muted-foreground">{formatDate(c.getValue() as string, lang)}</span> },
+    { id: "reference", header: tf("reference"), accessorFn: (e) => e.reference, cell: (c) => <Mono className="whitespace-nowrap">{c.getValue() as string}</Mono> },
+    { id: "method", header: td("method"), accessorFn: (e) => e.payMethod ?? "", cell: (c) => <span className="whitespace-nowrap">{c.getValue() ? td(c.getValue() as "bank_transfer" | "twint" | "card") : "–"}</span> },
+    {
+      id: "receipt",
+      header: td("receipt"),
+      enableSorting: false,
+      cell: ({ row: { original: e } }) => {
+        const no = receipts.numberOf(e);
+        return no ? (
+          <button className="whitespace-nowrap font-mono text-xs font-semibold text-primary hover:underline" onClick={() => receipts.open(e, receiptParty(partner))}>{no}</button>
+        ) : "–";
+      },
+    },
+    { id: "amount", header: tf("amount"), accessorFn: (e) => e.amount, meta: { className: "text-end" }, cell: (c) => <span className="whitespace-nowrap font-bold tabular-nums">{formatCHF(c.getValue() as number, lang)}</span> },
+  ];
   const myInvoices = invoices.filter((i) => i.partnerId === partner.id).sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
   const myPayouts = payouts.filter((p) => p.partnerId === partner.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const openInvoices = myInvoices.filter((i) => i.status === "due");
@@ -133,23 +154,21 @@ function Payments() {
             <KpiCard label={t("creditDue")} value={formatCHF(money.creditDue, lang)} icon={<HandCoins />} tone="info" footer={openInvoices.length ? <button className="font-semibold text-primary hover:underline" onClick={() => setTab("invoices")}>{t("openInvoices", { count: openInvoices.length })}</button> : t("noOpenInvoices")} />
           </div>
           <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
-            <Card className="overflow-hidden">
-              <CardHeader title={t("history")} description={t("historyHint")} />
-              <div className="mt-4 divide-y border-t">
-                {myDues.length ? (
-                  myDues.map((d) => (
-                    <button key={d.id} onClick={() => setDueId(d.id)} className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-start text-sm transition hover:bg-surface-2/60">
-                      <Mono>{d.reference}</Mono>
-                      <span className="flex-1 text-muted-foreground">{td(d.method)}</span>
-                      <span className="font-bold">{formatCHF(d.amount, lang)}</span>
-                      <span className="w-24 text-end text-xs text-muted-foreground">{formatDate(d.createdAt, lang)}</span>
-                    </button>
-                  ))
-                ) : (
-                  <EmptyState icon={<ImageUp />} title={t("noReceipts")} body={t("noReceiptsBody")} action={<Button variant="outline" size="sm" onClick={() => setUpload(true)}><Upload /> {t("upload")}</Button>} />
-                )}
-              </div>
-            </Card>
+            <DataTable
+              data={payments}
+              columns={paymentColumns}
+              heading={
+                <div>
+                  <p className="font-bold text-ink">{t("history")}</p>
+                  <p className="text-sm text-muted-foreground">{t("historyHint")}</p>
+                </div>
+              }
+              initialSort={[{ id: "date", desc: true }]}
+              filters={[{ id: "method", label: td("method"), options: (["bank_transfer", "twint", "card"] as const).map((m) => ({ value: m, label: td(m) })), get: (e) => e.payMethod ?? "" }]}
+              // a bank-transfer receipt opens its detail (with the uploaded proof); online and recorded payments open their receipt
+              onRowClick={(e) => (e.kind === "receipt" ? setDueId(e.id) : receipts.open(e, receiptParty(partner)))}
+              emptyState={<EmptyState icon={<ImageUp />} title={t("noReceipts")} body={t("noReceiptsBody")} action={<Button variant="outline" size="sm" onClick={() => setUpload(true)}><Upload /> {t("upload")}</Button>} />}
+            />
             <Card className="h-fit overflow-hidden">
               <CardHeader title={t("recentMoves")} action={<Button variant="ghost" size="sm" onClick={() => setTab("statement")}>{t("fullStatement")}</Button>} />
               <WalletLedger entries={ledger.entries} limit={6} className="mt-4 border-t" receiptOf={receipts.numberOf} onReceipt={(e) => receipts.open(e, receiptParty(partner))} />

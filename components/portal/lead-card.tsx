@@ -56,7 +56,8 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
         </div>
       </div>
 
-      <div className="mt-4 space-y-2 rounded-xl bg-surface-2/70 p-3 text-sm">
+      {/* grows to the row height, so the buy buttons line up across cards with and without a note */}
+      <div className="mt-4 flex-1 space-y-2 rounded-xl bg-surface-2/70 p-3 text-sm">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5"><MapPin className="size-4 shrink-0 text-accent" />{offer.from.zip} {offer.from.city}{offer.to && <><ArrowRight className="size-3.5 text-muted-foreground" /> {offer.to.zip} {offer.to.city}</>}</p>
         <p className="flex items-center gap-2"><Building className="size-4 shrink-0 text-accent" />{offer.to ? <>{tf("floor")} {offer.from.floor} → {offer.to.floor} · {tf("elevator")}: {lift(offer.from.elevator)} → {lift(offer.to.elevator)}</> : <>{tf("floor")} {offer.from.floor} · {tf("elevator")}: {lift(offer.from.elevator)}</>}</p>
         <p className="flex items-center gap-2"><Calendar className="size-4 shrink-0 text-accent" />{formatDate(offer.executionDate, lang)}</p>
