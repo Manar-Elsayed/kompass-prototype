@@ -105,7 +105,7 @@ function CheckoutDialog({ offer, onClose }: { offer: Offer; onClose: () => void 
       setDone(res.order.offerId);
       // the card leaves the shop list once bought, so the toast carries the next step
       toast.success(t("bought", { id: res.order.offerId }), {
-        action: { label: t("viewLead"), onClick: () => router.push(`/portal/leads?open=${res.order.offerId}`) },
+        action: { label: t("viewLead"), onClick: () => router.push(`/portal/leads/${res.order.offerId}`) },
       });
     } else toast.error(t(res.error === "coupon" ? "couponBad" : res.error));
   };
@@ -119,7 +119,7 @@ function CheckoutDialog({ offer, onClose }: { offer: Offer; onClose: () => void 
             <DialogTitle>{t("bought", { id: done })}</DialogTitle>
             <div className="mt-6 flex justify-center gap-2">
               <Button variant="outline" onClick={onClose}>{tc("actions.close")}</Button>
-              <Button asChild><Link href={`/portal/leads?open=${done}`}>{t("viewLead")}</Link></Button>
+              <Button asChild><Link href={`/portal/leads/${done}`}>{t("viewLead")}</Link></Button>
             </div>
           </div>
         ) : (

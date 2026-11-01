@@ -153,9 +153,9 @@ function ToDo() {
     const lead = offerMap.get(o.offerId);
     if (!lead) continue;
     if (out.status === "chosen")
-      items.push({ id: `c-${o.id}`, tone: "success", icon: <CalendarCheck />, text: t("chosen", { name: `${lead.firstName} ${lead.lastName}`, date: formatDate(lead.executionDate, lang) }), cta: t("open"), href: `/portal/leads?open=${o.offerId}` });
+      items.push({ id: `c-${o.id}`, tone: "success", icon: <CalendarCheck />, text: t("chosen", { name: `${lead.firstName} ${lead.lastName}`, date: formatDate(lead.executionDate, lang) }), cta: t("open"), href: `/portal/leads/${o.offerId}` });
     else if (out.assigned && out.group === "open" && inLastDays(o.createdAt, 14))
-      items.push({ id: `a-${o.id}`, tone: "info", icon: <Headset />, text: t("assigned", { id: o.offerId, city: lead.from.city }), cta: t("call"), href: `/portal/leads?open=${o.offerId}` });
+      items.push({ id: `a-${o.id}`, tone: "info", icon: <Headset />, text: t("assigned", { id: o.offerId, city: lead.from.city }), cta: t("call"), href: `/portal/leads/${o.offerId}` });
   }
 
   const unread = threads.filter((x) => x.unread > 0);
@@ -279,7 +279,7 @@ function RecentPurchases() {
               {mine.slice(0, 6).map((o) => {
                 const lead = offerMap[o.offerId];
                 const out = leadOutcome({ offers, fakeReports, refunds }, o);
-                const open = `/portal/leads?open=${o.offerId}`;
+                const open = `/portal/leads/${o.offerId}`;
                 return (
                   <tr key={o.id} onClick={() => router.push(open)} className="cursor-pointer border-t transition-colors hover:bg-surface-2/70">
                     <td className={td}>

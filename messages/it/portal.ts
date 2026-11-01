@@ -136,6 +136,10 @@ export const portal: Built<typeof Def> = {
     short: "Saldo troppo basso per acquistare una richiesta",
   },
   leads: {
+    customerTitle: "Cliente",
+    jobTitle: "Il lavoro",
+    purchaseTitle: "Il Suo acquisto",
+    notMine: "Questa richiesta non è tra i Suoi acquisti.",
     outcomeTitle: "Com’è andata?",
     outcomeHint: "Ce lo dica dopo aver parlato con il cliente. Aggiorna il suo tasso di successo. Se il cliente risponde al questionario di Kompass dopo il trasloco, la sua risposta sostituisce la Sua.",
     outcomeSaved: "Salvato: {status}",

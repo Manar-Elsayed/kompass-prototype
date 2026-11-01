@@ -136,6 +136,10 @@ export const portal: Built<typeof Def> = {
     short: "Guthaben reicht für keine Anfrage",
   },
   leads: {
+    customerTitle: "Kunde",
+    jobTitle: "Der Auftrag",
+    purchaseTitle: "Ihr Kauf",
+    notMine: "Diese Anfrage gehört nicht zu Ihren Käufen.",
     outcomeTitle: "Wie ist es gelaufen?",
     outcomeHint: "Sagen Sie es uns nach dem Gespräch mit der Kundschaft. Das aktualisiert Ihre Erfolgsquote. Beantwortet der Kunde nach dem Umzug die Umfrage von Kompass, ersetzt seine Antwort Ihre Angabe.",
     outcomeSaved: "Gespeichert: {status}",

@@ -133,6 +133,10 @@ export const portal = {
     short: "Balance too low to buy an offer",
   },
   leads: {
+    customerTitle: "Customer",
+    jobTitle: "The job",
+    purchaseTitle: "Your purchase",
+    notMine: "This offer isn’t one of your purchases.",
     outcomeTitle: "How did it go?",
     outcomeHint: "Tell us after you’ve talked to the customer. It updates your win rate. If the customer answers Kompass’s survey after the move, their answer replaces yours.",
     outcomeSaved: "Saved: {status}",
