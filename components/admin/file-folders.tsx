@@ -46,13 +46,13 @@ export function useFolders() {
  * The Files home: one folder per company, as a list or a board, with a search for companies and
  * Create folder for a company that has none yet.
  */
-export function FileFolders() {
+/** The folder list; the page header carries "Create folder" and opens it through `creating`. */
+export function FileFolders({ creating, onCreatingChange }: { creating: boolean; onCreatingChange: (v: boolean) => void }) {
   const t = useTranslations("admin.files");
   const lang = useLang();
   const { folders, without } = useFolders();
   const [q, setQ] = useState("");
   const [view, setView] = useState<View>("board");
-  const [creating, setCreating] = useState(false);
 
   // the chosen view is a per-viewer convenience
   useEffect(() => {
@@ -86,7 +86,6 @@ export function FileFolders() {
             <TabsTrigger value="board"><LayoutGrid /> {t("viewBoard")}</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button onClick={() => setCreating(true)}><FolderPlus /> {t("createFolder")}</Button>
       </div>
 
       {!shown.length ? (
@@ -156,7 +155,7 @@ export function FileFolders() {
           </table>
         </Card>
       )}
-      {creating && <CreateFolderDialog companies={without} onClose={() => setCreating(false)} />}
+      {creating && <CreateFolderDialog companies={without} onClose={() => onCreatingChange(false)} />}
     </div>
   );
 }

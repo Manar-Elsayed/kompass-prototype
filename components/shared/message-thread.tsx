@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Mail, MessageSquarePlus, Send } from "lucide-react";
 import { toast } from "sonner";
-import type { CompanyMessage, MessageTopic } from "@/lib/types";
+import type { CompanyMessage, MessageAttachment, MessageTopic } from "@/lib/types";
 import { cn, formatDateTime, timeAgo } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentUser, useLang } from "@/lib/mock/hooks";
@@ -16,6 +16,7 @@ import { RadioCards } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/controls";
 import { EmptyState } from "@/components/shared/bits";
+import { AttachmentPicker, MessageAttachments } from "@/components/shared/attachments";
 
 type Viewer = CompanyMessage["from"];
 
@@ -120,6 +121,7 @@ export function MessageCenter({
                   <span className="line-clamp-1 text-xs text-muted-foreground">
                     {th.last.from === viewer ? `${t("you")}: ` : ""}
                     {th.last.body}
+                    {th.last.attachments?.length ? ` · ${t("attachments", { count: th.last.attachments.length })}` : ""}
                   </span>
                   <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     <Badge tone="neutral" className="px-1.5 py-0 text-[10px]">{t(`topics.${th.topic}`)}</Badge>
@@ -165,6 +167,7 @@ function ThreadView({ thread, viewer, partnerId, partnerName, onBack }: { thread
   const markRead = useStore((s) => s.markThreadRead);
   const { user } = useCurrentUser();
   const [body, setBody] = useState("");
+  const [files, setFiles] = useState<MessageAttachment[]>([]);
   const end = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -178,8 +181,9 @@ function ThreadView({ thread, viewer, partnerId, partnerName, onBack }: { thread
   const author = (m: CompanyMessage) => (m.from === "company" ? partnerName : `${users.find((u) => u.id === m.byUserId)?.name ?? "Kompass"} · Kompass`);
   const reply = () => {
     if (body.trim().length < 2) return;
-    send({ partnerId, from: viewer, threadId: thread.id, body, byUserId: viewer === "kompass" ? user?.id : undefined });
+    send({ partnerId, from: viewer, threadId: thread.id, body, byUserId: viewer === "kompass" ? user?.id : undefined, attachments: files });
     setBody("");
+    setFiles([]);
     // the toast names who receives it
     toast.success(viewer === "kompass" ? tc("sent", { name: partnerName }) : t("sent"));
   };
@@ -202,6 +206,7 @@ function ThreadView({ thread, viewer, partnerId, partnerName, onBack }: { thread
               <div className={cn("max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm", mine ? "rounded-se-sm bg-primary text-white" : "rounded-ss-sm border bg-surface")}>
                 <p className={cn("mb-0.5 text-xs font-semibold", mine ? "text-white/80" : "text-muted-foreground")}>{author(m)}</p>
                 <p className="whitespace-pre-line">{m.body}</p>
+                {m.attachments && <MessageAttachments items={m.attachments} mine={mine} />}
                 <p className={cn("mt-1 text-[11px]", mine ? "text-white/70" : "text-muted-foreground")}>
                   {formatDateTime(m.createdAt, lang)}
                   {mine && ` · ${m.readAt ? t("seen") : t("delivered")}`}
@@ -213,7 +218,8 @@ function ThreadView({ thread, viewer, partnerId, partnerName, onBack }: { thread
         })}
         <div ref={end} />
       </div>
-      <div className="flex items-end gap-2 border-t p-3">
+      <div className="space-y-2 border-t p-3">
+      <div className="flex items-end gap-2">
         <Textarea
           rows={2}
           value={body}
@@ -226,6 +232,8 @@ function ThreadView({ thread, viewer, partnerId, partnerName, onBack }: { thread
           className="min-h-0 flex-1 resize-none"
         />
         <Button onClick={reply} disabled={body.trim().length < 2}><Send /> <span className="hidden sm:inline">{t("send")}</span></Button>
+      </div>
+      <AttachmentPicker value={files} onChange={setFiles} />
       </div>
     </>
   );
@@ -257,13 +265,14 @@ function NewThreadView({
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [channel, setChannel] = useState<"email" | "portal">("email");
+  const [files, setFiles] = useState<MessageAttachment[]>([]);
   const fromKompass = viewer === "kompass";
   const ready = subject.trim().length > 0 && body.trim().length >= 3;
 
   const send = () => {
     if (!ready) return;
     if (fromKompass) sendCompanyMessage({ partnerId, subject: subject.trim(), body: body.trim(), channel, topic, byUserId: user?.id });
-    else sendMessage({ partnerId, from: viewer, subject: subject.trim(), body: body.trim(), topic });
+    else sendMessage({ partnerId, from: viewer, subject: subject.trim(), body: body.trim(), topic, attachments: files });
     toast.success(fromKompass ? tc("sent", { name: partnerName }) : t("sent"));
     onSent();
   };
@@ -303,6 +312,8 @@ function NewThreadView({
             }}
           />
         </Field>
+        {/* Kompass's own first message goes out by email too, so files are only offered to the company here */}
+        {!fromKompass && <AttachmentPicker value={files} onChange={setFiles} />}
       </div>
       <div className="flex justify-end gap-2 border-t p-3">
         <Button variant="outline" onClick={onCancel}>{ta("cancel")}</Button>

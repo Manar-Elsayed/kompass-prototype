@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Building2 } from "lucide-react";
+import { Building2, Upload } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { formatDate } from "@/lib/utils";
 import { useHydrated, useLang } from "@/lib/mock/hooks";
@@ -24,6 +25,7 @@ export default function FolderPage() {
   const hydrated = useHydrated();
   const partner = useStore((s) => s.partners.find((p) => p.id === id));
   const folder = useFolders().folders.find((f) => f.partner.id === id);
+  const [uploading, setUploading] = useState(false);
 
   if (!partner) {
     if (!hydrated) return <Skeleton className="h-64" />;
@@ -46,12 +48,15 @@ export default function FolderPage() {
         }
         subtitle={`${t("filesCount", { count: folder?.count ?? 0 })} · ${folder?.updatedAt ? t("updated", { date: formatDate(folder.updatedAt, lang) }) : t("noFilesYet")}`}
         actions={
-          <Button asChild variant="outline">
-            <Link href={`/admin/partners/${partner.id}`}><Building2 /> {t("openCompany")}</Link>
-          </Button>
+          <>
+            <Button asChild variant="outline">
+              <Link href={`/admin/partners/${partner.id}`}><Building2 /> {t("openCompany")}</Link>
+            </Button>
+            <Button onClick={() => setUploading(true)}><Upload /> {t("upload")}</Button>
+          </>
         }
       />
-      <FileManager partnerId={partner.id} />
+      <FileManager partnerId={partner.id} uploading={uploading} onUploadingChange={setUploading} />
     </>
   );
 }

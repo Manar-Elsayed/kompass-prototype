@@ -7,13 +7,14 @@ import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { useStore } from "@/lib/mock/store";
 import { useCurrentPartner } from "@/lib/mock/hooks";
-import { MESSAGE_TOPICS, type MessageTopic } from "@/lib/types";
+import { MESSAGE_TOPICS, type MessageAttachment, type MessageTopic } from "@/lib/types";
 import { sleep } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AttachmentPicker } from "@/components/shared/attachments";
 
 export interface ComposeOptions {
   topic?: MessageTopic;
@@ -41,13 +42,14 @@ function ComposeDialog({ topic: initialTopic = "general", subject: initialSubjec
   const [topic, setTopic] = useState<MessageTopic>(initialTopic);
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState(initialBody);
+  const [files, setFiles] = useState<MessageAttachment[]>([]);
   const [busy, setBusy] = useState(false);
   const valid = subject.trim().length >= 3 && body.trim().length >= 10;
 
   const submit = async () => {
     setBusy(true);
     await sleep(400);
-    const msg = send({ partnerId: partner.id, from: "company", topic, subject, body });
+    const msg = send({ partnerId: partner.id, from: "company", topic, subject, body, attachments: files });
     setBusy(false);
     toast.success(t("sent"), { action: openThread ? undefined : { label: t("open"), onClick: () => router.push(`/portal/messages?thread=${msg.threadId}`) } });
     onClose();
@@ -70,6 +72,8 @@ function ComposeDialog({ topic: initialTopic = "general", subject: initialSubjec
         <Field label={t("message")} required hint={t("messageHint")}>
           <Textarea rows={5} value={body} onChange={(e) => setBody(e.target.value)} placeholder={t("messagePh")} />
         </Field>
+        {/* e.g. a new insurance certificate, a screenshot of a problem or a signed form */}
+        <AttachmentPicker value={files} onChange={setFiles} />
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{tc("cancel")}</Button>
           <Button onClick={submit} disabled={!valid} loading={busy}><Send /> {t("send")}</Button>

@@ -444,7 +444,7 @@ export function partnerFeed(db: FeedDB, partnerId: string): FeedItem[] {
 
   for (const r of db.refunds.filter((x) => x.partnerId === partnerId && x.status !== "pending")) {
     const order = r.orderId ? db.orders.find((o) => o.id === r.orderId) : undefined;
-    const href = order ? `/portal/leads?open=${order.offerId}` : "/portal/payments?tab=statement";
+    const href = order ? `/portal/leads/${order.offerId}` : "/portal/payments?tab=statement";
     push(r.id, r.decidedAt ?? r.createdAt, r.status === "refunded" ? "refund" : "refundRejected", r.status === "refunded" ? "success" : "warning", href, { amount: r.amount });
   }
 
@@ -452,7 +452,7 @@ export function partnerFeed(db: FeedDB, partnerId: string): FeedItem[] {
   const offerById = new Map(db.offers.map((o) => [o.id, o]));
   for (const o of mine) {
     const offer = offerById.get(o.offerId);
-    const href = `/portal/leads?open=${o.offerId}`;
+    const href = `/portal/leads/${o.offerId}`;
     if (o.channel === "manual") push(o.id, o.createdAt, "assigned", "info", href, { offer: o.offerId, amount: o.price });
     if (!offer) continue;
     if (offer.status === "cancelled" && offer.cancelledAt && offer.cancelledAt > o.createdAt)

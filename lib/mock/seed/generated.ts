@@ -940,6 +940,31 @@ approved.slice(0, 14).forEach((p, i) => {
   });
 });
 
+// The demo company (Alpen Umzüge AG) had credit too: one invoice paid, one still due, so its
+// Invoices tab isn't empty. Its balance grows by the credit, so the wallet still matches the ledger.
+(
+  [
+    [100, 120, 30, "paid", "BANK-4471"],
+    [50, 9, 30, "due", ""],
+  ] as const
+).forEach(([amount, age, term, status, paidReference], i) => {
+  const p = partners[0];
+  const topupId = `TU-${pad(topups.length + 1, 4)}`;
+  const invoiceId = `KMP-2026-${pad(i + 34, 4)}`;
+  topups.push({ id: topupId, partnerId: p.id, amount, method: "credit", reference: invoiceId, note: "Agreed credit for the busy season.", byUserId: ADMINS[i % 2], invoiceId, createdAt: daysAgo(age) });
+  invoices.push({
+    id: invoiceId,
+    partnerId: p.id,
+    topupId,
+    amount,
+    status,
+    issuedAt: daysAgo(age),
+    dueAt: daysAgo(age - term),
+    ...(status === "paid" ? { paidAt: daysAgo(age - 25), paidMethod: "bank_transfer" as const, paidReference } : {}),
+  });
+  p.wallet += amount;
+});
+
 // Wallet balances must equal their ledger. Money in before the history above (first deposits)
 // becomes an opening balance recorded by admin, so every franc is accounted for.
 for (const p of partners) {
