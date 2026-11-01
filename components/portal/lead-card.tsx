@@ -33,7 +33,7 @@ export function LeadCard({ offer, sold, canBuy, compact }: { offer: Offer; sold:
   const svc = useServiceMap()[offer.serviceId];
   const [open, setOpen] = useState(false);
   const left = offer.offersWanted - sold;
-  const closing = !!offer.repostedAt || isExpiringSoon(offer);
+  const closing = isExpiringSoon(offer);
   const listPrice = svc?.leadPrice ?? 0;
   const price = discountedPrice(listPrice, offer.discount);
 

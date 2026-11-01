@@ -75,7 +75,7 @@ export default function LeadShop() {
   const inView = (x: (typeof all)[number]) => {
     if (view === "newest") return now - Date.parse(x.offer.createdAt) <= 7 * DAY;
     if (view === "closing") return left(x) <= 2;
-    if (view === "expiring") return !!x.offer.repostedAt || isExpiringSoon(x.offer);
+    if (view === "expiring") return isExpiringSoon(x.offer);
     if (view === "discounts") return !!x.offer.discount;
     return true;
   };

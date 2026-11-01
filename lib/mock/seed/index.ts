@@ -72,7 +72,7 @@ function withLateDiscounts(db: DB): DB {
       // the same rule as canDiscount in selectors (not imported: selectors already import the seed)
       const left = o.offersWanted - sold(o.id);
       const days = (Date.parse(o.deadline) - now) / DAY;
-      return o.status === "in_progress" && o.active && left > 0 && days >= 0 && (days <= 3 || left === 1 || !!o.repostedAt);
+      return o.status === "in_progress" && o.active && left > 0 && days >= 0 && (days <= 3 || left === 1);
     })
     .sort((a, b) => a.deadline.localeCompare(b.deadline))
     .slice(0, 2);

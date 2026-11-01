@@ -108,7 +108,6 @@ export interface Offer {
   cancelledAt?: string;
   verifiedAt?: string;
   /** Pushed back to the top of the shop shortly before the deadline. */
-  repostedAt?: string;
   /** A lower price Kompass set late, so the last slots sell before the deadline. */
   discount?: OfferDiscount;
   /** When the customer was emailed the names of the companies that bought the offer. */
