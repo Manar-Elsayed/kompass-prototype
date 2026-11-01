@@ -3,7 +3,7 @@
 import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Ban, Plus, RotateCcw, Send, ShieldCheck, UserPlus } from "lucide-react";
+import { AlertTriangle, Ban, Plus, Send, ShieldCheck, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { Offer } from "@/lib/types";
@@ -43,7 +43,6 @@ function Leads() {
   const services = useStore((s) => s.services);
   const patch = useStore((s) => s.patch);
   const approveOffer = useStore((s) => s.approveOffer);
-  const repostOffer = useStore((s) => s.repostOffer);
   const serviceMap = useServiceMap();
   const { confirm, dialog } = useConfirm();
   const { ask: askSurvey, dialog: surveyDialog } = useSendSurvey();
@@ -175,15 +174,6 @@ function Leads() {
                     toast.success(t("admin.leads.detail.approved", { id: o.id }));
                   },
                 }),
-            },
-            {
-              label: t("admin.leads.detail.repost"),
-              icon: <RotateCcw />,
-              hidden: o.status !== "in_progress" || full,
-              onSelect: () => {
-                repostOffer(o.id);
-                toast.success(t("admin.rows.reposted", { id: o.id }));
-              },
             },
             { label: t("admin.rows.assignCompany"), icon: <UserPlus />, href: `/admin/leads/${o.id}#assign`, hidden: !open || full },
             { label: t(surveySent(o) ? "admin.leads.survey.resend" : "admin.leads.survey.send"), icon: <Send />, hidden: !canSendSurvey(o, sold[o.id] ?? 0, answeredIds.has(o.id)), onSelect: () => askSurvey(o) },

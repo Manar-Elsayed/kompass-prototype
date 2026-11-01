@@ -16,7 +16,6 @@ import {
   Mail,
   MapPin,
   Phone,
-  RotateCcw,
   Send,
   ShieldCheck,
   ShoppingCart,
@@ -29,7 +28,7 @@ import type { FakeReport, Offer, Order } from "@/lib/types";
 import { cn, formatCHF, formatDate, formatDateTime } from "@/lib/utils";
 import { useStore } from "@/lib/mock/store";
 import { CITIES } from "@/lib/mock/seed";
-import { canBuyLeads, canDiscount, companyScore, daysLeft, discountedPrice, isExpiringSoon, surveyDate, surveySent, takesOffersFor } from "@/lib/mock/selectors";
+import { canBuyLeads, canDiscount, companyScore, discountedPrice, isExpiringSoon, surveyDate, surveySent, takesOffersFor } from "@/lib/mock/selectors";
 import { useL, useLang, usePartnerMap, useServiceMap } from "@/lib/mock/hooks";
 import { mock } from "@/lib/mock/api";
 import { Button } from "@/components/ui/button";
@@ -63,8 +62,6 @@ export default function LeadDetail() {
   const orders = useMemo(() => allOrders.filter((o) => o.offerId === id).sort((a, b) => a.createdAt.localeCompare(b.createdAt)), [allOrders, id]);
   const patch = useStore((s) => s.patch);
   const approveOffer = useStore((s) => s.approveOffer);
-  const repostOffer = useStore((s) => s.repostOffer);
-  const partners = useStore((s) => s.partners);
   const serviceMap = useServiceMap();
   const partnerMap = usePartnerMap();
   const { confirm, dialog } = useConfirm();
@@ -92,10 +89,8 @@ export default function LeadDetail() {
   const revenue = orders.reduce((a, o) => a + o.price, 0);
   const tl = (k: string, v?: Record<string, string | number>) => t(`admin.leads.detail.${k}`, v);
   const left = Math.max(0, offer.offersWanted - orders.length);
-  const days = daysLeft(offer.deadline);
   const expiring = isExpiringSoon(offer);
   const open = offer.status === "new" || offer.status === "in_progress";
-  const matching = partners.filter((p) => p.status === "approved" && !p.banned && takesOffersFor(p, offer.serviceId)).length;
   const listPrice = svc?.leadPrice ?? 0;
   const discountable = canDiscount(offer, orders.length);
 
@@ -111,12 +106,6 @@ export default function LeadDetail() {
       },
     });
 
-  const repost = () => {
-    repostOffer(offer.id);
-    toast.success(tl("reposted", { id: offer.id, count: matching }));
-  };
-
-
   const timeline = [
     { at: offer.createdAt, text: t("admin.leads.detail.submitted"), icon: <Flag className="size-3.5" /> },
     offer.verifiedAt && { at: offer.verifiedAt, text: tl("evVerified"), icon: <ShieldCheck className="size-3.5" /> },
@@ -126,7 +115,6 @@ export default function LeadDetail() {
       icon: <ShoppingCart className="size-3.5" />,
     })),
     offer.status === "completed" && orders.length && { at: orders[orders.length - 1].createdAt, text: tl("evCompleted"), icon: <CheckCircle2 className="size-3.5" /> },
-    offer.repostedAt && { at: offer.repostedAt, text: tl("evReposted"), icon: <RotateCcw className="size-3.5" /> },
     offer.discount && { at: offer.discount.at, text: tl("evDiscount", { price: formatCHF(discountedPrice(listPrice, offer.discount), lang) }), icon: <BadgePercent className="size-3.5" /> },
     surveySent(offer) && { at: surveyDate(offer), text: tl("evSurveySent"), icon: <Mail className="size-3.5" /> },
     offer.chosenAt && { at: offer.chosenAt, text: tl("evChosen", { name: partnerMap[offer.chosenPartnerId ?? ""]?.name ?? "?" }), icon: <Hand className="size-3.5" /> },
@@ -244,17 +232,6 @@ export default function LeadDetail() {
                         ? tl("expiredOn", { date: formatDate(offer.deadline, lang) })
                         : tl("expiresOn", { date: formatDate(offer.deadline, lang) })}
                   </p>
-                  {expiring && (
-                    <div className="mt-3 rounded-lg border border-warning/30 bg-warning-soft/40 p-3">
-                      <p className="mb-2 text-xs text-ink">{tl("repostHint", { days: Math.max(0, days), left })}</p>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button size="sm" variant="outline" onClick={repost}>
-                          <RotateCcw /> {tl("repost")}
-                        </Button>
-                        {offer.repostedAt && <span className="text-xs text-muted-foreground">{tl("repostedOn", { date: formatDateTime(offer.repostedAt, lang) })}</span>}
-                      </div>
-                    </div>
-                  )}
                   {/* a discount comes late, to sell the last slots: once the offer expires soon or has one slot left */}
                   {(discountable || offer.discount) && (
                     <div className="mt-3 rounded-lg border border-success/30 bg-success-soft/40 p-3">

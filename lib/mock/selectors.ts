@@ -171,7 +171,6 @@ export const surveyDate = (o: Pick<Offer, "executionDate" | "surveySentAt">) =>
 export const surveySent = (o: Pick<Offer, "executionDate" | "status" | "surveySentAt">) =>
   o.status !== "cancelled" && (!!o.surveySentAt || Date.parse(surveyDate(o)) <= refNow());
 
-/** On sale, inside the deadline window where admin should repost it (2-3 days, per the brief). */
 /** The price after an offer's discount (whole francs, never below 0). */
 export const discountedPrice = (base: number, d?: { type: "percent" | "fixed"; value: number }) =>
   !d ? base : Math.max(0, Math.round(d.type === "percent" ? base * (1 - d.value / 100) : base - d.value));
@@ -184,10 +183,10 @@ export const isExpiringSoon = (o: Pick<Offer, "status" | "deadline">) => {
 
 /**
  * Kompass may lower the price only late in an offer's life: on sale with slots left, and either
- * expiring soon, reposted, or down to its last slot.
+ * expiring soon or down to its last slot.
  */
 export const canDiscount = (o: Offer, sold: number) =>
-  o.status === "in_progress" && sold < o.offersWanted && (isExpiringSoon(o) || !!o.repostedAt || o.offersWanted - sold === 1);
+  o.status === "in_progress" && sold < o.offersWanted && (isExpiringSoon(o) || o.offersWanted - sold === 1);
 
 /** An offer can be bought while it is on sale, visible, inside its deadline and has slots left. */
 export const isPurchasable = (o: Offer, sold: number) =>
@@ -198,7 +197,7 @@ export const offerServiceIds = (p: { serviceIds: string[]; pausedServiceIds?: st
 /** The company takes new offers for this service (it offers it and hasn't paused it). */
 export const takesOffersFor = (p: { serviceIds: string[]; pausedServiceIds?: string[] }, serviceId: string) => offerServiceIds(p).includes(serviceId);
 
-/** Leads a partner can buy right now: purchasable, matching active services, not already owned. Reposted ones first. */
+/** Leads a partner can buy right now: purchasable, matching active services, not already owned. Newest first. */
 export function availableLeads(db: Pick<DB, "offers" | "orders">, partner: { id: string; serviceIds: string[]; pausedServiceIds?: string[] }) {
   const sold: Record<string, number> = {};
   const mine = new Set<string>();
@@ -209,7 +208,7 @@ export function availableLeads(db: Pick<DB, "offers" | "orders">, partner: { id:
   return db.offers
     .filter((o) => isPurchasable(o, sold[o.id] ?? 0) && takesOffersFor(partner, o.serviceId) && !mine.has(o.id))
     .map((o) => ({ offer: o, sold: sold[o.id] ?? 0 }))
-    .sort((a, b) => (b.offer.repostedAt ?? "").localeCompare(a.offer.repostedAt ?? ""));
+    .sort((a, b) => b.offer.createdAt.localeCompare(a.offer.createdAt));
 }
 
 const PHONE_OK = /^\+?[\d\s()-]{9,}$/;

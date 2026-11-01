@@ -47,7 +47,7 @@ interface Actions {
   setConfig: (partial: Partial<DB["config"]>) => void;
 
   /* cross-surface flows */
-  submitOffer: (input: Omit<Offer, "id" | "createdAt" | "status" | "active" | "ip" | "device" | "source" | "flags" | "cancelReason" | "cancelledAt" | "verifiedAt" | "repostedAt" | "buyersNotifiedAt" | "chosenPartnerId" | "chosenAt"> & { source?: Offer["source"] }) => Offer;
+  submitOffer: (input: Omit<Offer, "id" | "createdAt" | "status" | "active" | "ip" | "device" | "source" | "flags" | "cancelReason" | "cancelledAt" | "verifiedAt" | "buyersNotifiedAt" | "chosenPartnerId" | "chosenAt"> & { source?: Offer["source"] }) => Offer;
   /** A website signup, or admin adding a company (no "new application" notification then). Starts as an application. */
   registerPartner: (input: Omit<Partner, "id" | "slug" | "status" | "banned" | "featured" | "wallet" | "documents" | "lastSeen" | "createdAt">, opts?: { byAdmin?: boolean }) => Partner;
   /** Approving keeps what the company uploaded and marks it checked; rejecting records the reason it is shown. */
@@ -101,7 +101,6 @@ interface Actions {
   /** Fake → refunds the listed purchases to the buyers' wallets; customer → nobody is refunded. */
   cancelOffer: (id: string, reason: CancelReason, refundOrderIds?: string[]) => void;
   /** Close to the deadline: back to the top of the shop and companies are notified again. */
-  repostOffer: (id: string) => void;
   /** Manual / urgent assignment: charges the company the agreed price straight from its wallet. */
   assignLead: (offerId: string, partnerId: string, price: number, note?: string) => BuyResult;
   /** Records that the customer was emailed the names of the companies that bought the offer. */
@@ -675,8 +674,6 @@ export const useStore = create<Store>()(
         }
       },
 
-      repostOffer: (id) =>
-        set((s) => ({ offers: s.offers.map((o) => (o.id === id && o.status === "in_progress" ? { ...o, repostedAt: nowIso(), active: true } : o)) })),
 
       notifyCustomerOfBuyers: (offerId) =>
         set((s) => ({ offers: s.offers.map((o) => (o.id === offerId ? { ...o, buyersNotifiedAt: nowIso() } : o)) })),
